@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "sessionId": "679761ba-80c0-4cd3-a586-cc6a1fc56308",
+      "fullPath": "/Users/test/.claude/projects/-Users-test-project/679761ba-80c0-4cd3-a586-cc6a1fc56308.jsonl",
+      "projectPath": "/Users/test/project",
+      "firstPrompt": "Hello, can you help me understand this codebase?",
+      "summary": "Code exploration session",
+      "messageCount": 6,
+      "created": "2026-02-01T18:57:51.729Z",
+      "modified": "2026-02-01T19:00:22.857Z",
+      "gitBranch": "main",
+      "isSidechain": false
+    },
+    {
+      "sessionId": "12345678-1234-1234-1234-123456789012",
+      "fullPath": "/Users/test/.claude/projects/-Users-test-project/12345678-1234-1234-1234-123456789012.jsonl",
+      "projectPath": "/Users/test/project",
+      "firstPrompt": "Another session for testing",
+      "summary": "Test session",
+      "messageCount": 3,
+      "created": "2026-01-15T10:00:00.000Z",
+      "modified": "2026-01-15T10:30:00.000Z",
+      "gitBranch": "feature-branch",
+      "isSidechain": false
+    }
+  ]
+}
