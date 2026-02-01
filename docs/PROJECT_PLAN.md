@@ -541,8 +541,25 @@ After all three sprints complete:
 ### Phase 5: Agent Discovery 🔲 NOT STARTED
 
 **Priority**: MEDIUM
+**Development Method**: Parallel background dev agents in sc-git-worktree
+**QA Method**: Background QA agent verifies 100% test pass + coverage after each sprint
+**PR Target**: develop (after QA verification)
 
 Find subagents by criteria (files explored, tools used, time range).
+
+#### Development Workflow
+
+**CRITICAL**: All development MUST follow this workflow:
+1. Create feature worktree using `sc-git-worktree` from develop branch
+2. Deploy parallel background dev agents for independent tasks
+3. Each dev sprint MUST be followed by background QA agent verification:
+   - Verify plan requirements were met
+   - Verify adequate test coverage (>80% for new code)
+   - Verify corner case tests (nil inputs, invalid data, edge cases)
+   - Verify 100% test pass rate (`go test ./...`)
+   - Verify zero lint errors (`golangci-lint run ./...`)
+4. Only after QA agent confirms 100% pass: create PR to develop
+5. Clean up worktree after merge
 
 #### Requirements
 - Find agents that explored specific files (Read/Edit/Write tool calls)
@@ -586,7 +603,23 @@ claude-history find-agent /path --start 2026-01-30 --explored "*.go" --tool bash
 }
 ```
 
-#### Checklist
+#### Development Sprints (Parallel Execution)
+
+**Sprint 5a: Agent Discovery Core** (Background Dev Agent #1)
+- [ ] Create worktree: `sc-git-worktree create feature/phase5-agent-discovery`
+- [ ] Create `pkg/agent/discovery.go`
+  - [ ] `FindAgents()` with filter criteria
+  - [ ] `matchesFilePattern()` for glob matching
+  - [ ] Scan main session and all nested subagents
+  - [ ] Extract file paths from Read/Write/Edit tool calls
+- [ ] Create `pkg/agent/discovery_test.go`
+  - [ ] Test file pattern matching (exact, glob patterns)
+  - [ ] Test nested agent discovery (2-3 levels deep)
+  - [ ] Test time range filtering
+  - [ ] Corner cases: empty sessions, no agents, invalid patterns
+  - [ ] Target: >80% coverage
+
+**Sprint 5b: CLI Integration** (Background Dev Agent #2, depends on 5a)
 - [ ] Create `cmd/find_agent.go`
   - [ ] `--explored` flag (glob pattern for files)
   - [ ] `--tool` flag (reuse from Phase 4)
@@ -594,34 +627,68 @@ claude-history find-agent /path --start 2026-01-30 --explored "*.go" --tool bash
   - [ ] `--start` and `--end` time filters
   - [ ] `--session` to scope to single session
   - [ ] `--format json|list` output
-- [ ] Create `pkg/agent/discovery.go`
-  - [ ] `FindAgents()` with filter criteria
-  - [ ] `matchesFilePattern()` for glob matching
-  - [ ] Scan main session and all nested subagents
-  - [ ] Extract file paths from Read/Write/Edit tool calls
-- [ ] Create `pkg/agent/discovery_test.go`
-  - [ ] Test file pattern matching
-  - [ ] Test nested agent discovery
-  - [ ] Test time range filtering
+- [ ] Create `cmd/find_agent_test.go` (if needed for complex flag parsing)
+  - [ ] Test flag combinations
+  - [ ] Test invalid inputs
+
+**Sprint 5c: Enhanced Tree Support** (Background Dev Agent #3, parallel with 5a)
 - [ ] Update `pkg/agent/tree.go`
   - [ ] Build true nested tree from parentUuid chains
   - [ ] Support recursive agent searching
+- [ ] Update `pkg/agent/agent_test.go`
+  - [ ] Test nested tree building
+  - [ ] Test parentUuid chain resolution
+  - [ ] Corner cases: circular references, orphaned agents
+
+#### QA Verification (Background QA Agent - MANDATORY)
+After all dev sprints complete:
+- [ ] Run full test suite: `go test ./... -v`
+- [ ] Verify 100% test pass rate (zero failures)
+- [ ] Check coverage: `go test ./pkg/agent/... -cover` (target >80%)
+- [ ] Run linter: `golangci-lint run ./...` (zero errors)
+- [ ] Verify corner case coverage:
+  - [ ] Empty/nil inputs handled gracefully
+  - [ ] Invalid patterns/regex handled
+  - [ ] Deeply nested agents (3+ levels) work
+  - [ ] No panic on malformed data
+- [ ] Verify cross-platform compatibility (paths)
+- [ ] Test manual CLI usage with sample data
+- [ ] **Only if 100% pass**: Commit and create PR to develop
 
 #### Files to Create/Modify
-| File | Action |
-|------|--------|
-| `cmd/find_agent.go` | Create |
-| `pkg/agent/discovery.go` | Create |
-| `pkg/agent/discovery_test.go` | Create |
-| `pkg/agent/tree.go` | Modify |
+| Sprint | File | Action | Dev Agent |
+|--------|------|--------|-----------|
+| 5a | `pkg/agent/discovery.go` | Create | #1 |
+| 5a | `pkg/agent/discovery_test.go` | Create | #1 |
+| 5b | `cmd/find_agent.go` | Create | #2 |
+| 5c | `pkg/agent/tree.go` | Modify | #3 |
+| 5c | `pkg/agent/agent_test.go` | Update | #3 |
 
 ---
 
 ### Phase 6: HTML Export 🔲 NOT STARTED
 
 **Priority**: LOW
+**Development Method**: Parallel background dev agents in sc-git-worktree
+**QA Method**: Background QA agent verifies 100% test pass + coverage after each sprint
+**PR Target**: develop (after QA verification)
 
 Generate shareable HTML history with expandable tool calls and subagent sections.
+
+#### Development Workflow
+
+**CRITICAL**: All development MUST follow this workflow:
+1. Create feature worktree using `sc-git-worktree` from develop branch
+2. Deploy parallel background dev agents for independent tasks
+3. Each dev sprint MUST be followed by background QA agent verification:
+   - Verify plan requirements were met
+   - Verify adequate test coverage (>80% for new code)
+   - Verify corner case tests (empty sessions, missing files, malformed data)
+   - Verify 100% test pass rate (`go test ./...`)
+   - Verify zero lint errors (`golangci-lint run ./...`)
+   - Verify HTML output renders correctly in browser
+4. Only after QA agent confirms 100% pass: create PR to develop
+5. Clean up worktree after merge
 
 #### Requirements
 - Export to specified folder or auto-named temp folder
@@ -673,52 +740,92 @@ Example: /tmp/claude-history/679761ba-2026-02-01T19-00-22/
 - Timestamp of last activity for cache invalidation
 - If session continues, timestamp changes → indicates stale export
 
-#### Checklist
-- [ ] Create `cmd/export.go`
-  - [ ] `--output` flag for custom folder
-  - [ ] `--format html|jsonl` flag
-  - [ ] Auto-generate temp folder if no output specified
-  - [ ] Print export location on completion
+#### Development Sprints (Parallel Execution)
+
+**Sprint 6a: Export Infrastructure** (Background Dev Agent #1)
+- [ ] Create worktree: `sc-git-worktree create feature/phase6-html-export`
+- [ ] Create `pkg/export/export.go`
+  - [ ] `ExportSession()` main orchestration function
+  - [ ] Temp folder naming logic (`{sessionId}-{timestamp}`)
+  - [ ] Cross-platform path handling (`os.TempDir()`, `filepath.Join`)
+  - [ ] Copy JSONL source files
+- [ ] Create `pkg/export/export_test.go`
+  - [ ] Test temp folder creation/naming
+  - [ ] Test JSONL file copying
+  - [ ] Test cross-platform paths (Unix and Windows)
+  - [ ] Corner cases: missing files, permission errors, existing folders
+  - [ ] Target: >80% coverage
+
+**Sprint 6b: HTML Rendering** (Background Dev Agent #2, parallel with 6a)
 - [ ] Create `pkg/export/html.go`
-  - [ ] `ExportSession()` main function
   - [ ] `renderConversation()` for main HTML
   - [ ] `renderAgentFragment()` for subagent HTML
   - [ ] `renderToolCall()` with expandable section
-  - [ ] Syntax highlighting for code in tool outputs
+  - [ ] Escape HTML in content (prevent XSS)
   - [ ] Style different message types (user, assistant, system)
+- [ ] Create `pkg/export/html_test.go`
+  - [ ] Test HTML generation with sample data
+  - [ ] Test HTML escaping (XSS prevention)
+  - [ ] Test tool call rendering
+  - [ ] Corner cases: empty sessions, null content, special chars
+  - [ ] Target: >80% coverage
+
+**Sprint 6c: Manifest & Templates** (Background Dev Agent #3, parallel with 6a/6b)
 - [ ] Create `pkg/export/manifest.go`
   - [ ] Generate manifest.json with tree structure
   - [ ] Include all source file paths
-  - [ ] Include export timestamp
-- [ ] Create `pkg/export/templates/`
-  - [ ] `index.html` template
-  - [ ] `agent.html` template (fragment)
-  - [ ] `style.css`
-  - [ ] `script.js` (expand/collapse, lazy loading)
-- [ ] Create `pkg/export/html_test.go`
-  - [ ] Test HTML generation
+  - [ ] Include export timestamp and metadata
+- [ ] Create `pkg/export/manifest_test.go`
   - [ ] Test manifest generation
-  - [ ] Test temp folder naming
-- [ ] Copy source JSONL files
-  - [ ] Copy main session JSONL
-  - [ ] Copy all subagent JSONL files
-  - [ ] Preserve directory structure
-- [ ] Cross-platform temp folder handling
-  - [ ] Use `os.TempDir()` not hardcoded `/tmp`
-  - [ ] Handle Windows path separators in HTML links
+  - [ ] Test JSON serialization
+- [ ] Create `pkg/export/templates/`
+  - [ ] `index.html` template (embedded or external)
+  - [ ] `agent.html` template (fragment)
+  - [ ] `style.css` (responsive design)
+  - [ ] `script.js` (expand/collapse, lazy loading)
+
+**Sprint 6d: CLI Integration** (Background Dev Agent #4, depends on 6a)
+- [ ] Create `cmd/export.go`
+  - [ ] `--output` flag for custom folder
+  - [ ] `--format html|jsonl` flag
+  - [ ] `--session` flag (required)
+  - [ ] Auto-generate temp folder if no output specified
+  - [ ] Print export location on completion
+- [ ] Integration with pkg/export
+
+#### QA Verification (Background QA Agent - MANDATORY)
+After all dev sprints complete:
+- [ ] Run full test suite: `go test ./... -v`
+- [ ] Verify 100% test pass rate (zero failures)
+- [ ] Check coverage: `go test ./pkg/export/... -cover` (target >80%)
+- [ ] Run linter: `golangci-lint run ./...` (zero errors)
+- [ ] Verify corner case coverage:
+  - [ ] Empty/nil sessions handled gracefully
+  - [ ] Missing source files handled
+  - [ ] HTML escaping prevents XSS
+  - [ ] Cross-platform paths work (test on Windows paths)
+  - [ ] Temp folder creation with existing folder
+  - [ ] Permission errors handled gracefully
+- [ ] Manual QA testing:
+  - [ ] Export sample session to HTML
+  - [ ] Open index.html in browser (verify rendering)
+  - [ ] Test expand/collapse for tool calls
+  - [ ] Test expand/collapse for subagents
+  - [ ] Verify all source JSONL files present
+  - [ ] Verify manifest.json is valid
+- [ ] **Only if 100% pass**: Commit and create PR to develop
 
 #### Files to Create/Modify
-| File | Action |
-|------|--------|
-| `cmd/export.go` | Create |
-| `pkg/export/html.go` | Create |
-| `pkg/export/manifest.go` | Create |
-| `pkg/export/html_test.go` | Create |
-| `pkg/export/templates/index.html` | Create |
-| `pkg/export/templates/agent.html` | Create |
-| `pkg/export/templates/style.css` | Create |
-| `pkg/export/templates/script.js` | Create |
-| `internal/output/html.go` | Create |
+| Sprint | File | Action | Dev Agent |
+|--------|------|--------|-----------|
+| 6a | `pkg/export/export.go` | Create | #1 |
+| 6a | `pkg/export/export_test.go` | Create | #1 |
+| 6b | `pkg/export/html.go` | Create | #2 |
+| 6b | `pkg/export/html_test.go` | Create | #2 |
+| 6c | `pkg/export/manifest.go` | Create | #3 |
+| 6c | `pkg/export/manifest_test.go` | Create | #3 |
+| 6c | `pkg/export/templates/*.{html,css,js}` | Create | #3 |
+| 6d | `cmd/export.go` | Create | #4 |
 
 ---
 
