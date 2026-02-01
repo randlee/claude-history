@@ -178,6 +178,10 @@ type FilterOptions struct {
 	EndTime   *time.Time
 	Types     []models.EntryType
 	AgentID   string
+
+	// Tool filtering
+	ToolTypes []string // Filter by tool names (case-insensitive)
+	ToolMatch string   // Regex pattern to match tool inputs
 }
 
 // FilterEntries filters session entries based on the given options.
@@ -210,6 +214,27 @@ func FilterEntries(entries []models.ConversationEntry, opts FilterOptions) []mod
 				continue
 			}
 			if opts.EndTime != nil && ts.After(*opts.EndTime) {
+				continue
+			}
+		}
+
+		// Filter by tool types (only applies to entries with tool calls)
+		if len(opts.ToolTypes) > 0 {
+			hasMatchingTool := false
+			for _, toolName := range opts.ToolTypes {
+				if entry.HasToolCall(toolName) {
+					hasMatchingTool = true
+					break
+				}
+			}
+			if !hasMatchingTool {
+				continue
+			}
+		}
+
+		// Filter by tool input pattern
+		if opts.ToolMatch != "" {
+			if !entry.MatchesToolInput(opts.ToolMatch) {
 				continue
 			}
 		}
