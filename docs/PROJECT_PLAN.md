@@ -272,9 +272,11 @@ src/claude-history/
 
 ## Upcoming Implementation
 
-### Phase 4: Tool Filtering 🔲 IN PROGRESS
+### Phase 4: Tool Filtering ✅ COMPLETE
 
 **Priority**: HIGH
+**Status**: PR #5 open, all CI checks passing
+**PR**: https://github.com/randlee/claude-history/pull/5
 
 Add ability to filter by tool type and tool arguments in assistant messages.
 
@@ -311,37 +313,45 @@ claude-history query /path --session <id> --tool bash --tool-match "grep.*db\.go
 | `AskUserQuestion` | Prompt user for input |
 
 #### Checklist
-- [ ] Create `pkg/models/tools.go`
-  - [ ] `ToolUse` struct (ID, Name, Input)
-  - [ ] `ToolResult` struct (ToolUseID, Content, IsError)
-  - [ ] `ExtractToolCalls()` method on ConversationEntry
-  - [ ] `ExtractToolResults()` method on ConversationEntry
-- [ ] Create `pkg/models/tools_test.go`
-  - [ ] Test tool extraction from assistant messages
-  - [ ] Test various tool input formats
-  - [ ] Test missing/malformed tool calls
-- [ ] Update `pkg/session/session.go`
-  - [ ] Add `ToolTypes []string` to FilterOptions
-  - [ ] Add `ToolMatch string` (regex) to FilterOptions
-  - [ ] Implement tool filtering in `FilterEntries()`
-- [ ] Update `cmd/query.go`
-  - [ ] Add `--tool` flag (comma-separated, case-insensitive)
-  - [ ] Add `--tool-match` flag (regex pattern)
-  - [ ] Validate tool names against known list (warn on unknown)
-- [ ] Update `internal/output/formatter.go`
-  - [ ] Add tool call formatting in list output
-  - [ ] Show tool name and truncated input
-- [ ] Cross-platform tests
-  - [ ] Test path patterns in tool arguments (Windows vs Unix)
+- [x] Create `pkg/models/tools.go`
+  - [x] `ToolUse` struct (ID, Name, Input)
+  - [x] `ToolResult` struct (ToolUseID, Content, IsError)
+  - [x] `ExtractToolCalls()` method on ConversationEntry
+  - [x] `ExtractToolResults()` method on ConversationEntry
+- [x] Create `pkg/models/tools_test.go`
+  - [x] Test tool extraction from assistant messages
+  - [x] Test various tool input formats
+  - [x] Test missing/malformed tool calls
+- [x] Update `pkg/session/session.go`
+  - [x] Add `ToolTypes []string` to FilterOptions
+  - [x] Add `ToolMatch string` (regex) to FilterOptions
+  - [x] Implement tool filtering in `FilterEntries()`
+- [x] Update `cmd/query.go`
+  - [x] Add `--tool` flag (comma-separated, case-insensitive)
+  - [x] Add `--tool-match` flag (regex pattern)
+  - [x] Validate tool names against known list (warn on unknown)
+- [x] Update `internal/output/formatter.go`
+  - [x] Add tool call formatting in list output
+  - [x] Show tool name and truncated input
+- [x] Cross-platform tests
+  - [x] CI passes on macOS, Ubuntu, Windows
 
-#### Files to Create/Modify
-| File | Action |
-|------|--------|
-| `pkg/models/tools.go` | Create |
-| `pkg/models/tools_test.go` | Create |
-| `pkg/session/session.go` | Modify |
-| `cmd/query.go` | Modify |
-| `internal/output/formatter.go` | Modify |
+#### Files Created/Modified
+| File | Action | Status |
+|------|--------|--------|
+| `pkg/models/tools.go` | Create | ✅ Done |
+| `pkg/models/tools_test.go` | Create | ✅ Done |
+| `pkg/session/session.go` | Modify | ✅ Done |
+| `pkg/session/session_test.go` | Modify | ✅ Done |
+| `cmd/query.go` | Modify | ✅ Done |
+| `internal/output/formatter.go` | Modify | ✅ Done |
+| `internal/output/formatter_test.go` | Create | ✅ Done |
+
+#### Implementation Notes (2026-02-01)
+- Implemented via parallel worktrees: WI-1 (tool-models), WI-2 (output-formatter)
+- WI-3 (session-filtering) and WI-4 (CLI integration) done sequentially
+- All work merged into `feature/phase4-session-filtering` branch
+- Coverage: models 88.4%, session 57.7%, output 42.1%
 
 ---
 
