@@ -195,42 +195,147 @@ func TestFilterEntries_ToolTypes(t *testing.T) {
 		struct{ name, input string }{"Write", `{"file_path":"/tmp/test.txt"}`},
 	)
 	userEntry := models.ConversationEntry{UUID: "4", Type: models.EntryTypeUser, Timestamp: "2026-02-01T10:00:00.000Z"}
+	systemEntry := models.ConversationEntry{UUID: "5", Type: models.EntryTypeSystem, Timestamp: "2026-02-01T10:00:00.000Z"}
+	assistantNoTools := models.ConversationEntry{
+		UUID:      "6",
+		Type:      models.EntryTypeAssistant,
+		Timestamp: "2026-02-01T10:00:00.000Z",
+		Message:   json.RawMessage(`{"role":"assistant","content":"Just text, no tools"}`),
+	}
 
-	entries := []models.ConversationEntry{bashEntry, readEntry, multiEntry, userEntry}
+	entries := []models.ConversationEntry{bashEntry, readEntry, multiEntry, userEntry, systemEntry, assistantNoTools}
 
-	t.Run("filter for Bash", func(t *testing.T) {
+	tests := []struct {
+		name      string
+		toolTypes []string
+		wantCount int
+		wantUUIDs []string
+	}{
+		{
+			name:      "single tool type",
+			toolTypes: []string{"Bash"},
+			wantCount: 2,
+			wantUUIDs: []string{"1", "3"},
+		},
+		{
+			name:      "case insensitive matching",
+			toolTypes: []string{"bash"},
+			wantCount: 2,
+			wantUUIDs: []string{"1", "3"},
+		},
+		{
+			name:      "mixed case matching",
+			toolTypes: []string{"BaSh"},
+			wantCount: 2,
+			wantUUIDs: []string{"1", "3"},
+		},
+		{
+			name:      "multiple tool types OR logic",
+			toolTypes: []string{"Read", "Write"},
+			wantCount: 2,
+			wantUUIDs: []string{"2", "3"},
+		},
+		{
+			name:      "multiple tool types with case insensitive",
+			toolTypes: []string{"read", "WRITE"},
+			wantCount: 2,
+			wantUUIDs: []string{"2", "3"},
+		},
+		{
+			name:      "non-existent tool",
+			toolTypes: []string{"NonExistent"},
+			wantCount: 0,
+			wantUUIDs: []string{},
+		},
+		{
+			name:      "empty tool types does not filter",
+			toolTypes: []string{},
+			wantCount: 6,
+			wantUUIDs: []string{"1", "2", "3", "4", "5", "6"},
+		},
+		{
+			name:      "nil tool types does not filter",
+			toolTypes: nil,
+			wantCount: 6,
+			wantUUIDs: []string{"1", "2", "3", "4", "5", "6"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FilterEntries(entries, FilterOptions{
+				ToolTypes: tt.toolTypes,
+			})
+			if len(result) != tt.wantCount {
+				t.Errorf("Got %d entries, want %d", len(result), tt.wantCount)
+			}
+			// Verify correct entries returned
+			if len(result) == len(tt.wantUUIDs) {
+				for i, uuid := range tt.wantUUIDs {
+					if result[i].UUID != uuid {
+						t.Errorf("Entry %d: got UUID %s, want %s", i, result[i].UUID, uuid)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestFilterEntries_ToolTypes_WithOtherFilters(t *testing.T) {
+	// Test ToolTypes combined with existing filters
+	bashEntry1 := makeAssistantWithTools("1", struct{ name, input string }{"Bash", `{"command":"git status"}`})
+	bashEntry1.Timestamp = "2026-02-01T10:00:00.000Z"
+	bashEntry1.Type = models.EntryTypeAssistant
+
+	bashEntry2 := makeAssistantWithTools("2", struct{ name, input string }{"Bash", `{"command":"npm install"}`})
+	bashEntry2.Timestamp = "2026-02-01T11:00:00.000Z"
+	bashEntry2.Type = models.EntryTypeAssistant
+
+	readEntry := makeAssistantWithTools("3", struct{ name, input string }{"Read", `{"file_path":"/path/to/file.go"}`})
+	readEntry.Timestamp = "2026-02-01T12:00:00.000Z"
+	readEntry.Type = models.EntryTypeAssistant
+
+	userEntry := models.ConversationEntry{UUID: "4", Type: models.EntryTypeUser, Timestamp: "2026-02-01T13:00:00.000Z"}
+
+	entries := []models.ConversationEntry{bashEntry1, bashEntry2, readEntry, userEntry}
+
+	t.Run("tool types with entry type filter", func(t *testing.T) {
 		result := FilterEntries(entries, FilterOptions{
 			ToolTypes: []string{"Bash"},
+			Types:     []models.EntryType{models.EntryTypeAssistant},
 		})
 		if len(result) != 2 {
-			t.Errorf("Got %d entries, want 2 (bash and multi)", len(result))
+			t.Errorf("Got %d entries, want 2", len(result))
 		}
 	})
 
-	t.Run("filter for bash lowercase", func(t *testing.T) {
+	t.Run("tool types with time range filter", func(t *testing.T) {
+		start := time.Date(2026, 2, 1, 10, 30, 0, 0, time.UTC)
+		end := time.Date(2026, 2, 1, 12, 30, 0, 0, time.UTC)
 		result := FilterEntries(entries, FilterOptions{
-			ToolTypes: []string{"bash"},
+			ToolTypes: []string{"Bash"},
+			StartTime: &start,
+			EndTime:   &end,
 		})
-		if len(result) != 2 {
-			t.Errorf("Got %d entries, want 2 (case-insensitive)", len(result))
+		if len(result) != 1 {
+			t.Errorf("Got %d entries, want 1 (bashEntry2 only)", len(result))
+		}
+		if len(result) > 0 && result[0].UUID != "2" {
+			t.Errorf("Got UUID %s, want 2", result[0].UUID)
 		}
 	})
 
-	t.Run("filter for multiple tools", func(t *testing.T) {
+	t.Run("tool types with all filters combined", func(t *testing.T) {
+		start := time.Date(2026, 2, 1, 9, 0, 0, 0, time.UTC)
+		end := time.Date(2026, 2, 1, 11, 30, 0, 0, time.UTC)
 		result := FilterEntries(entries, FilterOptions{
-			ToolTypes: []string{"Read", "Write"},
+			ToolTypes: []string{"Bash"},
+			Types:     []models.EntryType{models.EntryTypeAssistant},
+			StartTime: &start,
+			EndTime:   &end,
 		})
 		if len(result) != 2 {
-			t.Errorf("Got %d entries, want 2 (read and multi)", len(result))
-		}
-	})
-
-	t.Run("filter for non-existent tool", func(t *testing.T) {
-		result := FilterEntries(entries, FilterOptions{
-			ToolTypes: []string{"NonExistent"},
-		})
-		if len(result) != 0 {
-			t.Errorf("Got %d entries, want 0", len(result))
+			t.Errorf("Got %d entries, want 2", len(result))
 		}
 	})
 }
@@ -239,33 +344,220 @@ func TestFilterEntries_ToolMatch(t *testing.T) {
 	gitEntry := makeAssistantWithTools("1", struct{ name, input string }{"Bash", `{"command":"git status"}`})
 	npmEntry := makeAssistantWithTools("2", struct{ name, input string }{"Bash", `{"command":"npm install"}`})
 	goFileEntry := makeAssistantWithTools("3", struct{ name, input string }{"Read", `{"file_path":"/Users/test/main.go"}`})
+	pyFileEntry := makeAssistantWithTools("4", struct{ name, input string }{"Read", `{"file_path":"/home/user/script.py"}`})
+	writeEntry := makeAssistantWithTools("5", struct{ name, input string }{"Write", `{"file_path":"/tmp/output.txt","content":"test"}`})
+	multiToolEntry := makeAssistantWithTools("6",
+		struct{ name, input string }{"Bash", `{"command":"ls -la"}`},
+		struct{ name, input string }{"Grep", `{"pattern":"TODO"}`},
+	)
+	userEntry := models.ConversationEntry{UUID: "7", Type: models.EntryTypeUser, Timestamp: "2026-02-01T10:00:00.000Z"}
 
-	entries := []models.ConversationEntry{gitEntry, npmEntry, goFileEntry}
+	entries := []models.ConversationEntry{gitEntry, npmEntry, goFileEntry, pyFileEntry, writeEntry, multiToolEntry, userEntry}
 
-	t.Run("match git commands", func(t *testing.T) {
+	tests := []struct {
+		name      string
+		pattern   string
+		wantCount int
+		wantUUIDs []string
+	}{
+		{
+			name:      "simple substring match",
+			pattern:   "git",
+			wantCount: 1,
+			wantUUIDs: []string{"1"},
+		},
+		{
+			name:      "regex pattern for commands",
+			pattern:   `git.*status`,
+			wantCount: 1,
+			wantUUIDs: []string{"1"},
+		},
+		{
+			name:      "regex pattern for npm",
+			pattern:   `npm\s+install`,
+			wantCount: 1,
+			wantUUIDs: []string{"2"},
+		},
+		{
+			name:      "match .go file paths",
+			pattern:   `\.go`,
+			wantCount: 1,
+			wantUUIDs: []string{"3"},
+		},
+		{
+			name:      "match .py file paths",
+			pattern:   `\.py`,
+			wantCount: 1,
+			wantUUIDs: []string{"4"},
+		},
+		{
+			name:      "match any file extension",
+			pattern:   `\.\w+$`,
+			wantCount: 0,
+			wantUUIDs: []string{},
+		},
+		{
+			name:      "match file_path key",
+			pattern:   `file_path`,
+			wantCount: 3,
+			wantUUIDs: []string{"3", "4", "5"},
+		},
+		{
+			name:      "match pattern in multi-tool entry",
+			pattern:   `TODO`,
+			wantCount: 1,
+			wantUUIDs: []string{"6"},
+		},
+		{
+			name:      "no match returns empty",
+			pattern:   "nonexistent",
+			wantCount: 0,
+			wantUUIDs: []string{},
+		},
+		{
+			name:      "invalid regex returns empty",
+			pattern:   "[invalid",
+			wantCount: 0,
+			wantUUIDs: []string{},
+		},
+		{
+			name:      "unclosed group regex returns empty",
+			pattern:   "(unclosed",
+			wantCount: 0,
+			wantUUIDs: []string{},
+		},
+		{
+			name:      "empty pattern does not filter",
+			pattern:   "",
+			wantCount: 7,
+			wantUUIDs: []string{"1", "2", "3", "4", "5", "6", "7"},
+		},
+		{
+			name:      "match /tmp paths",
+			pattern:   `/tmp/`,
+			wantCount: 1,
+			wantUUIDs: []string{"5"},
+		},
+		{
+			name:      "match Users or home in paths",
+			pattern:   `(Users|home)`,
+			wantCount: 2,
+			wantUUIDs: []string{"3", "4"},
+		},
+		{
+			name:      "case sensitive pattern",
+			pattern:   `Bash`,
+			wantCount: 0,
+			wantUUIDs: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FilterEntries(entries, FilterOptions{
+				ToolMatch: tt.pattern,
+			})
+			if len(result) != tt.wantCount {
+				t.Errorf("Got %d entries, want %d", len(result), tt.wantCount)
+				for i, r := range result {
+					t.Logf("  Result[%d]: UUID=%s", i, r.UUID)
+				}
+			}
+			// Verify correct entries returned when count matches
+			if len(result) == len(tt.wantUUIDs) {
+				for i, uuid := range tt.wantUUIDs {
+					if result[i].UUID != uuid {
+						t.Errorf("Entry %d: got UUID %s, want %s", i, result[i].UUID, uuid)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestFilterEntries_ToolMatch_WithOtherFilters(t *testing.T) {
+	// Test ToolMatch combined with existing filters
+	gitEntry := makeAssistantWithTools("1", struct{ name, input string }{"Bash", `{"command":"git status"}`})
+	gitEntry.Timestamp = "2026-02-01T10:00:00.000Z"
+	gitEntry.Type = models.EntryTypeAssistant
+
+	npmEntry := makeAssistantWithTools("2", struct{ name, input string }{"Bash", `{"command":"npm install"}`})
+	npmEntry.Timestamp = "2026-02-01T11:00:00.000Z"
+	npmEntry.Type = models.EntryTypeAssistant
+
+	goFileEntry := makeAssistantWithTools("3", struct{ name, input string }{"Read", `{"file_path":"/test/main.go"}`})
+	goFileEntry.Timestamp = "2026-02-01T12:00:00.000Z"
+	goFileEntry.Type = models.EntryTypeAssistant
+
+	userEntry := models.ConversationEntry{UUID: "4", Type: models.EntryTypeUser, Timestamp: "2026-02-01T13:00:00.000Z"}
+
+	entries := []models.ConversationEntry{gitEntry, npmEntry, goFileEntry, userEntry}
+
+	t.Run("tool match with entry type filter", func(t *testing.T) {
 		result := FilterEntries(entries, FilterOptions{
 			ToolMatch: "git",
+			Types:     []models.EntryType{models.EntryTypeAssistant},
 		})
 		if len(result) != 1 {
 			t.Errorf("Got %d entries, want 1", len(result))
 		}
 	})
 
-	t.Run("match .go files", func(t *testing.T) {
+	t.Run("tool match with time range filter", func(t *testing.T) {
+		start := time.Date(2026, 2, 1, 10, 30, 0, 0, time.UTC)
+		end := time.Date(2026, 2, 1, 13, 0, 0, 0, time.UTC)
 		result := FilterEntries(entries, FilterOptions{
-			ToolMatch: `\.go`,
+			ToolMatch: `\.(go|js)`,
+			StartTime: &start,
+			EndTime:   &end,
 		})
 		if len(result) != 1 {
-			t.Errorf("Got %d entries, want 1", len(result))
+			t.Errorf("Got %d entries, want 1 (goFileEntry only)", len(result))
+		}
+		if len(result) > 0 && result[0].UUID != "3" {
+			t.Errorf("Got UUID %s, want 3", result[0].UUID)
 		}
 	})
 
-	t.Run("invalid regex returns no matches", func(t *testing.T) {
+	t.Run("tool match with all filters combined", func(t *testing.T) {
+		start := time.Date(2026, 2, 1, 9, 0, 0, 0, time.UTC)
+		end := time.Date(2026, 2, 1, 11, 30, 0, 0, time.UTC)
 		result := FilterEntries(entries, FilterOptions{
-			ToolMatch: "[invalid",
+			ToolMatch: "command",
+			Types:     []models.EntryType{models.EntryTypeAssistant},
+			StartTime: &start,
+			EndTime:   &end,
 		})
-		if len(result) != 0 {
-			t.Errorf("Got %d entries, want 0 for invalid regex", len(result))
+		if len(result) != 2 {
+			t.Errorf("Got %d entries, want 2", len(result))
+		}
+	})
+
+	t.Run("tool match with AgentID filter", func(t *testing.T) {
+		// Create fresh entries with AgentID set
+		gitEntry2 := makeAssistantWithTools("1", struct{ name, input string }{"Bash", `{"command":"git status"}`})
+		gitEntry2.Timestamp = "2026-02-01T10:00:00.000Z"
+		gitEntry2.Type = models.EntryTypeAssistant
+		gitEntry2.AgentID = "agent-1"
+
+		npmEntry2 := makeAssistantWithTools("2", struct{ name, input string }{"Bash", `{"command":"npm install"}`})
+		npmEntry2.Timestamp = "2026-02-01T11:00:00.000Z"
+		npmEntry2.Type = models.EntryTypeAssistant
+		npmEntry2.AgentID = "agent-2"
+
+		goFileEntry2 := makeAssistantWithTools("3", struct{ name, input string }{"Read", `{"file_path":"/test/main.go"}`})
+		goFileEntry2.Timestamp = "2026-02-01T12:00:00.000Z"
+		goFileEntry2.Type = models.EntryTypeAssistant
+		goFileEntry2.AgentID = "agent-1"
+
+		entries2 := []models.ConversationEntry{gitEntry2, npmEntry2, goFileEntry2}
+
+		result := FilterEntries(entries2, FilterOptions{
+			ToolMatch: "command",
+			AgentID:   "agent-1",
+		})
+		if len(result) != 1 {
+			t.Errorf("Got %d entries, want 1 (gitEntry only)", len(result))
 		}
 	})
 }
@@ -274,29 +566,236 @@ func TestFilterEntries_ToolTypeAndMatch(t *testing.T) {
 	bashGit := makeAssistantWithTools("1", struct{ name, input string }{"Bash", `{"command":"git status"}`})
 	bashNpm := makeAssistantWithTools("2", struct{ name, input string }{"Bash", `{"command":"npm install"}`})
 	readGo := makeAssistantWithTools("3", struct{ name, input string }{"Read", `{"file_path":"/test/main.go"}`})
+	readPy := makeAssistantWithTools("4", struct{ name, input string }{"Read", `{"file_path":"/test/script.py"}`})
+	writeGo := makeAssistantWithTools("5", struct{ name, input string }{"Write", `{"file_path":"/test/output.go"}`})
+	bashLs := makeAssistantWithTools("6", struct{ name, input string }{"Bash", `{"command":"ls -la"}`})
+	multiTool := makeAssistantWithTools("7",
+		struct{ name, input string }{"Bash", `{"command":"git log"}`},
+		struct{ name, input string }{"Read", `{"file_path":"/test/README.md"}`},
+	)
 
-	entries := []models.ConversationEntry{bashGit, bashNpm, readGo}
+	entries := []models.ConversationEntry{bashGit, bashNpm, readGo, readPy, writeGo, bashLs, multiTool}
 
-	t.Run("both filters must match", func(t *testing.T) {
+	tests := []struct {
+		name      string
+		toolTypes []string
+		toolMatch string
+		wantCount int
+		wantUUIDs []string
+		desc      string
+	}{
+		{
+			name:      "both filters match",
+			toolTypes: []string{"Bash"},
+			toolMatch: "git",
+			wantCount: 2,
+			wantUUIDs: []string{"1", "7"},
+			desc:      "Bash tools with 'git' in input",
+		},
+		{
+			name:      "tool type matches but pattern doesn't",
+			toolTypes: []string{"Read"},
+			toolMatch: "git",
+			wantCount: 1,
+			wantUUIDs: []string{"7"},
+			desc:      "Multi-tool entry has Read AND git (in different tools)",
+		},
+		{
+			name:      "pattern matches but tool type doesn't",
+			toolTypes: []string{"Write"},
+			toolMatch: "npm",
+			wantCount: 0,
+			wantUUIDs: []string{},
+			desc:      "Write tools have no 'npm' in input",
+		},
+		{
+			name:      "both match different tools",
+			toolTypes: []string{"Read", "Write"},
+			toolMatch: `\.go`,
+			wantCount: 2,
+			wantUUIDs: []string{"3", "5"},
+			desc:      "Read or Write tools with .go files",
+		},
+		{
+			name:      "multiple tool types one matches pattern",
+			toolTypes: []string{"Bash", "Read"},
+			toolMatch: "status",
+			wantCount: 1,
+			wantUUIDs: []string{"1"},
+			desc:      "Only Bash git status matches",
+		},
+		{
+			name:      "case insensitive tool type with pattern",
+			toolTypes: []string{"bash"},
+			toolMatch: "npm",
+			wantCount: 1,
+			wantUUIDs: []string{"2"},
+			desc:      "Case-insensitive Bash with npm pattern",
+		},
+		{
+			name:      "multi-tool entry matches both filters",
+			toolTypes: []string{"Bash"},
+			toolMatch: "log",
+			wantCount: 1,
+			wantUUIDs: []string{"7"},
+			desc:      "Multi-tool entry has Bash with 'log'",
+		},
+		{
+			name:      "multi-tool entry matches type but not pattern",
+			toolTypes: []string{"Read"},
+			toolMatch: "status",
+			wantCount: 0,
+			wantUUIDs: []string{},
+			desc:      "Multi-tool has Read but only Bash has 'status'",
+		},
+		{
+			name:      "empty tool type ignores pattern",
+			toolTypes: []string{},
+			toolMatch: "git",
+			wantCount: 2,
+			wantUUIDs: []string{"1", "7"},
+			desc:      "Empty ToolTypes, only ToolMatch applied",
+		},
+		{
+			name:      "empty pattern ignores tool type",
+			toolTypes: []string{"Bash"},
+			toolMatch: "",
+			wantCount: 4,
+			wantUUIDs: []string{"1", "2", "6", "7"},
+			desc:      "Empty ToolMatch, only ToolTypes applied",
+		},
+		{
+			name:      "both empty returns all",
+			toolTypes: []string{},
+			toolMatch: "",
+			wantCount: 7,
+			wantUUIDs: []string{"1", "2", "3", "4", "5", "6", "7"},
+			desc:      "No filtering applied",
+		},
+		{
+			name:      "complex regex with multiple tool types",
+			toolTypes: []string{"Read", "Write"},
+			toolMatch: `\.(go|py)`,
+			wantCount: 3,
+			wantUUIDs: []string{"3", "4", "5"},
+			desc:      "Read/Write tools with .go or .py files",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FilterEntries(entries, FilterOptions{
+				ToolTypes: tt.toolTypes,
+				ToolMatch: tt.toolMatch,
+			})
+			if len(result) != tt.wantCount {
+				t.Errorf("%s: Got %d entries, want %d", tt.desc, len(result), tt.wantCount)
+				for i, r := range result {
+					t.Logf("  Result[%d]: UUID=%s", i, r.UUID)
+				}
+			}
+			// Verify correct entries returned when count matches
+			if len(result) == len(tt.wantUUIDs) {
+				for i, uuid := range tt.wantUUIDs {
+					if result[i].UUID != uuid {
+						t.Errorf("Entry %d: got UUID %s, want %s", i, result[i].UUID, uuid)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestFilterEntries_ToolTypeAndMatch_WithAllFilters(t *testing.T) {
+	// Test ToolTypes + ToolMatch + Types + Time + AgentID all together
+	bashGit := makeAssistantWithTools("1", struct{ name, input string }{"Bash", `{"command":"git status"}`})
+	bashGit.Timestamp = "2026-02-01T10:00:00.000Z"
+	bashGit.Type = models.EntryTypeAssistant
+	bashGit.AgentID = "agent-1"
+
+	bashNpm := makeAssistantWithTools("2", struct{ name, input string }{"Bash", `{"command":"npm install"}`})
+	bashNpm.Timestamp = "2026-02-01T11:00:00.000Z"
+	bashNpm.Type = models.EntryTypeAssistant
+	bashNpm.AgentID = "agent-2"
+
+	readGo := makeAssistantWithTools("3", struct{ name, input string }{"Read", `{"file_path":"/test/main.go"}`})
+	readGo.Timestamp = "2026-02-01T12:00:00.000Z"
+	readGo.Type = models.EntryTypeAssistant
+	readGo.AgentID = "agent-1"
+
+	userEntry := models.ConversationEntry{
+		UUID:      "4",
+		Type:      models.EntryTypeUser,
+		Timestamp: "2026-02-01T13:00:00.000Z",
+		AgentID:   "agent-1",
+	}
+
+	entries := []models.ConversationEntry{bashGit, bashNpm, readGo, userEntry}
+
+	t.Run("all filters combined", func(t *testing.T) {
+		start := time.Date(2026, 2, 1, 9, 0, 0, 0, time.UTC)
+		end := time.Date(2026, 2, 1, 10, 30, 0, 0, time.UTC)
 		result := FilterEntries(entries, FilterOptions{
 			ToolTypes: []string{"Bash"},
 			ToolMatch: "git",
+			Types:     []models.EntryType{models.EntryTypeAssistant},
+			StartTime: &start,
+			EndTime:   &end,
+			AgentID:   "agent-1",
 		})
 		if len(result) != 1 {
-			t.Errorf("Got %d entries, want 1 (only bashGit matches both)", len(result))
+			t.Errorf("Got %d entries, want 1 (only bashGit matches all)", len(result))
 		}
 		if len(result) > 0 && result[0].UUID != "1" {
 			t.Errorf("Expected entry 1 (bashGit), got %s", result[0].UUID)
 		}
 	})
 
-	t.Run("tool type matches but pattern doesn't", func(t *testing.T) {
+	t.Run("all filters but wrong agent", func(t *testing.T) {
+		start := time.Date(2026, 2, 1, 9, 0, 0, 0, time.UTC)
+		end := time.Date(2026, 2, 1, 10, 30, 0, 0, time.UTC)
 		result := FilterEntries(entries, FilterOptions{
-			ToolTypes: []string{"Read"},
+			ToolTypes: []string{"Bash"},
 			ToolMatch: "git",
+			Types:     []models.EntryType{models.EntryTypeAssistant},
+			StartTime: &start,
+			EndTime:   &end,
+			AgentID:   "agent-2",
 		})
 		if len(result) != 0 {
-			t.Errorf("Got %d entries, want 0", len(result))
+			t.Errorf("Got %d entries, want 0 (wrong agent)", len(result))
+		}
+	})
+
+	t.Run("all filters but wrong time range", func(t *testing.T) {
+		start := time.Date(2026, 2, 1, 11, 0, 0, 0, time.UTC)
+		end := time.Date(2026, 2, 1, 13, 0, 0, 0, time.UTC)
+		result := FilterEntries(entries, FilterOptions{
+			ToolTypes: []string{"Bash"},
+			ToolMatch: "git",
+			Types:     []models.EntryType{models.EntryTypeAssistant},
+			StartTime: &start,
+			EndTime:   &end,
+			AgentID:   "agent-1",
+		})
+		if len(result) != 0 {
+			t.Errorf("Got %d entries, want 0 (bashGit outside time range)", len(result))
+		}
+	})
+
+	t.Run("tool filters with multiple matching entries", func(t *testing.T) {
+		start := time.Date(2026, 2, 1, 9, 0, 0, 0, time.UTC)
+		end := time.Date(2026, 2, 1, 12, 30, 0, 0, time.UTC)
+		result := FilterEntries(entries, FilterOptions{
+			ToolTypes: []string{"Bash", "Read"},
+			ToolMatch: "(git|main)",
+			Types:     []models.EntryType{models.EntryTypeAssistant},
+			StartTime: &start,
+			EndTime:   &end,
+			AgentID:   "agent-1",
+		})
+		if len(result) != 2 {
+			t.Errorf("Got %d entries, want 2 (bashGit and readGo)", len(result))
 		}
 	})
 }

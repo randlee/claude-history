@@ -273,6 +273,7 @@ func TestExtractToolDisplayValue(t *testing.T) {
 		input    map[string]any
 		expected string
 	}{
+		// Bash tool
 		{
 			name:     "Bash extracts command",
 			toolName: "Bash",
@@ -280,11 +281,89 @@ func TestExtractToolDisplayValue(t *testing.T) {
 			expected: "npm install",
 		},
 		{
+			name:     "Bash with missing command key",
+			toolName: "Bash",
+			input:    map[string]any{"other": "value"},
+			expected: `{"other":"value"}`,
+		},
+		{
+			name:     "Bash with wrong type for command",
+			toolName: "Bash",
+			input:    map[string]any{"command": 123},
+			expected: `{"command":123}`,
+		},
+		// Read tool
+		{
 			name:     "Read extracts file_path",
 			toolName: "Read",
 			input:    map[string]any{"file_path": "/src/main.go", "offset": 0},
 			expected: "/src/main.go",
 		},
+		{
+			name:     "Read with missing file_path key",
+			toolName: "Read",
+			input:    map[string]any{"other": "value"},
+			expected: `{"other":"value"}`,
+		},
+		{
+			name:     "Read with wrong type for file_path",
+			toolName: "Read",
+			input:    map[string]any{"file_path": 456},
+			expected: `{"file_path":456}`,
+		},
+		// Write tool
+		{
+			name:     "Write extracts file_path",
+			toolName: "Write",
+			input:    map[string]any{"file_path": "/output/data.json"},
+			expected: "/output/data.json",
+		},
+		{
+			name:     "Write with missing file_path key",
+			toolName: "Write",
+			input:    map[string]any{"content": "data"},
+			expected: `{"content":"data"}`,
+		},
+		// Edit tool
+		{
+			name:     "Edit extracts file_path",
+			toolName: "Edit",
+			input:    map[string]any{"file_path": "/src/config.yaml"},
+			expected: "/src/config.yaml",
+		},
+		{
+			name:     "Edit with missing file_path key",
+			toolName: "Edit",
+			input:    map[string]any{"old_string": "foo"},
+			expected: `{"old_string":"foo"}`,
+		},
+		// Grep tool
+		{
+			name:     "Grep extracts pattern",
+			toolName: "Grep",
+			input:    map[string]any{"pattern": "func.*Test", "path": "/src"},
+			expected: "func.*Test",
+		},
+		{
+			name:     "Grep with missing pattern key",
+			toolName: "Grep",
+			input:    map[string]any{"path": "/src"},
+			expected: `{"path":"/src"}`,
+		},
+		// Glob tool
+		{
+			name:     "Glob extracts pattern",
+			toolName: "Glob",
+			input:    map[string]any{"pattern": "**/*.go"},
+			expected: "**/*.go",
+		},
+		{
+			name:     "Glob with missing pattern key",
+			toolName: "Glob",
+			input:    map[string]any{"path": "/src"},
+			expected: `{"path":"/src"}`,
+		},
+		// Task tool
 		{
 			name:     "Task prefers description over prompt",
 			toolName: "Task",
@@ -298,6 +377,38 @@ func TestExtractToolDisplayValue(t *testing.T) {
 			expected: "Review this",
 		},
 		{
+			name:     "Task with neither description nor prompt",
+			toolName: "Task",
+			input:    map[string]any{"subagent_type": "Explore"},
+			expected: `{"subagent_type":"Explore"}`,
+		},
+		// Unknown/Other tools - should fall back to JSON
+		{
+			name:     "WebFetch falls back to JSON",
+			toolName: "WebFetch",
+			input:    map[string]any{"url": "https://example.com"},
+			expected: `{"url":"https://example.com"}`,
+		},
+		{
+			name:     "WebSearch falls back to JSON",
+			toolName: "WebSearch",
+			input:    map[string]any{"query": "golang testing"},
+			expected: `{"query":"golang testing"}`,
+		},
+		{
+			name:     "NotebookEdit falls back to JSON",
+			toolName: "NotebookEdit",
+			input:    map[string]any{"notebook_path": "/notebook.ipynb"},
+			expected: `{"notebook_path":"/notebook.ipynb"}`,
+		},
+		{
+			name:     "AskUserQuestion falls back to JSON",
+			toolName: "AskUserQuestion",
+			input:    map[string]any{"question": "Proceed?"},
+			expected: `{"question":"Proceed?"}`,
+		},
+		// Edge cases
+		{
 			name:     "Nil input returns empty",
 			toolName: "Bash",
 			input:    nil,
@@ -308,12 +419,6 @@ func TestExtractToolDisplayValue(t *testing.T) {
 			toolName: "Bash",
 			input:    map[string]any{},
 			expected: "",
-		},
-		{
-			name:     "Wrong type returns JSON",
-			toolName: "Bash",
-			input:    map[string]any{"command": 123},
-			expected: `{"command":123}`,
 		},
 	}
 
@@ -340,9 +445,19 @@ func TestSerializeInput(t *testing.T) {
 			expected: "",
 		},
 		{
-			name:     "Simple map",
+			name:     "Simple map with string",
 			input:    map[string]any{"key": "value"},
 			expected: `{"key":"value"}`,
+		},
+		{
+			name:     "Simple map with number",
+			input:    map[string]any{"count": 42},
+			expected: `{"count":42}`,
+		},
+		{
+			name:     "Simple map with boolean",
+			input:    map[string]any{"enabled": true},
+			expected: `{"enabled":true}`,
 		},
 		{
 			name:     "Multiple keys",
@@ -366,6 +481,89 @@ func TestSerializeInput(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSerializeInputComplex(t *testing.T) {
+	t.Run("Nested map", func(t *testing.T) {
+		input := map[string]any{
+			"config": map[string]any{
+				"timeout": 5000,
+				"retry":   true,
+			},
+		}
+		result := serializeInput(input)
+		// Check that nested structure is preserved
+		if !strings.Contains(result, `"config"`) {
+			t.Error("Expected 'config' key in output")
+		}
+		if !strings.Contains(result, `"timeout":5000`) {
+			t.Error("Expected nested 'timeout' field in output")
+		}
+		if !strings.Contains(result, `"retry":true`) {
+			t.Error("Expected nested 'retry' field in output")
+		}
+	})
+
+	t.Run("Array in map", func(t *testing.T) {
+		input := map[string]any{
+			"files": []string{"a.go", "b.go", "c.go"},
+		}
+		result := serializeInput(input)
+		if !strings.Contains(result, `"files":["a.go","b.go","c.go"]`) {
+			t.Errorf("serializeInput() = %q, expected array to be serialized", result)
+		}
+	})
+
+	t.Run("Deeply nested map", func(t *testing.T) {
+		input := map[string]any{
+			"level1": map[string]any{
+				"level2": map[string]any{
+					"level3": "deep_value",
+				},
+			},
+		}
+		result := serializeInput(input)
+		if !strings.Contains(result, `"level1"`) || !strings.Contains(result, `"level2"`) || !strings.Contains(result, `"level3":"deep_value"`) {
+			t.Errorf("serializeInput() = %q, expected nested structure", result)
+		}
+	})
+
+	t.Run("Mixed types in map", func(t *testing.T) {
+		input := map[string]any{
+			"string": "text",
+			"number": 123,
+			"bool":   false,
+			"null":   nil,
+			"array":  []int{1, 2, 3},
+			"object": map[string]string{"key": "val"},
+		}
+		result := serializeInput(input)
+		// Verify all types are present in JSON output
+		if result == "" {
+			t.Error("Expected non-empty serialization for mixed types")
+		}
+		// Basic validation - contains some expected values
+		if !strings.Contains(result, `"string":"text"`) {
+			t.Error("Expected string field in output")
+		}
+		if !strings.Contains(result, `"number":123`) {
+			t.Error("Expected number field in output")
+		}
+	})
+
+	t.Run("Unmarshalable type returns empty", func(t *testing.T) {
+		// Channels, functions, and complex numbers cannot be marshaled to JSON
+		// However, since input is map[string]any from tool inputs, this is unlikely
+		// This test documents the error handling behavior even though it's hard to trigger
+		input := map[string]any{
+			"channel": make(chan int),
+		}
+		result := serializeInput(input)
+		// JSON marshaling will fail for channels, so we expect empty string
+		if result != "" {
+			t.Errorf("serializeInput with channel = %q, want empty string", result)
+		}
+	})
 }
 
 // Existing formatter tests

@@ -191,6 +191,106 @@ func TestExtractToolCalls_Grep(t *testing.T) {
 	}
 }
 
+func TestExtractToolCalls_WebFetch(t *testing.T) {
+	entry := ConversationEntry{
+		Type: EntryTypeAssistant,
+		Message: json.RawMessage(`{
+			"role": "assistant",
+			"content": [
+				{"type": "tool_use", "id": "toolu_08VWX", "name": "WebFetch", "input": {"url": "https://example.com/api", "prompt": "Extract data"}}
+			]
+		}`),
+	}
+
+	tools := entry.ExtractToolCalls()
+
+	if len(tools) != 1 {
+		t.Fatalf("ExtractToolCalls() returned %d tools, want 1", len(tools))
+	}
+
+	if tools[0].Name != "WebFetch" {
+		t.Errorf("Tool Name = %q, want %q", tools[0].Name, "WebFetch")
+	}
+	if tools[0].Input["url"] != "https://example.com/api" {
+		t.Errorf("Tool Input[url] = %v, want %q", tools[0].Input["url"], "https://example.com/api")
+	}
+}
+
+func TestExtractToolCalls_WebSearch(t *testing.T) {
+	entry := ConversationEntry{
+		Type: EntryTypeAssistant,
+		Message: json.RawMessage(`{
+			"role": "assistant",
+			"content": [
+				{"type": "tool_use", "id": "toolu_09YZA", "name": "WebSearch", "input": {"query": "golang testing best practices"}}
+			]
+		}`),
+	}
+
+	tools := entry.ExtractToolCalls()
+
+	if len(tools) != 1 {
+		t.Fatalf("ExtractToolCalls() returned %d tools, want 1", len(tools))
+	}
+
+	if tools[0].Name != "WebSearch" {
+		t.Errorf("Tool Name = %q, want %q", tools[0].Name, "WebSearch")
+	}
+	if tools[0].Input["query"] != "golang testing best practices" {
+		t.Errorf("Tool Input[query] = %v, want %q", tools[0].Input["query"], "golang testing best practices")
+	}
+}
+
+func TestExtractToolCalls_NotebookEdit(t *testing.T) {
+	entry := ConversationEntry{
+		Type: EntryTypeAssistant,
+		Message: json.RawMessage(`{
+			"role": "assistant",
+			"content": [
+				{"type": "tool_use", "id": "toolu_10BCD", "name": "NotebookEdit", "input": {"notebook_path": "/path/to/notebook.ipynb", "cell_id": "abc123", "new_source": "print('hello')"}}
+			]
+		}`),
+	}
+
+	tools := entry.ExtractToolCalls()
+
+	if len(tools) != 1 {
+		t.Fatalf("ExtractToolCalls() returned %d tools, want 1", len(tools))
+	}
+
+	if tools[0].Name != "NotebookEdit" {
+		t.Errorf("Tool Name = %q, want %q", tools[0].Name, "NotebookEdit")
+	}
+	if tools[0].Input["notebook_path"] != "/path/to/notebook.ipynb" {
+		t.Errorf("Tool Input[notebook_path] = %v, want %q", tools[0].Input["notebook_path"], "/path/to/notebook.ipynb")
+	}
+}
+
+func TestExtractToolCalls_AskUserQuestion(t *testing.T) {
+	entry := ConversationEntry{
+		Type: EntryTypeAssistant,
+		Message: json.RawMessage(`{
+			"role": "assistant",
+			"content": [
+				{"type": "tool_use", "id": "toolu_11EFG", "name": "AskUserQuestion", "input": {"question": "Should I proceed?", "options": ["Yes", "No"]}}
+			]
+		}`),
+	}
+
+	tools := entry.ExtractToolCalls()
+
+	if len(tools) != 1 {
+		t.Fatalf("ExtractToolCalls() returned %d tools, want 1", len(tools))
+	}
+
+	if tools[0].Name != "AskUserQuestion" {
+		t.Errorf("Tool Name = %q, want %q", tools[0].Name, "AskUserQuestion")
+	}
+	if tools[0].Input["question"] != "Should I proceed?" {
+		t.Errorf("Tool Input[question] = %v, want %q", tools[0].Input["question"], "Should I proceed?")
+	}
+}
+
 func TestExtractToolCalls_MultipleTools(t *testing.T) {
 	entry := ConversationEntry{
 		Type: EntryTypeAssistant,
@@ -718,5 +818,429 @@ func TestExtractToolResults_DirectContentArray(t *testing.T) {
 
 	if results[0].Content != "Success" {
 		t.Errorf("Content = %q, want Success", results[0].Content)
+	}
+}
+
+func TestExtractToolCalls_MalformedInput(t *testing.T) {
+	// Tool use with input field that's not valid JSON
+	entry := ConversationEntry{
+		Type: EntryTypeAssistant,
+		Message: json.RawMessage(`{
+			"role": "assistant",
+			"content": [
+				{"type": "tool_use", "id": "toolu_01", "name": "Bash", "input": "not a json object"}
+			]
+		}`),
+	}
+
+	tools := entry.ExtractToolCalls()
+
+	if len(tools) != 1 {
+		t.Fatalf("ExtractToolCalls() returned %d tools, want 1", len(tools))
+	}
+
+	// Input should be nil or empty since it couldn't be parsed
+	if tools[0].Input != nil {
+		t.Errorf("Tool Input = %v, want nil for malformed input", tools[0].Input)
+	}
+}
+
+func TestExtractToolResults_EmptyContent(t *testing.T) {
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": [
+				{"type": "tool_result", "tool_use_id": "toolu_01", "content": ""}
+			]
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 1 {
+		t.Fatalf("ExtractToolResults() returned %d results, want 1", len(results))
+	}
+
+	if results[0].Content != "" {
+		t.Errorf("Content = %q, want empty string", results[0].Content)
+	}
+}
+
+func TestExtractToolResults_ContentString(t *testing.T) {
+	// Test content as direct string
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": [
+				{"type": "tool_result", "tool_use_id": "toolu_01", "content": "Plain string result"}
+			]
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 1 {
+		t.Fatalf("ExtractToolResults() returned %d results, want 1", len(results))
+	}
+
+	if results[0].Content != "Plain string result" {
+		t.Errorf("Content = %q, want %q", results[0].Content, "Plain string result")
+	}
+}
+
+func TestExtractToolResults_ArrayContentEmptyBlocks(t *testing.T) {
+	// Array content with empty text blocks
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": [
+				{"type": "tool_result", "tool_use_id": "toolu_01", "content": [{"type": "text", "text": ""}, {"type": "text", "text": ""}]}
+			]
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 1 {
+		t.Fatalf("ExtractToolResults() returned %d results, want 1", len(results))
+	}
+
+	if results[0].Content != "" {
+		t.Errorf("Content = %q, want empty string", results[0].Content)
+	}
+}
+
+func TestExtractToolResults_MalformedContentJSON(t *testing.T) {
+	// Content field with invalid JSON
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": [
+				{"type": "tool_result", "tool_use_id": "toolu_01"}
+			]
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 1 {
+		t.Fatalf("ExtractToolResults() returned %d results, want 1", len(results))
+	}
+
+	// Content should be empty since content field is missing
+	if results[0].Content != "" {
+		t.Errorf("Content = %q, want empty string", results[0].Content)
+	}
+}
+
+func TestExtractIsError_WithWrapper(t *testing.T) {
+	// Test extractIsError with message wrapper
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": [
+				{"type": "tool_result", "tool_use_id": "toolu_error", "content": "Error message", "is_error": true}
+			]
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 1 {
+		t.Fatalf("ExtractToolResults() returned %d results, want 1", len(results))
+	}
+
+	if !results[0].IsError {
+		t.Errorf("IsError = false, want true")
+	}
+}
+
+func TestExtractIsError_NoWrapper(t *testing.T) {
+	// Test extractIsError with direct content array (no wrapper)
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`[
+			{"type": "tool_result", "tool_use_id": "toolu_error", "content": "Error message", "is_error": true}
+		]`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 1 {
+		t.Fatalf("ExtractToolResults() returned %d results, want 1", len(results))
+	}
+
+	if !results[0].IsError {
+		t.Errorf("IsError = false, want true")
+	}
+}
+
+func TestExtractIsError_EmptyMessage(t *testing.T) {
+	// Test extractIsError with empty message
+	entry := ConversationEntry{
+		Type:    EntryTypeUser,
+		Message: json.RawMessage(``),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 0 {
+		t.Errorf("ExtractToolResults() on empty message returned %d results, want 0", len(results))
+	}
+}
+
+func TestExtractIsError_WrongToolUseID(t *testing.T) {
+	// Test extractIsError when tool_use_id doesn't match
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": [
+				{"type": "tool_result", "tool_use_id": "toolu_01", "content": "Result 1"},
+				{"type": "tool_result", "tool_use_id": "toolu_02", "content": "Error", "is_error": true}
+			]
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 2 {
+		t.Fatalf("ExtractToolResults() returned %d results, want 2", len(results))
+	}
+
+	// First result should not have error
+	if results[0].IsError {
+		t.Errorf("Result 0 IsError = true, want false")
+	}
+
+	// Second result should have error
+	if !results[1].IsError {
+		t.Errorf("Result 1 IsError = false, want true")
+	}
+}
+
+func TestExtractIsError_MalformedMessage(t *testing.T) {
+	// Test extractIsError with malformed message
+	entry := ConversationEntry{
+		Type:    EntryTypeUser,
+		Message: json.RawMessage(`{invalid json`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 0 {
+		t.Errorf("ExtractToolResults() on malformed JSON returned %d results, want 0", len(results))
+	}
+}
+
+func TestMatchesToolInput_EmptyPattern(t *testing.T) {
+	entry := ConversationEntry{
+		Type: EntryTypeAssistant,
+		Message: json.RawMessage(`{
+			"role": "assistant",
+			"content": [
+				{"type": "tool_use", "id": "toolu_01", "name": "Bash", "input": {"command": "ls"}}
+			]
+		}`),
+	}
+
+	// Empty regex pattern matches everything in Go (it matches empty string at the start)
+	// This is expected behavior - an empty pattern will match any input
+	if !entry.MatchesToolInput("") {
+		t.Error("MatchesToolInput(\"\") = false, want true (empty regex matches everything)")
+	}
+}
+
+func TestExtractToolCalls_AllToolTypes(t *testing.T) {
+	// Test all 11 tool types in a single message
+	entry := ConversationEntry{
+		Type: EntryTypeAssistant,
+		Message: json.RawMessage(`{
+			"role": "assistant",
+			"content": [
+				{"type": "tool_use", "id": "toolu_01", "name": "Bash", "input": {"command": "ls"}},
+				{"type": "tool_use", "id": "toolu_02", "name": "Read", "input": {"file_path": "/file.go"}},
+				{"type": "tool_use", "id": "toolu_03", "name": "Write", "input": {"file_path": "/new.go", "content": "code"}},
+				{"type": "tool_use", "id": "toolu_04", "name": "Edit", "input": {"file_path": "/edit.go", "old_string": "a", "new_string": "b"}},
+				{"type": "tool_use", "id": "toolu_05", "name": "Task", "input": {"description": "Explore"}},
+				{"type": "tool_use", "id": "toolu_06", "name": "Glob", "input": {"pattern": "*.go"}},
+				{"type": "tool_use", "id": "toolu_07", "name": "Grep", "input": {"pattern": "func"}},
+				{"type": "tool_use", "id": "toolu_08", "name": "WebFetch", "input": {"url": "https://example.com"}},
+				{"type": "tool_use", "id": "toolu_09", "name": "WebSearch", "input": {"query": "test"}},
+				{"type": "tool_use", "id": "toolu_10", "name": "NotebookEdit", "input": {"notebook_path": "/nb.ipynb"}},
+				{"type": "tool_use", "id": "toolu_11", "name": "AskUserQuestion", "input": {"question": "Continue?"}}
+			]
+		}`),
+	}
+
+	tools := entry.ExtractToolCalls()
+
+	if len(tools) != 11 {
+		t.Fatalf("ExtractToolCalls() returned %d tools, want 11", len(tools))
+	}
+
+	expectedTools := []string{"Bash", "Read", "Write", "Edit", "Task", "Glob", "Grep", "WebFetch", "WebSearch", "NotebookEdit", "AskUserQuestion"}
+	for i, expected := range expectedTools {
+		if tools[i].Name != expected {
+			t.Errorf("Tool %d: Name = %q, want %q", i, tools[i].Name, expected)
+		}
+	}
+}
+
+func TestExtractIsError_NonToolResultType(t *testing.T) {
+	// Test extractIsError when content has non-tool_result types
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": [
+				{"type": "text", "text": "some text"},
+				{"type": "tool_result", "tool_use_id": "toolu_01", "content": "Success", "is_error": false}
+			]
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 1 {
+		t.Fatalf("ExtractToolResults() returned %d results, want 1", len(results))
+	}
+
+	if results[0].IsError {
+		t.Errorf("IsError = true, want false")
+	}
+}
+
+func TestExtractIsError_WrapperNoContent(t *testing.T) {
+	// Test extractIsError with wrapper but empty content
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": []
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 0 {
+		t.Errorf("ExtractToolResults() returned %d results, want 0", len(results))
+	}
+}
+
+func TestExtractIsError_InvalidContentArray(t *testing.T) {
+	// Test extractIsError when content is not parseable as tool results array
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": "string instead of array"
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	// This should still return 0 results since content is a string, not array of tool_results
+	if len(results) != 0 {
+		t.Errorf("ExtractToolResults() returned %d results, want 0", len(results))
+	}
+}
+
+func TestExtractToolResults_MixedContentTypes(t *testing.T) {
+	// Test tool results mixed with other content types
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": [
+				{"type": "text", "text": "Here are the results:"},
+				{"type": "tool_result", "tool_use_id": "toolu_01", "content": "Result 1"},
+				{"type": "image", "source": "..."},
+				{"type": "tool_result", "tool_use_id": "toolu_02", "content": "Result 2", "is_error": true}
+			]
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 2 {
+		t.Fatalf("ExtractToolResults() returned %d results, want 2", len(results))
+	}
+
+	if results[0].ToolUseID != "toolu_01" || results[0].IsError {
+		t.Errorf("Result 0 mismatch: %+v", results[0])
+	}
+	if results[1].ToolUseID != "toolu_02" || !results[1].IsError {
+		t.Errorf("Result 1 mismatch: %+v", results[1])
+	}
+}
+
+func TestExtractToolCalls_EmptyInputField(t *testing.T) {
+	// Test tool call with empty input field
+	entry := ConversationEntry{
+		Type: EntryTypeAssistant,
+		Message: json.RawMessage(`{
+			"role": "assistant",
+			"content": [
+				{"type": "tool_use", "id": "toolu_01", "name": "Bash"}
+			]
+		}`),
+	}
+
+	tools := entry.ExtractToolCalls()
+
+	if len(tools) != 1 {
+		t.Fatalf("ExtractToolCalls() returned %d tools, want 1", len(tools))
+	}
+
+	if tools[0].Input != nil {
+		t.Errorf("Tool Input = %v, want nil for missing input field", tools[0].Input)
+	}
+}
+
+func TestExtractIsError_DirectArrayNotObject(t *testing.T) {
+	// Test extractIsError when message is direct array but not parseable as tool results
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`[
+			"not a tool result object",
+			"just strings"
+		]`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	// Should return empty since content cannot be parsed as tool results
+	if len(results) != 0 {
+		t.Errorf("ExtractToolResults() returned %d results, want 0", len(results))
+	}
+}
+
+func TestExtractToolResults_ContentAsNumber(t *testing.T) {
+	// Test when content field is a number (edge case)
+	entry := ConversationEntry{
+		Type: EntryTypeUser,
+		Message: json.RawMessage(`{
+			"role": "user",
+			"content": [
+				{"type": "tool_result", "tool_use_id": "toolu_01", "content": 12345}
+			]
+		}`),
+	}
+
+	results := entry.ExtractToolResults()
+
+	if len(results) != 1 {
+		t.Fatalf("ExtractToolResults() returned %d results, want 1", len(results))
+	}
+
+	// Content should be empty since it couldn't be parsed as string or array
+	if results[0].Content != "" {
+		t.Errorf("Content = %q, want empty string for non-string content", results[0].Content)
 	}
 }
