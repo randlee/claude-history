@@ -618,15 +618,27 @@ Generate shareable HTML history with expandable tool calls and subagent sections
 │    - Sprint 6c (manifest/templates) ────┘                               │
 │    - Sprint 6d (CLI) ← depends on 6a                                    │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ 3. QA VERIFICATION (Background QA Agent - MANDATORY)                    │
+│ 3. DEV-QA LOOP (MANDATORY - repeat until QA approves)                   │
+│                                                                         │
+│    ┌─────────────┐     issues found      ┌─────────────┐                │
+│    │  QA Agent   │ ───────────────────▶  │  Dev Agent  │                │
+│    │  (review)   │                       │   (fix)     │                │
+│    └─────────────┘ ◀─────────────────── └─────────────┘                │
+│           │              re-review                                      │
+│           │                                                             │
+│           ▼ approved                                                    │
+│                                                                         │
+│    QA Agent Checks:                                                     │
 │    - Verify plan requirements were met                                  │
 │    - Verify adequate test coverage (>80% for new code)                  │
 │    - Verify corner case tests (empty sessions, missing files, XSS)      │
 │    - Verify 100% test pass rate (`go test ./...`)                       │
 │    - Verify zero lint errors (`golangci-lint run ./...`)                │
 │    - Verify HTML output renders correctly in browser                    │
+│                                                                         │
+│    ⚠️  ALL ISSUES MUST BE ADDRESSED - no exceptions                     │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ 4. PR TO DEVELOP (only if QA passes)                                    │
+│ 4. PR TO DEVELOP (only after QA approves)                               │
 │    - Push branches, create PRs                                          │
 │    - Wait for CI checks                                                 │
 │    - Merge after approval                                               │
