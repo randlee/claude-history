@@ -6,6 +6,22 @@ import (
 	"testing"
 )
 
+// mustMkdirAll creates directories or fails the test
+func mustMkdirAll(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0750); err != nil {
+		t.Fatalf("MkdirAll(%q) failed: %v", path, err)
+	}
+}
+
+// mustWriteFile writes a file or fails the test
+func mustWriteFile(t *testing.T, path string, data []byte) {
+	t.Helper()
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatalf("WriteFile(%q) failed: %v", path, err)
+	}
+}
+
 func TestParseAgentType(t *testing.T) {
 	tests := []struct {
 		agentID  string
@@ -31,7 +47,7 @@ func TestDiscoverAgents(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionDir := filepath.Join(tmpDir, "679761ba-80c0-4cd3-a586-cc6a1fc56308")
 	subagentsDir := filepath.Join(sessionDir, "subagents")
-	os.MkdirAll(subagentsDir, 0755)
+	mustMkdirAll(t, subagentsDir)
 
 	// Create agent files
 	agent1Content := `{"uuid":"1","sessionId":"test","type":"user"}
@@ -39,8 +55,8 @@ func TestDiscoverAgents(t *testing.T) {
 `
 	agent2Content := `{"uuid":"1","sessionId":"test","type":"system"}
 `
-	os.WriteFile(filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte(agent1Content), 0644)
-	os.WriteFile(filepath.Join(subagentsDir, "agent-aprompt_suggestion-abc.jsonl"), []byte(agent2Content), 0644)
+	mustWriteFile(t, filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte(agent1Content))
+	mustWriteFile(t, filepath.Join(subagentsDir, "agent-aprompt_suggestion-abc.jsonl"), []byte(agent2Content))
 
 	agents, err := DiscoverAgents(sessionDir)
 	if err != nil {
@@ -86,7 +102,7 @@ func TestFindAgentSpawns(t *testing.T) {
 {"uuid":"3","type":"assistant"}
 {"uuid":"4","type":"queue-operation","agentId":"a68b8c0"}
 `
-	os.WriteFile(sessionFile, []byte(content), 0644)
+	mustWriteFile(t, sessionFile, []byte(content))
 
 	spawns, err := FindAgentSpawns(sessionFile)
 	if err != nil {
@@ -116,17 +132,17 @@ func TestBuildTree(t *testing.T) {
 {"uuid":"2","sessionId":"` + sessionID + `","type":"assistant"}
 {"uuid":"3","sessionId":"` + sessionID + `","type":"queue-operation","agentId":"a12eb64"}
 `
-	os.WriteFile(sessionFile, []byte(sessionContent), 0644)
+	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	// Create agent file
 	sessionDir := filepath.Join(tmpDir, sessionID)
 	subagentsDir := filepath.Join(sessionDir, "subagents")
-	os.MkdirAll(subagentsDir, 0755)
+	mustMkdirAll(t, subagentsDir)
 
 	agentContent := `{"uuid":"a1","type":"user"}
 {"uuid":"a2","type":"assistant"}
 `
-	os.WriteFile(filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte(agentContent), 0644)
+	mustWriteFile(t, filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte(agentContent))
 
 	tree, err := BuildTree(tmpDir, sessionID)
 	if err != nil {

@@ -56,11 +56,11 @@ func TestConversationEntry_TypeChecks(t *testing.T) {
 
 func TestConversationEntry_ParseMessageContent(t *testing.T) {
 	tests := []struct {
-		name        string
-		message     string
-		wantCount   int
-		wantType    string
-		wantText    string
+		name      string
+		message   string
+		wantCount int
+		wantType  string
+		wantText  string
 	}{
 		{
 			name:      "array of content",

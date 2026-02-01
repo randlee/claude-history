@@ -1,0 +1,42 @@
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  default: standard
+  enable:
+    - misspell
+    - unconvert
+    - gosec
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/randlee/claude-history
+
+linters-settings:
+  misspell:
+    locale: US
+  gosec:
+    excludes:
+      - G304 # File path from variable (expected for CLI tool)
+      - G306 # WriteFile permissions (acceptable in tests)
+      - G301 # Directory permissions (acceptable in tests)
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    # Ignore unchecked errors for fmt print functions in output package
+    # These are CLI output functions where errors are unrecoverable
+    - path: internal/output/
+      linters:
+        - errcheck
+      text: "Error return value of `fmt\\.(Fprint|Fprintf|Fprintln)`"

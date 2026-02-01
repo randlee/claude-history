@@ -25,11 +25,11 @@ func NewScanner() *Scanner {
 // Lines that fail to parse as JSON are silently skipped.
 // If fn returns an error, scanning stops and that error is returned.
 func (s *Scanner) Scan(filePath string, fn func(line json.RawMessage) error) error {
-	file, err := os.Open(filePath)
+	file, err := os.Open(filePath) //nolint:gosec // G304: file path from CLI input is expected
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	scanner := bufio.NewScanner(file)
 

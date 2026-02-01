@@ -9,6 +9,14 @@ import (
 	"github.com/randlee/claude-history/pkg/models"
 )
 
+// mustWriteFile writes a file or fails the test
+func mustWriteFile(t *testing.T, path string, data []byte) {
+	t.Helper()
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatalf("WriteFile(%q) failed: %v", path, err)
+	}
+}
+
 func TestReadSession(t *testing.T) {
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.jsonl")
@@ -16,7 +24,7 @@ func TestReadSession(t *testing.T) {
 	content := `{"uuid":"1","sessionId":"test-session","type":"user","timestamp":"2026-02-01T18:00:00.000Z","message":"Hello"}
 {"uuid":"2","sessionId":"test-session","type":"assistant","timestamp":"2026-02-01T18:00:01.000Z","message":"Hi there"}
 `
-	os.WriteFile(testFile, []byte(content), 0644)
+	mustWriteFile(t, testFile, []byte(content))
 
 	entries, err := ReadSession(testFile)
 	if err != nil {
@@ -40,7 +48,7 @@ func TestGetSessionInfo(t *testing.T) {
 {"uuid":"2","sessionId":"679761ba-80c0-4cd3-a586-cc6a1fc56308","type":"assistant","timestamp":"2026-02-01T18:00:05.000Z"}
 {"uuid":"3","sessionId":"679761ba-80c0-4cd3-a586-cc6a1fc56308","type":"user","timestamp":"2026-02-01T18:01:00.000Z"}
 `
-	os.WriteFile(testFile, []byte(content), 0644)
+	mustWriteFile(t, testFile, []byte(content))
 
 	session, err := GetSessionInfo(testFile)
 	if err != nil {
@@ -130,7 +138,7 @@ func TestReadSessionIndex(t *testing.T) {
     }
   ]
 }`
-	os.WriteFile(indexFile, []byte(content), 0644)
+	mustWriteFile(t, indexFile, []byte(content))
 
 	index, err := ReadSessionIndex(indexFile)
 	if err != nil {
