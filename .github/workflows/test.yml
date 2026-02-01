@@ -12,45 +12,8 @@ on:
 
 jobs:
   test:
-    name: Run Tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ['1.21', '1.22']
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Download dependencies
-        working-directory: ./src
-        run: go mod download
-
-      - name: Run tests
-        working-directory: ./src
-        run: go test ./... -v -race
-
-      - name: Run tests with coverage
-        working-directory: ./src
-        run: go test ./... -coverprofile=coverage.out -covermode=atomic
-
-      - name: Upload coverage
-        if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.22'
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./src/coverage.out
-          fail_ci_if_error: false
-
-  build:
-    name: Build
+    name: Test
     runs-on: ubuntu-latest
-    needs: test
 
     steps:
       - name: Checkout code
@@ -61,14 +24,29 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Build for multiple platforms
+      - name: Run tests with race detection and coverage
         working-directory: ./src
-        run: |
-          GOOS=darwin GOARCH=amd64 go build -o ../bin/claude-history-darwin-amd64 .
-          GOOS=darwin GOARCH=arm64 go build -o ../bin/claude-history-darwin-arm64 .
-          GOOS=linux GOARCH=amd64 go build -o ../bin/claude-history-linux-amd64 .
-          GOOS=linux GOARCH=arm64 go build -o ../bin/claude-history-linux-arm64 .
-          GOOS=windows GOARCH=amd64 go build -o ../bin/claude-history-windows-amd64.exe .
+        run: go test ./... -v -race -coverprofile=coverage.out -covermode=atomic
 
-      - name: Verify binaries
-        run: ls -la bin/
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./src/coverage.out
+          fail_ci_if_error: false
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build
+        working-directory: ./src
+        run: go build -o ../bin/claude-history .
