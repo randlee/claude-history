@@ -248,8 +248,8 @@ func TestExtractToolCalls_EmptyContent(t *testing.T) {
 
 	tools := entry.ExtractToolCalls()
 
-	if tools != nil && len(tools) != 0 {
-		t.Errorf("ExtractToolCalls() on empty content returned %d tools, want nil or empty", len(tools))
+	if len(tools) != 0 {
+		t.Errorf("ExtractToolCalls() on empty content returned %d tools, want 0", len(tools))
 	}
 }
 
@@ -636,8 +636,8 @@ func TestExtractToolCalls_MalformedJSON(t *testing.T) {
 
 	tools := entry.ExtractToolCalls()
 
-	if tools != nil && len(tools) != 0 {
-		t.Errorf("ExtractToolCalls() on malformed JSON returned %d tools, want nil or empty", len(tools))
+	if len(tools) != 0 {
+		t.Errorf("ExtractToolCalls() on malformed JSON returned %d tools, want 0", len(tools))
 	}
 }
 
@@ -649,8 +649,8 @@ func TestExtractToolResults_MalformedJSON(t *testing.T) {
 
 	results := entry.ExtractToolResults()
 
-	if results != nil && len(results) != 0 {
-		t.Errorf("ExtractToolResults() on malformed JSON returned %d results, want nil or empty", len(results))
+	if len(results) != 0 {
+		t.Errorf("ExtractToolResults() on malformed JSON returned %d results, want 0", len(results))
 	}
 }
 
