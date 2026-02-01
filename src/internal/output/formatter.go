@@ -1,4 +1,6 @@
 // Package output provides output formatting for CLI display.
+//
+//nolint:errcheck // CLI output errors are unrecoverable - writing to stdout/stderr
 package output
 
 import (

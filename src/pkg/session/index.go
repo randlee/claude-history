@@ -9,7 +9,7 @@ import (
 
 // ReadSessionIndex reads and parses a sessions-index.json file.
 func ReadSessionIndex(filePath string) (*models.SessionIndex, error) {
-	data, err := os.ReadFile(filePath)
+	data, err := os.ReadFile(filePath) //nolint:gosec // G304: file path from CLI input is expected
 	if err != nil {
 		return nil, err
 	}

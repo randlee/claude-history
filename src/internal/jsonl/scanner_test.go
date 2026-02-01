@@ -16,7 +16,7 @@ func TestScanner_Scan(t *testing.T) {
 {"id": 2, "name": "second"}
 {"id": 3, "name": "third"}
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -47,7 +47,7 @@ not valid json
 also not valid
 {"id": 3}
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -75,7 +75,7 @@ func TestScanInto(t *testing.T) {
 	content := `{"id": 1, "name": "first"}
 {"id": 2, "name": "second"}
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -111,7 +111,7 @@ func TestReadAll(t *testing.T) {
 {"value": 20}
 {"value": 30}
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -147,7 +147,7 @@ invalid
 {"c": 3}
 {"d": 4}
 `
-	if err := os.WriteFile(testFile, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(testFile, []byte(content), 0600); err != nil {
 		t.Fatal(err)
 	}
 

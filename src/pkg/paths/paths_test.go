@@ -6,6 +6,22 @@ import (
 	"testing"
 )
 
+// mustMkdirAll creates directories or fails the test
+func mustMkdirAll(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(path, 0750); err != nil {
+		t.Fatalf("MkdirAll(%q) failed: %v", path, err)
+	}
+}
+
+// mustWriteFile writes a file or fails the test
+func mustWriteFile(t *testing.T, path string, data []byte) {
+	t.Helper()
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatalf("WriteFile(%q) failed: %v", path, err)
+	}
+}
+
 func TestDefaultClaudeDir(t *testing.T) {
 	dir, err := DefaultClaudeDir()
 	if err != nil {
@@ -84,12 +100,12 @@ func TestAgentFile(t *testing.T) {
 func TestListProjects(t *testing.T) {
 	tmpDir := t.TempDir()
 	projectsDir := filepath.Join(tmpDir, "projects")
-	os.MkdirAll(projectsDir, 0755)
+	mustMkdirAll(t, projectsDir)
 
 	// Create some project directories
-	os.MkdirAll(filepath.Join(projectsDir, "-Users-test-project1"), 0755)
-	os.MkdirAll(filepath.Join(projectsDir, "-Users-test-project2"), 0755)
-	os.MkdirAll(filepath.Join(projectsDir, "not-encoded"), 0755) // Should be excluded
+	mustMkdirAll(t, filepath.Join(projectsDir, "-Users-test-project1"))
+	mustMkdirAll(t, filepath.Join(projectsDir, "-Users-test-project2"))
+	mustMkdirAll(t, filepath.Join(projectsDir, "not-encoded")) // Should be excluded
 
 	projects, err := ListProjects(tmpDir)
 	if err != nil {
@@ -109,10 +125,10 @@ func TestListSessionFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Create session files
-	os.WriteFile(filepath.Join(tmpDir, "679761ba-80c0-4cd3-a586-cc6a1fc56308.jsonl"), []byte("{}"), 0644)
-	os.WriteFile(filepath.Join(tmpDir, "12345678-1234-1234-1234-123456789012.jsonl"), []byte("{}"), 0644)
-	os.WriteFile(filepath.Join(tmpDir, "sessions-index.json"), []byte("{}"), 0644) // Should be excluded
-	os.MkdirAll(filepath.Join(tmpDir, "some-dir"), 0755)                           // Should be excluded
+	mustWriteFile(t, filepath.Join(tmpDir, "679761ba-80c0-4cd3-a586-cc6a1fc56308.jsonl"), []byte("{}"))
+	mustWriteFile(t, filepath.Join(tmpDir, "12345678-1234-1234-1234-123456789012.jsonl"), []byte("{}"))
+	mustWriteFile(t, filepath.Join(tmpDir, "sessions-index.json"), []byte("{}")) // Should be excluded
+	mustMkdirAll(t, filepath.Join(tmpDir, "some-dir"))                           // Should be excluded
 
 	sessions, err := ListSessionFiles(tmpDir)
 	if err != nil {
@@ -127,12 +143,12 @@ func TestListSessionFiles(t *testing.T) {
 func TestListAgentFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	subagentsDir := filepath.Join(tmpDir, "subagents")
-	os.MkdirAll(subagentsDir, 0755)
+	mustMkdirAll(t, subagentsDir)
 
 	// Create agent files
-	os.WriteFile(filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte("{}"), 0644)
-	os.WriteFile(filepath.Join(subagentsDir, "agent-aprompt_suggestion-abc.jsonl"), []byte("{}"), 0644)
-	os.WriteFile(filepath.Join(subagentsDir, "other.jsonl"), []byte("{}"), 0644) // Should be excluded
+	mustWriteFile(t, filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte("{}"))
+	mustWriteFile(t, filepath.Join(subagentsDir, "agent-aprompt_suggestion-abc.jsonl"), []byte("{}"))
+	mustWriteFile(t, filepath.Join(subagentsDir, "other.jsonl"), []byte("{}")) // Should be excluded
 
 	agents, err := ListAgentFiles(tmpDir)
 	if err != nil {

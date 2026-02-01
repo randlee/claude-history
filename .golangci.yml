@@ -1,0 +1,38 @@
+version: "2"
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  default: standard
+  enable:
+    - misspell
+    - unconvert
+    - gosec
+  settings:
+    misspell:
+      locale: US
+    gosec:
+      excludes:
+        - G304 # File path from variable (expected for CLI tool)
+        - G306 # WriteFile permissions (acceptable in tests)
+        - G301 # Directory permissions (acceptable in tests)
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/randlee/claude-history
+
+output:
+  formats:
+    text:
+      print-linter-name: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
