@@ -3,6 +3,7 @@ package export
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -242,6 +243,9 @@ func TestCopyFile_LargeFile(t *testing.T) {
 }
 
 func TestCopyFile_PermissionError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping permission test on Windows - chmod doesn't work the same way")
+	}
 	if os.Getuid() == 0 {
 		t.Skip("skipping permission test when running as root")
 	}
@@ -971,6 +975,9 @@ func TestCleanupExport_PathTraversal(t *testing.T) {
 }
 
 func TestExportSession_ErrorCopyingAgents(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping permission test on Windows - chmod doesn't work the same way")
+	}
 	if os.Getuid() == 0 {
 		t.Skip("skipping permission test when running as root")
 	}
