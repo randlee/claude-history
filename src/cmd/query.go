@@ -20,7 +20,16 @@ var (
 	queryTypes     string
 	querySessionID string
 	queryAgentID   string
+	queryTools     string // --tool flag
+	queryToolMatch string // --tool-match flag
 )
+
+// knownTools is used for validation warnings when unknown tool types are specified
+var knownTools = map[string]bool{
+	"bash": true, "read": true, "write": true, "edit": true,
+	"task": true, "glob": true, "grep": true, "webfetch": true,
+	"websearch": true, "notebookedit": true, "askuserquestion": true,
+}
 
 var queryCmd = &cobra.Command{
 	Use:   "query <project-path>",
@@ -40,6 +49,13 @@ Examples:
   # Query specific session
   claude-history query /path/to/project --session 679761ba-80c0-4cd3-a586-cc6a1fc56308
 
+  # Filter by tool type
+  claude-history query /path/to/project --tool bash
+  claude-history query /path/to/project --tool bash,read,write
+
+  # Filter by tool input pattern
+  claude-history query /path/to/project --tool bash --tool-match "git"
+
   # Output formats
   claude-history query /path/to/project --format json
   claude-history query /path/to/project --format summary`,
@@ -55,6 +71,8 @@ func init() {
 	queryCmd.Flags().StringVar(&queryTypes, "type", "", "Entry types to include (comma-separated: user,assistant,system)")
 	queryCmd.Flags().StringVar(&querySessionID, "session", "", "Filter to specific session ID")
 	queryCmd.Flags().StringVar(&queryAgentID, "agent", "", "Filter to specific agent ID")
+	queryCmd.Flags().StringVar(&queryTools, "tool", "", "Filter by tool types (comma-separated: bash,read,write)")
+	queryCmd.Flags().StringVar(&queryToolMatch, "tool-match", "", "Filter by tool input regex pattern")
 }
 
 func runQuery(cmd *cobra.Command, args []string) error {
@@ -174,6 +192,25 @@ func buildFilterOptions() (session.FilterOptions, error) {
 
 	// Agent ID
 	opts.AgentID = queryAgentID
+
+	// Parse tool types
+	if queryTools != "" {
+		tools := strings.Split(queryTools, ",")
+		for _, tool := range tools {
+			tool = strings.TrimSpace(tool)
+			if tool == "" {
+				continue
+			}
+			// Warn on unknown tools (but still allow them)
+			if !knownTools[strings.ToLower(tool)] {
+				fmt.Fprintf(os.Stderr, "Warning: unknown tool type: %s\n", tool)
+			}
+			opts.ToolTypes = append(opts.ToolTypes, tool)
+		}
+	}
+
+	// Tool match pattern
+	opts.ToolMatch = queryToolMatch
 
 	return opts, nil
 }
