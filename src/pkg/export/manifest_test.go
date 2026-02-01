@@ -435,23 +435,6 @@ func TestBuildSourceFilesList(t *testing.T) {
 	}
 }
 
-// Integration test helpers
-func createTestSessionFile(t *testing.T, dir, sessionID string, entries []string) string {
-	t.Helper()
-
-	filePath := filepath.Join(dir, sessionID+".jsonl")
-	content := ""
-	for _, entry := range entries {
-		content += entry + "\n"
-	}
-
-	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
-		t.Fatalf("Failed to create test session file: %v", err)
-	}
-
-	return filePath
-}
-
 func TestGenerateManifest_NonExistentSession(t *testing.T) {
 	tempDir := t.TempDir()
 

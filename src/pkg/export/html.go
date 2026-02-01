@@ -75,7 +75,7 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	sb.WriteString("\n")
 
 	// Entry header with timestamp and type
-	sb.WriteString(fmt.Sprintf(`  <div class="entry-header">`, ))
+	sb.WriteString(`  <div class="entry-header">`)
 	sb.WriteString(fmt.Sprintf(`<span class="timestamp">%s</span>`, escapeHTML(timestamp)))
 	sb.WriteString(fmt.Sprintf(` <span class="type">%s</span>`, escapeHTML(string(entry.Type))))
 	if entry.AgentID != "" {

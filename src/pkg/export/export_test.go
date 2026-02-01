@@ -259,7 +259,7 @@ func TestCopyFile_PermissionError(t *testing.T) {
 	if err := os.Mkdir(readOnlyDir, 0555); err != nil {
 		t.Fatalf("failed to create read-only directory: %v", err)
 	}
-	defer os.Chmod(readOnlyDir, 0755) // Cleanup
+	defer func() { _ = os.Chmod(readOnlyDir, 0755) }() //nolint:gosec // restore perms for cleanup
 
 	dstPath := filepath.Join(readOnlyDir, "dest.txt")
 	err := copyFile(srcPath, dstPath)
@@ -350,7 +350,7 @@ func TestExportSession_WithTempDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ExportSession() error = %v", err)
 	}
-	defer CleanupExport(result.OutputDir)
+	defer func() { _ = CleanupExport(result.OutputDir) }()
 
 	// Verify output dir is under temp
 	if !strings.HasPrefix(result.OutputDir, os.TempDir()) {
@@ -987,10 +987,10 @@ func TestExportSession_ErrorCopyingAgents(t *testing.T) {
 
 	// Make agents directory read-only to cause copy errors
 	agentsDir := filepath.Join(outputDir, "source", "agents")
-	if err := os.Chmod(agentsDir, 0555); err != nil {
+	if err := os.Chmod(agentsDir, 0555); err != nil { //nolint:gosec // intentionally restrictive for test
 		t.Fatalf("failed to chmod agents dir: %v", err)
 	}
-	defer os.Chmod(agentsDir, 0755) // Cleanup
+	defer func() { _ = os.Chmod(agentsDir, 0755) }() //nolint:gosec // restore perms for cleanup
 
 	opts := ExportOptions{
 		OutputDir: outputDir,

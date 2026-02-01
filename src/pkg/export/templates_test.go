@@ -207,7 +207,7 @@ func TestGetTemplatesFS(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to open style.css from FS: %v", err)
 	} else {
-		file.Close()
+		_ = file.Close()
 	}
 }
 

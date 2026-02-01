@@ -18,13 +18,13 @@ const ManifestVersion = "1.0.0"
 
 // Manifest contains metadata about an exported session.
 type Manifest struct {
-	Version     string          `json:"version"`
-	ExportedAt  time.Time       `json:"exported_at"`
-	SessionID   string          `json:"session_id"`
-	ProjectPath string          `json:"project_path"`
-	EntryCount  int             `json:"entry_count"`
-	AgentTree   *AgentTreeNode  `json:"agent_tree"`
-	SourceFiles []SourceFile    `json:"source_files"`
+	Version     string         `json:"version"`
+	ExportedAt  time.Time      `json:"exported_at"`
+	SessionID   string         `json:"session_id"`
+	ProjectPath string         `json:"project_path"`
+	EntryCount  int            `json:"entry_count"`
+	AgentTree   *AgentTreeNode `json:"agent_tree"`
+	SourceFiles []SourceFile   `json:"source_files"`
 }
 
 // AgentTreeNode represents a node in the agent hierarchy for the manifest.
