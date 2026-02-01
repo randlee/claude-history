@@ -125,10 +125,10 @@ func TestFormatToolCallTruncation(t *testing.T) {
 
 func TestFormatToolCallTruncationEdgeCases(t *testing.T) {
 	tests := []struct {
-		name          string
-		inputLength   int
-		shouldTrunc   bool
-		expectedLen   int
+		name        string
+		inputLength int
+		shouldTrunc bool
+		expectedLen int
 	}{
 		{
 			name:        "Exactly 80 chars - no truncation",
