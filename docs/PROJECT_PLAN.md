@@ -352,6 +352,151 @@ claude-history query /path --session <id> --tool bash --tool-match "grep.*db\.go
 - WI-3 (session-filtering) and WI-4 (CLI integration) done sequentially
 - All work merged into `feature/phase4-session-filtering` branch
 - Coverage: models 88.4%, session 57.7%, output 42.1%
+- **Tests incomplete** - sprint below to add comprehensive tests
+
+---
+
+### Phase 4a: Test Coverage Sprints 🔲 NOT STARTED
+
+**Priority**: HIGH (blocking Phase 4 completion)
+**Worktree**: `feature/phase4-session-filtering` (existing)
+
+Add comprehensive tests for Phase 4 implementation. Three sequential sprints, each followed by QA verification.
+
+---
+
+#### Sprint 4a-1: Tool Models Tests (`pkg/models/tools.go`)
+
+**Target file**: `pkg/models/tools_test.go`
+
+**Test Requirements**:
+
+| Function | Test Cases Required |
+|----------|---------------------|
+| `ExtractToolCalls()` | - Assistant message with single tool call (Bash, Read, Write, Edit, Task, Glob, Grep, WebFetch, WebSearch, NotebookEdit, AskUserQuestion) |
+| | - Assistant message with multiple tool calls |
+| | - Assistant message with no tool calls (text only) |
+| | - Non-assistant entry type returns empty |
+| | - Malformed JSON content returns empty |
+| | - Missing required fields (id, name, input) handled gracefully |
+| | - Nested content wrapper `{role, content}` unwrapped correctly |
+| | - Direct content array parsed correctly |
+| `ExtractToolResults()` | - User message with single tool result |
+| | - User message with multiple tool results |
+| | - User message with error result (`is_error: true`) |
+| | - Non-user entry type returns empty |
+| | - Content as string vs content as array |
+| | - Malformed JSON handled gracefully |
+| `HasToolCall()` | - Exact match (e.g., "Bash") |
+| | - Case-insensitive match ("bash", "BASH", "BaSh") |
+| | - Tool not present returns false |
+| | - Multiple tools, one matches |
+| | - Empty tool name returns false |
+| | - Non-assistant entry returns false |
+| `MatchesToolInput()` | - Simple substring match |
+| | - Regex pattern match (e.g., `\.go$`) |
+| | - Pattern matches in any tool input |
+| | - No match returns false |
+| | - Invalid regex returns false (not panic) |
+| | - Empty pattern returns false |
+| | - Non-assistant entry returns false |
+| | - Tool with nil/empty input handled |
+
+**QA Verification**:
+- [ ] All tests pass (`go test ./pkg/models/... -v`)
+- [ ] No lint warnings (`golangci-lint run ./pkg/models/...`)
+- [ ] Coverage > 90% for tools.go
+
+---
+
+#### Sprint 4a-2: Output Formatter Tests (`internal/output/formatter.go`)
+
+**Target file**: `internal/output/formatter_test.go`
+
+**Test Requirements**:
+
+| Function | Test Cases Required |
+|----------|---------------------|
+| `FormatToolCall()` | - Bash tool with command |
+| | - Read/Write/Edit tool with file_path |
+| | - Grep/Glob tool with pattern |
+| | - Task tool with description |
+| | - Task tool with prompt (fallback) |
+| | - Unknown tool falls back to JSON serialization |
+| | - Nil input returns `[ToolName]` only |
+| | - Empty input map returns `[ToolName]` only |
+| | - Input truncated at 80 chars with `...` |
+| | - Input exactly 80 chars (no truncation) |
+| | - Input 79 chars (no truncation) |
+| | - Input 81 chars (truncation) |
+| `FormatToolCalls()` | - Empty slice returns empty string |
+| | - Nil slice returns empty string |
+| | - Single tool formatted correctly |
+| | - Multiple tools joined with newlines |
+| `FormatToolSummary()` | - Empty slice returns empty string |
+| | - Single tool shows full format |
+| | - Multiple tools shows `[Tool1, Tool2, Tool3]` |
+| `extractToolDisplayValue()` | - Each tool type extracts correct key |
+| | - Missing key falls back to JSON |
+| | - Wrong type for expected key falls back to JSON |
+| `serializeInput()` | - Empty map returns empty string |
+| | - Simple map serializes to JSON |
+| | - Complex nested map serializes |
+
+**QA Verification**:
+- [ ] All tests pass (`go test ./internal/output/... -v`)
+- [ ] No lint warnings (`golangci-lint run ./internal/output/...`)
+- [ ] Coverage > 90% for formatter.go tool functions
+
+---
+
+#### Sprint 4a-3: Session Filtering Tests (`pkg/session/session.go`)
+
+**Target file**: `pkg/session/session_test.go`
+
+**Test Requirements**:
+
+| Function | Test Cases Required |
+|----------|---------------------|
+| `FilterEntries()` with `ToolTypes` | - Single tool type filters correctly |
+| | - Multiple tool types (OR logic) |
+| | - Case-insensitive tool matching |
+| | - Non-existent tool returns empty |
+| | - Empty ToolTypes does not filter |
+| | - Combined with existing filters (Types, StartTime, EndTime) |
+| `FilterEntries()` with `ToolMatch` | - Simple substring pattern |
+| | - Regex pattern (e.g., `git.*status`) |
+| | - Pattern in file path (e.g., `\.go$`) |
+| | - No match returns empty |
+| | - Invalid regex returns empty (not panic) |
+| | - Empty ToolMatch does not filter |
+| | - Combined with existing filters |
+| `FilterEntries()` with both | - Both ToolTypes AND ToolMatch must match |
+| | - ToolTypes matches but ToolMatch doesn't → excluded |
+| | - ToolMatch matches but ToolTypes doesn't → excluded |
+| | - Both match → included |
+
+**Test Data Requirements**:
+- Create helper function to generate test entries with tool calls
+- Cover all tool types in test data
+- Include entries with multiple tools
+- Include entries with no tools
+
+**QA Verification**:
+- [ ] All tests pass (`go test ./pkg/session/... -v`)
+- [ ] No lint warnings (`golangci-lint run ./pkg/session/...`)
+- [ ] Coverage > 80% for session.go FilterEntries function
+
+---
+
+#### Final QA for Phase 4a
+
+After all three sprints complete:
+- [ ] Full test suite passes: `go test ./... -v`
+- [ ] No lint warnings: `golangci-lint run ./...`
+- [ ] Cross-platform CI passes (macOS, Ubuntu, Windows)
+- [ ] Commit all changes to `feature/phase4-session-filtering`
+- [ ] Push and verify PR #5 CI passes
 
 ---
 
