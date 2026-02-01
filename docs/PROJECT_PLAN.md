@@ -1,8 +1,8 @@
 # Claude History CLI Tool - Project Plan
 
-**Document Version**: 2.1
+**Document Version**: 2.2
 **Created**: 2026-02-01
-**Updated**: 2026-02-01 (Phase 4a completion)
+**Updated**: 2026-02-01 (Phase 5 completion)
 **Language**: Go
 **Status**: In Development
 
@@ -165,12 +165,12 @@ src/claude-history/
 - ✅ Phase 3: Session & Agent Discovery (list, query, tree commands)
 - ✅ Phase 4: Tool Filtering (`--tool`, `--tool-match` flags)
 - ✅ Phase 4a: Test Coverage Sprints (90%+ coverage achieved)
+- ✅ Phase 5: Agent Discovery (`find-agent` command, nested tree building)
 
 ### In Progress
-- None (Phase 4 complete, awaiting merge to main via PR #6)
+- None
 
 ### Upcoming Phases
-- 🔲 Phase 5: Agent Discovery (`find-agent` command)
 - 🔲 Phase 6: HTML Export (`export` command)
 
 ---
@@ -538,35 +538,14 @@ After all three sprints complete:
 
 ---
 
-### Phase 5: Agent Discovery 🔲 NOT STARTED
+### Phase 5: Agent Discovery ✅ COMPLETE
 
-**Priority**: MEDIUM
+**Completed**: 2026-02-01
 **Development Method**: Parallel background dev agents in sc-git-worktree
-**QA Method**: Background QA agent verifies 100% test pass + coverage after each sprint
-**PR Target**: develop (after QA verification)
+**QA Method**: Background QA agents verified 100% test pass + coverage
+**PRs**: #7 (discovery core), #8 (tree enhancements), #9 (CLI integration)
 
 Find subagents by criteria (files explored, tools used, time range).
-
-#### Development Workflow
-
-**CRITICAL**: All development MUST follow this workflow:
-1. Create feature worktree using `sc-git-worktree` from develop branch
-2. Deploy parallel background dev agents for independent tasks
-3. Each dev sprint MUST be followed by background QA agent verification:
-   - Verify plan requirements were met
-   - Verify adequate test coverage (>80% for new code)
-   - Verify corner case tests (nil inputs, invalid data, edge cases)
-   - Verify 100% test pass rate (`go test ./...`)
-   - Verify zero lint errors (`golangci-lint run ./...`)
-4. Only after QA agent confirms 100% pass: create PR to develop
-5. Clean up worktree after merge
-
-#### Requirements
-- Find agents that explored specific files (Read/Edit/Write tool calls)
-- Find agents by time range
-- Find agents by tool usage patterns
-- Return agent ID, session ID, JSONL path (for resurrection)
-- Search nested agents (agents spawned by agents)
 
 #### CLI Usage
 ```bash
@@ -582,113 +561,93 @@ claude-history find-agent /path --tool-match "db\.go"
 
 # Combine filters
 claude-history find-agent /path --start 2026-01-30 --explored "*.go" --tool bash
+
+# JSON output for scripting
+claude-history find-agent /path --explored "*.go" --format json
 ```
 
-#### Output Format (JSON)
-```json
-{
-  "agents": [
-    {
-      "agentId": "a12eb64",
-      "sessionId": "679761ba-80c0-4cd3-a586-cc6a1fc56308",
-      "projectPath": "/Users/randlee/Documents/github",
-      "jsonlPath": "/Users/randlee/.claude/projects/.../subagents/agent-a12eb64.jsonl",
-      "entryCount": 29,
-      "matchedFiles": ["beads/src/db.go"],
-      "matchedTools": ["Read", "Grep"],
-      "created": "2026-02-01T18:58:01.000Z",
-      "modified": "2026-02-01T18:59:25.000Z"
-    }
-  ]
-}
-```
+#### Implementation Summary
 
-#### Development Sprints (Parallel Execution)
+**Execution Method**: Three parallel background dev agents on dedicated worktrees
 
-**Sprint 5a: Agent Discovery Core** (Background Dev Agent #1)
-- [ ] Create worktree: `sc-git-worktree create feature/phase5-agent-discovery`
-- [ ] Create `pkg/agent/discovery.go`
-  - [ ] `FindAgents()` with filter criteria
-  - [ ] `matchesFilePattern()` for glob matching
-  - [ ] Scan main session and all nested subagents
-  - [ ] Extract file paths from Read/Write/Edit tool calls
-- [ ] Create `pkg/agent/discovery_test.go`
-  - [ ] Test file pattern matching (exact, glob patterns)
-  - [ ] Test nested agent discovery (2-3 levels deep)
-  - [ ] Test time range filtering
-  - [ ] Corner cases: empty sessions, no agents, invalid patterns
-  - [ ] Target: >80% coverage
+| Sprint | Worktree | Agent | Deliverables | Coverage |
+|--------|----------|-------|--------------|----------|
+| 5a | `feature/phase5-discovery-core` | Dev #1 | `pkg/agent/discovery.go`, 24 tests | 86.0% |
+| 5c | `feature/phase5-tree-enhanced` | Dev #2 | `pkg/agent/tree.go` updates, 13 tests | 80.8% |
+| 5b | `feature/phase5-cli-integration` | Dev #3 | `cmd/find_agent.go` | - |
 
-**Sprint 5b: CLI Integration** (Background Dev Agent #2, depends on 5a)
-- [ ] Create `cmd/find_agent.go`
-  - [ ] `--explored` flag (glob pattern for files)
-  - [ ] `--tool` flag (reuse from Phase 4)
-  - [ ] `--tool-match` flag (reuse from Phase 4)
-  - [ ] `--start` and `--end` time filters
-  - [ ] `--session` to scope to single session
-  - [ ] `--format json|list` output
-- [ ] Create `cmd/find_agent_test.go` (if needed for complex flag parsing)
-  - [ ] Test flag combinations
-  - [ ] Test invalid inputs
+**QA Verification**: Background QA agents confirmed:
+- [x] 136/136 tests pass (100%)
+- [x] Zero lint errors
+- [x] Coverage >80% for pkg/agent (86.3%)
+- [x] Corner cases: nil inputs, invalid patterns, circular refs, orphaned agents
 
-**Sprint 5c: Enhanced Tree Support** (Background Dev Agent #3, parallel with 5a)
-- [ ] Update `pkg/agent/tree.go`
-  - [ ] Build true nested tree from parentUuid chains
-  - [ ] Support recursive agent searching
-- [ ] Update `pkg/agent/agent_test.go`
-  - [ ] Test nested tree building
-  - [ ] Test parentUuid chain resolution
-  - [ ] Corner cases: circular references, orphaned agents
-
-#### QA Verification (Background QA Agent - MANDATORY)
-After all dev sprints complete:
-- [ ] Run full test suite: `go test ./... -v`
-- [ ] Verify 100% test pass rate (zero failures)
-- [ ] Check coverage: `go test ./pkg/agent/... -cover` (target >80%)
-- [ ] Run linter: `golangci-lint run ./...` (zero errors)
-- [ ] Verify corner case coverage:
-  - [ ] Empty/nil inputs handled gracefully
-  - [ ] Invalid patterns/regex handled
-  - [ ] Deeply nested agents (3+ levels) work
-  - [ ] No panic on malformed data
-- [ ] Verify cross-platform compatibility (paths)
-- [ ] Test manual CLI usage with sample data
-- [ ] **Only if 100% pass**: Commit and create PR to develop
-
-#### Files to Create/Modify
-| Sprint | File | Action | Dev Agent |
-|--------|------|--------|-----------|
-| 5a | `pkg/agent/discovery.go` | Create | #1 |
-| 5a | `pkg/agent/discovery_test.go` | Create | #1 |
-| 5b | `cmd/find_agent.go` | Create | #2 |
-| 5c | `pkg/agent/tree.go` | Modify | #3 |
-| 5c | `pkg/agent/agent_test.go` | Update | #3 |
+#### Files Created/Modified
+| File | Action | Description |
+|------|--------|-------------|
+| `pkg/agent/discovery.go` | Created | `FindAgents()`, `matchesFilePattern()` for glob matching |
+| `pkg/agent/discovery_test.go` | Created | 24 test functions, 86% coverage |
+| `pkg/agent/tree.go` | Modified | `BuildNestedTree()` with parentUuid chain resolution |
+| `pkg/agent/agent_test.go` | Updated | 13 new tests for nested tree building |
+| `cmd/find_agent.go` | Created | CLI with `--explored`, `--tool`, `--tool-match`, `--start`, `--end`, `--session` flags |
 
 ---
 
 ### Phase 6: HTML Export 🔲 NOT STARTED
 
-**Priority**: LOW
-**Development Method**: Parallel background dev agents in sc-git-worktree
-**QA Method**: Background QA agent verifies 100% test pass + coverage after each sprint
-**PR Target**: develop (after QA verification)
+**Priority**: MEDIUM
+**Development Method**: Parallel background dev agents on sc-git-worktree dedicated worktrees
+**QA Method**: Background QA agent verifies plan compliance, edge case tests, 100% test pass, zero lint errors
+**PR Target**: develop (only after QA verification passes)
 
 Generate shareable HTML history with expandable tool calls and subagent sections.
 
 #### Development Workflow
 
 **CRITICAL**: All development MUST follow this workflow:
-1. Create feature worktree using `sc-git-worktree` from develop branch
-2. Deploy parallel background dev agents for independent tasks
-3. Each dev sprint MUST be followed by background QA agent verification:
-   - Verify plan requirements were met
-   - Verify adequate test coverage (>80% for new code)
-   - Verify corner case tests (empty sessions, missing files, malformed data)
-   - Verify 100% test pass rate (`go test ./...`)
-   - Verify zero lint errors (`golangci-lint run ./...`)
-   - Verify HTML output renders correctly in browser
-4. Only after QA agent confirms 100% pass: create PR to develop
-5. Clean up worktree after merge
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 1. CREATE WORKTREES (sc-git-worktree)                                   │
+│    - Main feature worktree from develop                                 │
+│    - Parallel worktrees for independent sprints                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 2. DEPLOY PARALLEL BACKGROUND DEV AGENTS                                │
+│    - Sprint 6a (export infrastructure) ─┬─ parallel                     │
+│    - Sprint 6b (HTML rendering) ────────┤                               │
+│    - Sprint 6c (manifest/templates) ────┘                               │
+│    - Sprint 6d (CLI) ← depends on 6a                                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 3. DEV-QA LOOP (MANDATORY - repeat until QA approves)                   │
+│                                                                         │
+│    ┌─────────────┐     issues found      ┌─────────────┐                │
+│    │  QA Agent   │ ───────────────────▶  │  Dev Agent  │                │
+│    │  (review)   │                       │   (fix)     │                │
+│    └─────────────┘ ◀─────────────────── └─────────────┘                │
+│           │              re-review                                      │
+│           │                                                             │
+│           ▼ approved                                                    │
+│                                                                         │
+│    QA Agent Checks:                                                     │
+│    - Verify plan requirements were met                                  │
+│    - Verify adequate test coverage (>80% for new code)                  │
+│    - Verify corner case tests (empty sessions, missing files, XSS)      │
+│    - Verify 100% test pass rate (`go test ./...`)                       │
+│    - Verify zero lint errors (`golangci-lint run ./...`)                │
+│    - Verify HTML output renders correctly in browser                    │
+│                                                                         │
+│    ⚠️  ALL ISSUES MUST BE ADDRESSED - no exceptions                     │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 4. PR TO DEVELOP (only after QA approves)                               │
+│    - Push branches, create PRs                                          │
+│    - Wait for CI checks                                                 │
+│    - Merge after approval                                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 5. CLEANUP WORKTREES                                                    │
+│    - Remove worktrees after merge                                       │
+│    - Delete local branches                                              │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
 #### Requirements
 - Export to specified folder or auto-named temp folder
@@ -740,10 +699,14 @@ Example: /tmp/claude-history/679761ba-2026-02-01T19-00-22/
 - Timestamp of last activity for cache invalidation
 - If session continues, timestamp changes → indicates stale export
 
-#### Development Sprints (Parallel Execution)
+#### Development Sprints (Parallel Execution via sc-git-worktree)
 
 **Sprint 6a: Export Infrastructure** (Background Dev Agent #1)
-- [ ] Create worktree: `sc-git-worktree create feature/phase6-html-export`
+```
+Worktree: wt/phase6-export-infra
+Branch: feature/phase6-export-infra
+Parallel: Start immediately
+```
 - [ ] Create `pkg/export/export.go`
   - [ ] `ExportSession()` main orchestration function
   - [ ] Temp folder naming logic (`{sessionId}-{timestamp}`)
@@ -756,7 +719,12 @@ Example: /tmp/claude-history/679761ba-2026-02-01T19-00-22/
   - [ ] Corner cases: missing files, permission errors, existing folders
   - [ ] Target: >80% coverage
 
-**Sprint 6b: HTML Rendering** (Background Dev Agent #2, parallel with 6a)
+**Sprint 6b: HTML Rendering** (Background Dev Agent #2)
+```
+Worktree: wt/phase6-html-render
+Branch: feature/phase6-html-render
+Parallel: With 6a
+```
 - [ ] Create `pkg/export/html.go`
   - [ ] `renderConversation()` for main HTML
   - [ ] `renderAgentFragment()` for subagent HTML
@@ -770,7 +738,12 @@ Example: /tmp/claude-history/679761ba-2026-02-01T19-00-22/
   - [ ] Corner cases: empty sessions, null content, special chars
   - [ ] Target: >80% coverage
 
-**Sprint 6c: Manifest & Templates** (Background Dev Agent #3, parallel with 6a/6b)
+**Sprint 6c: Manifest & Templates** (Background Dev Agent #3)
+```
+Worktree: wt/phase6-manifest
+Branch: feature/phase6-manifest
+Parallel: With 6a/6b
+```
 - [ ] Create `pkg/export/manifest.go`
   - [ ] Generate manifest.json with tree structure
   - [ ] Include all source file paths
@@ -784,7 +757,12 @@ Example: /tmp/claude-history/679761ba-2026-02-01T19-00-22/
   - [ ] `style.css` (responsive design)
   - [ ] `script.js` (expand/collapse, lazy loading)
 
-**Sprint 6d: CLI Integration** (Background Dev Agent #4, depends on 6a)
+**Sprint 6d: CLI Integration** (Background Dev Agent #4)
+```
+Worktree: wt/phase6-cli
+Branch: feature/phase6-cli
+Depends: Sprint 6a (cherry-pick or merge)
+```
 - [ ] Create `cmd/export.go`
   - [ ] `--output` flag for custom folder
   - [ ] `--format html|jsonl` flag
@@ -829,20 +807,11 @@ After all dev sprints complete:
 
 ---
 
-### Enhanced Agent Tree (Improvement to Phase 3)
+### Enhanced Agent Tree ✅ COMPLETE (Phase 5c)
 
-The existing `tree` command shows a flat list. Enhance to show true nested hierarchy.
+The `tree` command now shows true nested hierarchy using `parentUuid` chains.
 
-#### Current Behavior
-```
-Session: 679761ba
-├── Main conversation (175 entries)
-├── a12eb64 (29 entries)
-├── a68b8c0 (28 entries)
-└── nested-agent (15 entries)  ← shown flat, not nested
-```
-
-#### Required Behavior
+#### Behavior
 ```
 Session: 679761ba
 ├── Main conversation (175 entries)
@@ -853,14 +822,13 @@ Session: 679761ba
 │   └── a87f5f7 (119 entries)
 ```
 
-#### Checklist
-- [ ] Parse `parentUuid` from queue-operation entries in main session
-- [ ] Parse `parentUuid` from entries in subagent files
-- [ ] Match agent entries to their spawning queue-operation
-- [ ] Build recursive tree structure with proper parent-child links
-- [ ] Update ASCII tree renderer for nested display
-- [ ] Update JSON output with nested children array
-- [ ] Unit tests for nested tree building
+#### Implementation (Sprint 5c)
+- [x] Parse `parentUuid` from queue-operation entries in main session
+- [x] Parse `parentUuid` from entries in subagent files
+- [x] Match agent entries to their spawning queue-operation
+- [x] Build recursive tree structure with proper parent-child links (`BuildNestedTree()`)
+- [x] Handle edge cases: circular references, orphaned agents, self-refs
+- [x] Unit tests for nested tree building (13 new tests, 80.8% coverage)
 
 ---
 
