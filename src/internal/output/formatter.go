@@ -150,3 +150,121 @@ func writeEntrySummary(w io.Writer, entries []models.ConversationEntry) error {
 func WritePath(w io.Writer, path string) {
 	fmt.Fprintln(w, path)
 }
+
+// ToolUse represents a tool invocation for formatting (matches pkg/models.ToolUse).
+type ToolUse struct {
+	ID    string         `json:"id"`
+	Name  string         `json:"name"`
+	Input map[string]any `json:"input"`
+}
+
+// maxToolInputLength is the maximum length for tool input display before truncation.
+const maxToolInputLength = 80
+
+// FormatToolCall formats a single tool call for display.
+// Returns formatted string like "[Bash] git status" or "[Read] /path/to/file.go".
+func FormatToolCall(toolName string, input map[string]any) string {
+	displayValue := extractToolDisplayValue(toolName, input)
+	if displayValue == "" {
+		return fmt.Sprintf("[%s]", toolName)
+	}
+
+	// Truncate if needed
+	if len(displayValue) > maxToolInputLength {
+		displayValue = displayValue[:maxToolInputLength-3] + "..."
+	}
+
+	return fmt.Sprintf("[%s] %s", toolName, displayValue)
+}
+
+// FormatToolCalls formats multiple tool calls for list output.
+// Each tool is formatted on a separate line.
+func FormatToolCalls(tools []ToolUse) string {
+	if len(tools) == 0 {
+		return ""
+	}
+
+	var lines []string
+	for _, tool := range tools {
+		lines = append(lines, FormatToolCall(tool.Name, tool.Input))
+	}
+	return strings.Join(lines, "\n")
+}
+
+// FormatToolSummary creates a short summary of tools used in an entry.
+// Returns a compact format like "[Bash, Read, Write]" for multiple tools.
+func FormatToolSummary(tools []ToolUse) string {
+	if len(tools) == 0 {
+		return ""
+	}
+
+	if len(tools) == 1 {
+		return FormatToolCall(tools[0].Name, tools[0].Input)
+	}
+
+	// Multiple tools - just list the names
+	var names []string
+	for _, tool := range tools {
+		names = append(names, tool.Name)
+	}
+	return fmt.Sprintf("[%s]", strings.Join(names, ", "))
+}
+
+// extractToolDisplayValue extracts the most relevant display value from tool input.
+func extractToolDisplayValue(toolName string, input map[string]any) string {
+	if input == nil {
+		return ""
+	}
+
+	// Tool-specific extraction
+	switch toolName {
+	case "Bash":
+		if cmd, ok := input["command"].(string); ok {
+			return cmd
+		}
+	case "Read":
+		if path, ok := input["file_path"].(string); ok {
+			return path
+		}
+	case "Write":
+		if path, ok := input["file_path"].(string); ok {
+			return path
+		}
+	case "Edit":
+		if path, ok := input["file_path"].(string); ok {
+			return path
+		}
+	case "Grep":
+		if pattern, ok := input["pattern"].(string); ok {
+			return pattern
+		}
+	case "Glob":
+		if pattern, ok := input["pattern"].(string); ok {
+			return pattern
+		}
+	case "Task":
+		// Try description first, then prompt
+		if desc, ok := input["description"].(string); ok {
+			return desc
+		}
+		if prompt, ok := input["prompt"].(string); ok {
+			return prompt
+		}
+	}
+
+	// Default: JSON serialize the input
+	return serializeInput(input)
+}
+
+// serializeInput converts input map to a compact JSON string for display.
+func serializeInput(input map[string]any) string {
+	if len(input) == 0 {
+		return ""
+	}
+
+	data, err := json.Marshal(input)
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
