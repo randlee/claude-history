@@ -62,15 +62,6 @@ func createWriteToolCall(filePath string) map[string]any {
 	}
 }
 
-// createEditToolCall creates an Edit tool call for testing.
-func createEditToolCall(filePath string) map[string]any {
-	return map[string]any{
-		"id":    "tool_edit_1",
-		"name":  "Edit",
-		"input": map[string]any{"file_path": filePath, "old_string": "a", "new_string": "b"},
-	}
-}
-
 // createBashToolCall creates a Bash tool call for testing.
 func createBashToolCall(command string) map[string]any {
 	return map[string]any{

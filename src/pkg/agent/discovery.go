@@ -38,12 +38,12 @@ type FindAgentsOptions struct {
 
 // fileOperationTools are tools that operate on files.
 var fileOperationTools = map[string]bool{
-	"read":          true,
-	"write":         true,
-	"edit":          true,
-	"glob":          true,
-	"grep":          true,
-	"notebookedit":  true,
+	"read":         true,
+	"write":        true,
+	"edit":         true,
+	"glob":         true,
+	"grep":         true,
+	"notebookedit": true,
 }
 
 // FindAgents searches for agents matching the given criteria.
@@ -359,10 +359,7 @@ func matchDoubleStarPattern(path, pattern string) bool {
 	// For patterns like "**/*.go", the path should end with the suffix pattern
 	if parts[0] == "" && len(parts) == 2 {
 		// Pattern starts with **, e.g., "**/*.go"
-		suffix := parts[1]
-		if strings.HasPrefix(suffix, "/") {
-			suffix = suffix[1:]
-		}
+		suffix := strings.TrimPrefix(parts[1], "/")
 
 		// Try to match suffix against any part of the path
 		pathParts := strings.Split(path, "/")
@@ -393,9 +390,7 @@ func matchDoubleStarPattern(path, pattern string) bool {
 
 		// Path must end with suffix (if non-empty)
 		if suffix != "" {
-			if strings.HasPrefix(suffix, "/") {
-				suffix = suffix[1:]
-			}
+			suffix = strings.TrimPrefix(suffix, "/")
 			// Try matching suffix
 			matched, _ := filepath.Match(suffix, path)
 			if matched {
