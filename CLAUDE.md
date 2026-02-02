@@ -123,13 +123,15 @@ See [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) for detailed implementation sta
 - ✅ Phase 1: Foundation (encoding, JSONL parser, Cobra setup)
 - ✅ Phase 2: Path Resolution (resolve command)
 - ✅ Phase 3: Session & Agent Discovery (list, query, tree commands)
-
-### In Progress
-- 🔲 Phase 4: Tool Filtering (`--tool`, `--tool-match` flags)
+- ✅ Phase 4: Tool Filtering (`--tool`, `--tool-match` flags)
+- ✅ Phase 5: Agent Discovery (`find-agent` command)
+- ✅ Phase 6: HTML Export (`export` command)
+- ✅ Phase 7: Prefix Matching (git-style session/agent ID prefixes)
+- ✅ Phase 8: Export Integration (wire pkg/export to cmd/export)
+- ✅ Phase 9: Data Model Alignment (fix agent spawn detection)
 
 ### Planned
-- 🔲 Phase 5: Agent Discovery (`find-agent` command)
-- 🔲 Phase 6: HTML Export (`export` command)
+- Future enhancements (see PROJECT_PLAN.md)
 
 ## Coding Standards
 

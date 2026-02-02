@@ -17,6 +17,17 @@ const (
 	EntryTypeSummary        EntryType = "summary"
 )
 
+// ToolUseResult represents the result of a tool use, particularly for agent spawns.
+// When status is "async_launched" and AgentID is non-empty, this indicates an agent spawn.
+type ToolUseResult struct {
+	IsAsync     bool   `json:"isAsync"`
+	Status      string `json:"status"`      // "async_launched", "completed", etc.
+	AgentID     string `json:"agentId"`     // ID of the spawned agent
+	Description string `json:"description"` // Human-readable description of the task
+	Prompt      string `json:"prompt"`      // The prompt given to the spawned agent
+	OutputFile  string `json:"outputFile"`  // Path to the agent's output file
+}
+
 // ConversationEntry represents a single entry in a Claude Code session.
 type ConversationEntry struct {
 	UUID        string          `json:"uuid"`
@@ -27,6 +38,12 @@ type ConversationEntry struct {
 	ParentUUID  *string         `json:"parentUuid,omitempty"`
 	Timestamp   string          `json:"timestamp"`
 	Message     json.RawMessage `json:"message,omitempty"`
+
+	// SourceToolAssistantUUID links this entry to the assistant message that triggered it
+	SourceToolAssistantUUID string `json:"sourceToolAssistantUUID,omitempty"`
+
+	// ToolUseResult contains agent spawn information for user entries with tool results
+	ToolUseResult *ToolUseResult `json:"toolUseResult,omitempty"`
 
 	// Additional fields that may be present
 	CacheBreakpoint bool   `json:"cacheBreakpoint,omitempty"`
@@ -54,8 +71,38 @@ func (e *ConversationEntry) IsSystem() bool {
 }
 
 // IsQueueOperation returns true if this is a queue operation (agent spawn).
+// Deprecated: Agent spawns are now detected via IsAgentSpawn() which checks toolUseResult.
 func (e *ConversationEntry) IsQueueOperation() bool {
 	return e.Type == EntryTypeQueueOperation
+}
+
+// HasToolUseResult returns true if this entry has a toolUseResult field.
+func (e *ConversationEntry) HasToolUseResult() bool {
+	return e.ToolUseResult != nil
+}
+
+// GetToolUseResult returns the ToolUseResult if present, or nil otherwise.
+func (e *ConversationEntry) GetToolUseResult() *ToolUseResult {
+	return e.ToolUseResult
+}
+
+// IsAgentSpawn returns true if this entry represents an agent spawn.
+// Agent spawns are recorded in user entries where toolUseResult.status is "async_launched"
+// and toolUseResult.agentId is non-empty.
+func (e *ConversationEntry) IsAgentSpawn() bool {
+	if e.ToolUseResult == nil {
+		return false
+	}
+	return e.ToolUseResult.Status == "async_launched" && e.ToolUseResult.AgentID != ""
+}
+
+// GetSpawnedAgentID returns the ID of the spawned agent if this is an agent spawn entry.
+// Returns an empty string if this entry is not an agent spawn.
+func (e *ConversationEntry) GetSpawnedAgentID() string {
+	if !e.IsAgentSpawn() {
+		return ""
+	}
+	return e.ToolUseResult.AgentID
 }
 
 // MessageContent represents the content of a message.
