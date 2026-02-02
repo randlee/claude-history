@@ -11,6 +11,7 @@ import (
 	"github.com/randlee/claude-history/internal/output"
 	"github.com/randlee/claude-history/pkg/models"
 	"github.com/randlee/claude-history/pkg/paths"
+	"github.com/randlee/claude-history/pkg/resolver"
 	"github.com/randlee/claude-history/pkg/session"
 )
 
@@ -89,8 +90,29 @@ func runQuery(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("project not found: %s", projectPath)
 	}
 
-	// Build filter options
-	filterOpts, err := buildFilterOptions()
+	// Resolve session ID prefix if provided
+	var resolvedSessionID string
+	if querySessionID != "" {
+		resolvedSessionID, err = resolver.ResolveSessionID(projectDir, querySessionID)
+		if err != nil {
+			return fmt.Errorf("failed to resolve session ID: %w", err)
+		}
+	}
+
+	// Resolve agent ID prefix if provided
+	var resolvedAgentID string
+	if queryAgentID != "" {
+		if resolvedSessionID == "" {
+			return fmt.Errorf("--agent requires --session to be specified")
+		}
+		resolvedAgentID, err = resolver.ResolveAgentID(projectDir, resolvedSessionID, queryAgentID)
+		if err != nil {
+			return fmt.Errorf("failed to resolve agent ID: %w", err)
+		}
+	}
+
+	// Build filter options with resolved IDs
+	filterOpts, err := buildFilterOptions(resolvedAgentID)
 	if err != nil {
 		return err
 	}
@@ -98,9 +120,9 @@ func runQuery(cmd *cobra.Command, args []string) error {
 	// Collect entries
 	var allEntries []models.ConversationEntry
 
-	if querySessionID != "" {
+	if resolvedSessionID != "" {
 		// Query specific session
-		entries, err := querySession(projectDir, querySessionID, filterOpts)
+		entries, err := querySession(projectDir, resolvedSessionID, filterOpts)
 		if err != nil {
 			return err
 		}
@@ -149,7 +171,7 @@ func querySession(projectDir string, sessionID string, opts session.FilterOption
 	return filtered, nil
 }
 
-func buildFilterOptions() (session.FilterOptions, error) {
+func buildFilterOptions(resolvedAgentID string) (session.FilterOptions, error) {
 	var opts session.FilterOptions
 
 	// Parse start time
@@ -190,8 +212,8 @@ func buildFilterOptions() (session.FilterOptions, error) {
 		}
 	}
 
-	// Agent ID
-	opts.AgentID = queryAgentID
+	// Agent ID (use resolved agent ID)
+	opts.AgentID = resolvedAgentID
 
 	// Parse tool types
 	if queryTools != "" {
