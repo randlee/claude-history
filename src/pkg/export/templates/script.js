@@ -57,6 +57,80 @@ function loadAgent(header) {
 }
 
 /**
+ * Copy code block content to clipboard.
+ * @param {HTMLElement} button - The copy button element
+ */
+function copyCode(button) {
+    var codeBlock = button.closest('.code-block');
+    var codeContent = codeBlock.querySelector('.code-content code');
+
+    if (!codeContent) {
+        codeContent = codeBlock.querySelector('.code-content');
+    }
+
+    if (codeContent) {
+        var text = codeContent.textContent;
+
+        // Use modern clipboard API if available
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .then(function() {
+                    showCopySuccess(button);
+                })
+                .catch(function(err) {
+                    fallbackCopy(text, button);
+                });
+        } else {
+            fallbackCopy(text, button);
+        }
+    }
+}
+
+/**
+ * Fallback copy using textarea element.
+ * @param {string} text - The text to copy
+ * @param {HTMLElement} button - The copy button element
+ */
+function fallbackCopy(text, button) {
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+        document.execCommand('copy');
+        showCopySuccess(button);
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        button.textContent = 'Failed';
+        setTimeout(function() {
+            button.textContent = 'Copy';
+        }, 2000);
+    }
+
+    document.body.removeChild(textarea);
+}
+
+/**
+ * Show copy success feedback on button.
+ * @param {HTMLElement} button - The copy button element
+ */
+function showCopySuccess(button) {
+    var originalText = button.textContent;
+    button.textContent = 'Copied!';
+    button.classList.add('copied');
+
+    setTimeout(function() {
+        button.textContent = originalText;
+        button.classList.remove('copied');
+    }, 2000);
+}
+
+/**
  * Expand all tool call bodies.
  */
 function expandAll() {

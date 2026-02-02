@@ -79,7 +79,9 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	sb.WriteString(fmt.Sprintf(`<span class="timestamp">%s</span>`, escapeHTML(timestamp)))
 	sb.WriteString(fmt.Sprintf(` <span class="type">%s</span>`, escapeHTML(string(entry.Type))))
 	if entry.AgentID != "" {
-		sb.WriteString(fmt.Sprintf(` <span class="agent-id">[%s]</span>`, escapeHTML(entry.AgentID)))
+		sb.WriteString(fmt.Sprintf(` <span class="agent-id">[%s]%s</span>`,
+			escapeHTML(entry.AgentID),
+			renderCopyButton(entry.AgentID, "agent-id", "Copy agent ID")))
 	}
 	sb.WriteString("</div>\n")
 
@@ -89,7 +91,12 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	// Get text content
 	textContent := entry.GetTextContent()
 	if textContent != "" {
-		sb.WriteString(fmt.Sprintf(`<div class="text">%s</div>`, escapeHTML(textContent)))
+		// Apply markdown rendering for assistant messages
+		if entry.Type == models.EntryTypeAssistant {
+			sb.WriteString(fmt.Sprintf(`<div class="text markdown-content">%s</div>`, RenderMarkdown(textContent)))
+		} else {
+			sb.WriteString(fmt.Sprintf(`<div class="text">%s</div>`, escapeHTML(textContent)))
+		}
 	}
 
 	// Render tool calls for assistant messages
@@ -117,9 +124,18 @@ func renderToolCall(tool models.ToolUse, result models.ToolResult, hasResult boo
 	sb.WriteString(fmt.Sprintf(`<div class="tool-call" data-tool-id="%s">`, escapeHTML(tool.ID)))
 	sb.WriteString("\n")
 
-	// Collapsible header
-	sb.WriteString(fmt.Sprintf(`  <div class="tool-header" onclick="toggleTool(this)">%s</div>`, escapeHTML(toolSummary)))
-	sb.WriteString("\n")
+	// Collapsible header with tool ID copy button
+	sb.WriteString(fmt.Sprintf(`  <div class="tool-header" onclick="toggleTool(this)"><span class="tool-summary">%s</span>`,
+		escapeHTML(toolSummary)))
+	sb.WriteString(fmt.Sprintf(`<span class="tool-id">%s</span>`, renderCopyButton(tool.ID, "tool-id", "Copy tool ID")))
+
+	// Add file path copy button for file-related tools
+	filePath := extractFilePath(tool.Name, tool.Input)
+	if filePath != "" {
+		sb.WriteString(fmt.Sprintf(`<span class="file-path-btn">%s</span>`,
+			renderCopyButton(filePath, "file-path", "Copy file path")))
+	}
+	sb.WriteString("</div>\n")
 
 	// Hidden body with input and output
 	sb.WriteString(`  <div class="tool-body hidden">`)
@@ -158,7 +174,10 @@ func renderSubagentPlaceholder(agentID string, agentMap map[string]int) string {
 
 	sb.WriteString(fmt.Sprintf(`<div class="subagent" data-agent-id="%s">`, escapeHTML(agentID)))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf(`  <div class="subagent-header" onclick="loadAgent(this)">Subagent: %s (%d entries)</div>`, escapeHTML(shortID), entryCount))
+	sb.WriteString(fmt.Sprintf(`  <div class="subagent-header" onclick="loadAgent(this)"><span class="subagent-title">Subagent: %s</span> <span class="subagent-meta">(%d entries)</span>%s</div>`,
+		escapeHTML(shortID),
+		entryCount,
+		renderCopyButton(agentID, "agent-id", "Copy agent ID")))
 	sb.WriteString("\n")
 	sb.WriteString(`  <div class="subagent-content"></div>`)
 	sb.WriteString("\n")
@@ -170,6 +189,21 @@ func renderSubagentPlaceholder(agentID string, agentMap map[string]int) string {
 // escapeHTML escapes a string to prevent XSS attacks.
 func escapeHTML(s string) string {
 	return html.EscapeString(s)
+}
+
+// renderCopyButton generates HTML for a copy-to-clipboard button.
+// text is the value to copy, copyType indicates what kind of value it is (for styling/tracking),
+// and tooltip is the hover text shown to the user.
+func renderCopyButton(text, copyType, tooltip string) string {
+	if text == "" {
+		return ""
+	}
+	return fmt.Sprintf(
+		`<button class="copy-btn" data-copy-text="%s" data-copy-type="%s" title="%s"><span class="copy-icon">&#128203;</span></button>`,
+		escapeHTML(text),
+		escapeHTML(copyType),
+		escapeHTML(tooltip),
+	)
 }
 
 // getEntryClass returns the CSS class for an entry type.
@@ -266,6 +300,27 @@ func extractToolDisplayValue(toolName string, input map[string]any) string {
 	return ""
 }
 
+// extractFilePath extracts the file path from tool input for file-related tools.
+// Returns empty string for non-file tools or if no file path is present.
+func extractFilePath(toolName string, input map[string]any) string {
+	if input == nil {
+		return ""
+	}
+
+	switch toolName {
+	case "Read", "Write", "Edit":
+		if path, ok := input["file_path"].(string); ok {
+			return path
+		}
+	case "NotebookEdit":
+		if path, ok := input["notebook_path"].(string); ok {
+			return path
+		}
+	}
+
+	return ""
+}
+
 // formatToolInput formats tool input as indented JSON.
 func formatToolInput(input map[string]any) string {
 	if input == nil {
@@ -329,6 +384,7 @@ const htmlHeader = `<!DOCTYPE html>
 `
 
 const htmlFooter = `    <script src="static/script.js"></script>
+    <script src="static/clipboard.js"></script>
 </body>
 </html>
 `
