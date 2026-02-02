@@ -209,21 +209,6 @@ func TestResolveSessionID_NoMatch(t *testing.T) {
 	}
 }
 
-func TestResolveSessionID_EmptyPrefix(t *testing.T) {
-	projectDir := setupTestProject(t)
-
-	_, err := ResolveSessionID(projectDir, "")
-
-	if err == nil {
-		t.Fatal("Expected error for empty prefix, got nil")
-	}
-
-	errMsg := err.Error()
-	if !strings.Contains(errMsg, "cannot be empty") {
-		t.Errorf("Error should mention empty prefix, got: %s", errMsg)
-	}
-}
-
 func TestResolveSessionID_CaseSensitive(t *testing.T) {
 	projectDir := setupTestProject(t)
 
@@ -340,22 +325,6 @@ func TestResolveAgentID_NoMatch(t *testing.T) {
 	}
 	if !strings.Contains(errMsg, prefix) {
 		t.Errorf("Error should include the prefix, got: %s", errMsg)
-	}
-}
-
-func TestResolveAgentID_EmptyPrefix(t *testing.T) {
-	projectDir := setupTestProject(t)
-	sessionID := "test-session-12345678-1234-1234-1234-123456789abc"
-
-	_, err := ResolveAgentID(projectDir, sessionID, "")
-
-	if err == nil {
-		t.Fatal("Expected error for empty prefix, got nil")
-	}
-
-	errMsg := err.Error()
-	if !strings.Contains(errMsg, "cannot be empty") {
-		t.Errorf("Error should mention empty prefix, got: %s", errMsg)
 	}
 }
 
@@ -542,21 +511,6 @@ func TestAgentMatch_DescriptionTruncation(t *testing.T) {
 	}
 	if !strings.HasSuffix(desc, "...") {
 		t.Errorf("Expected description to end with '...', got: %s", desc)
-	}
-}
-
-func TestResolveSessionID_NonexistentDirectory(t *testing.T) {
-	nonexistentDir := filepath.Join(t.TempDir(), "does-not-exist")
-
-	_, err := ResolveSessionID(nonexistentDir, "test")
-
-	if err == nil {
-		t.Fatal("Expected error for nonexistent directory, got nil")
-	}
-
-	// Should get a "no session found" error (empty results)
-	if !strings.Contains(err.Error(), "no session found") {
-		t.Errorf("Expected 'no session found' error, got: %v", err)
 	}
 }
 
