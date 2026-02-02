@@ -5,10 +5,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
+	"github.com/randlee/claude-history/internal/jsonl"
+	"github.com/randlee/claude-history/pkg/agent"
+	"github.com/randlee/claude-history/pkg/export"
+	"github.com/randlee/claude-history/pkg/models"
 	"github.com/randlee/claude-history/pkg/paths"
 	"github.com/randlee/claude-history/pkg/session"
 )
@@ -127,23 +132,34 @@ func runExport(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(os.Stderr, "  First prompt: %s\n", truncateString(sessionInfo.FirstPrompt, 60))
 	}
 
-	// TODO: Call export.ExportSession when export package is merged
-	// For now, stub out the export functionality
-	//
-	// Planned export flow:
-	// 1. Copy source JSONL files to source/ subdirectory
-	// 2. For HTML format:
-	//    a. Parse and render main session to index.html
-	//    b. Parse and render each subagent to agents/{agentId}.html
-	//    c. Write static assets (style.css, script.js)
-	// 3. Generate manifest.json with:
-	//    - Session metadata
-	//    - Agent tree structure
-	//    - File listing
-	// 4. Print summary
+	// Export JSONL files
+	opts := export.ExportOptions{
+		OutputDir: outputDir,
+		ClaudeDir: claudeDir,
+	}
+	result, err := export.ExportSession(projectPath, exportSessionID, opts)
+	if err != nil {
+		return fmt.Errorf("failed to export session: %w", err)
+	}
 
-	fmt.Fprintf(os.Stderr, "\n[Stub] Export functionality not yet implemented.\n")
-	fmt.Fprintf(os.Stderr, "[Stub] Would export %d messages to %s\n", sessionInfo.MessageCount, outputDir)
+	// Report any non-fatal errors
+	if len(result.Errors) > 0 {
+		for _, errMsg := range result.Errors {
+			fmt.Fprintf(os.Stderr, "Warning: %s\n", errMsg)
+		}
+	}
+
+	fmt.Fprintf(os.Stderr, "✓ JSONL files exported (%d agents)\n", result.TotalAgents)
+
+	// If HTML format requested, generate HTML pages
+	if exportFormat == "html" {
+		if err := renderHTML(result, projectPath, projectDir, exportSessionID); err != nil {
+			// Non-fatal: JSONL files are already exported
+			fmt.Fprintf(os.Stderr, "Warning: HTML rendering failed: %v\n", err)
+		} else {
+			fmt.Fprintf(os.Stderr, "✓ HTML export completed\n")
+		}
+	}
 
 	// Print the output location (stdout for scripting)
 	fmt.Println(outputDir)
@@ -171,4 +187,109 @@ func truncateString(s string, maxLen int) string {
 		return s[:maxLen]
 	}
 	return s[:maxLen-3] + "..."
+}
+
+// renderHTML generates HTML pages for the exported session.
+func renderHTML(result *export.ExportResult, projectPath, projectDir, sessionID string) error {
+	// 1. Read main session entries
+	entries, err := jsonl.ReadAll[models.ConversationEntry](result.MainSessionFile)
+	if err != nil {
+		return fmt.Errorf("failed to read session: %w", err)
+	}
+
+	// 2. Build agent tree
+	agentTree, err := agent.BuildNestedTree(projectDir, sessionID)
+	if err != nil {
+		return fmt.Errorf("failed to build agent tree: %w", err)
+	}
+
+	// Convert tree to slice for RenderConversation
+	var agentNodes []*agent.TreeNode
+	if agentTree != nil && len(agentTree.Children) > 0 {
+		agentNodes = agentTree.Children
+	}
+
+	// 3. Render main conversation HTML
+	htmlContent, err := export.RenderConversation(entries, agentNodes)
+	if err != nil {
+		return fmt.Errorf("failed to render conversation: %w", err)
+	}
+
+	// 4. Write index.html
+	indexPath := filepath.Join(result.OutputDir, "index.html")
+	if err := os.WriteFile(indexPath, []byte(htmlContent), 0644); err != nil {
+		return fmt.Errorf("failed to write index.html: %w", err)
+	}
+
+	// 5. Render agent fragments
+	if err := renderAgentFragments(result, agentTree); err != nil {
+		// Non-fatal: log warning and continue
+		fmt.Fprintf(os.Stderr, "Warning: some agent fragments failed: %v\n", err)
+	}
+
+	// 6. Write static assets (CSS, JS)
+	if err := export.WriteStaticAssets(result.OutputDir); err != nil {
+		return fmt.Errorf("failed to write static assets: %w", err)
+	}
+
+	// 7. Generate and write manifest.json
+	manifest, err := export.GenerateManifest(projectDir, sessionID, result.OutputDir)
+	if err != nil {
+		// Non-fatal: log warning
+		fmt.Fprintf(os.Stderr, "Warning: failed to generate manifest: %v\n", err)
+	} else {
+		if err := export.WriteManifest(manifest, result.OutputDir); err != nil {
+			// Non-fatal: log warning
+			fmt.Fprintf(os.Stderr, "Warning: failed to write manifest: %v\n", err)
+		}
+	}
+
+	return nil
+}
+
+// renderAgentFragments renders HTML fragments for each agent.
+func renderAgentFragments(result *export.ExportResult, agentTree *agent.TreeNode) error {
+	// Create agents/ directory
+	agentsDir := filepath.Join(result.OutputDir, "agents")
+	if err := os.MkdirAll(agentsDir, 0755); err != nil {
+		return err
+	}
+
+	// Render each agent
+	var errors []string
+	for agentID, agentFile := range result.AgentFiles {
+		// Read agent entries
+		entries, err := jsonl.ReadAll[models.ConversationEntry](agentFile)
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("agent %s: %v", truncateAgentID(agentID), err))
+			continue
+		}
+
+		// Render agent fragment
+		htmlContent, err := export.RenderAgentFragment(agentID, entries)
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("agent %s: %v", truncateAgentID(agentID), err))
+			continue
+		}
+
+		// Write agent HTML
+		agentPath := filepath.Join(agentsDir, truncateAgentID(agentID)+".html")
+		if err := os.WriteFile(agentPath, []byte(htmlContent), 0644); err != nil {
+			errors = append(errors, fmt.Sprintf("agent %s: %v", truncateAgentID(agentID), err))
+			continue
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("%d agent(s) failed: %s", len(errors), strings.Join(errors, ", "))
+	}
+	return nil
+}
+
+// truncateAgentID returns the first 8 characters of an agent ID for display.
+func truncateAgentID(agentID string) string {
+	if len(agentID) > 8 {
+		return agentID[:8]
+	}
+	return agentID
 }
