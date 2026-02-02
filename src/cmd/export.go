@@ -89,7 +89,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 	}
 
 	// Resolve session ID prefix
-	resolvedSessionID, err := resolver.ResolveSessionID(claudeDir, projectPath, exportSessionID)
+	resolvedSessionID, err := resolver.ResolveSessionID(projectDir, exportSessionID)
 	if err != nil {
 		return fmt.Errorf("failed to resolve session ID: %w", err)
 	}

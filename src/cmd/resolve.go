@@ -66,14 +66,20 @@ func runResolve(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("project path required with --session and --agent")
 		}
 
+		// Get encoded project directory
+		projectDir, err := paths.ProjectDir(claudeDir, projectPath)
+		if err != nil {
+			return fmt.Errorf("failed to resolve project directory: %w", err)
+		}
+
 		// Resolve session ID prefix
-		fullSessionID, err := resolver.ResolveSessionID(claudeDir, projectPath, resolveSessionID)
+		fullSessionID, err := resolver.ResolveSessionID(projectDir, resolveSessionID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve session ID: %w", err)
 		}
 
 		// Resolve agent ID prefix
-		fullAgentID, err := resolver.ResolveAgentID(claudeDir, projectPath, fullSessionID, resolveAgentID)
+		fullAgentID, err := resolver.ResolveAgentID(projectDir, fullSessionID, resolveAgentID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve agent ID: %w", err)
 		}
@@ -93,8 +99,14 @@ func runResolve(cmd *cobra.Command, args []string) error {
 			return resolveSessionGlobal(resolveSessionID, outputFormat)
 		}
 
+		// Get encoded project directory
+		projectDir, err := paths.ProjectDir(claudeDir, projectPath)
+		if err != nil {
+			return fmt.Errorf("failed to resolve project directory: %w", err)
+		}
+
 		// Resolve session ID prefix
-		fullSessionID, err := resolver.ResolveSessionID(claudeDir, projectPath, resolveSessionID)
+		fullSessionID, err := resolver.ResolveSessionID(projectDir, resolveSessionID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve session ID: %w", err)
 		}

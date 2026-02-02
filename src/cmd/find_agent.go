@@ -82,7 +82,7 @@ func runFindAgent(cmd *cobra.Command, args []string) error {
 	// Resolve session ID prefix if provided
 	var resolvedSessionID string
 	if findSessionID != "" {
-		resolvedSessionID, err = resolver.ResolveSessionID(claudeDir, projectPath, findSessionID)
+		resolvedSessionID, err = resolver.ResolveSessionID(projectDir, findSessionID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve session ID: %w", err)
 		}

@@ -93,7 +93,7 @@ func runQuery(cmd *cobra.Command, args []string) error {
 	// Resolve session ID prefix if provided
 	var resolvedSessionID string
 	if querySessionID != "" {
-		resolvedSessionID, err = resolver.ResolveSessionID(claudeDir, projectPath, querySessionID)
+		resolvedSessionID, err = resolver.ResolveSessionID(projectDir, querySessionID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve session ID: %w", err)
 		}
@@ -105,7 +105,7 @@ func runQuery(cmd *cobra.Command, args []string) error {
 		if resolvedSessionID == "" {
 			return fmt.Errorf("--agent requires --session to be specified")
 		}
-		resolvedAgentID, err = resolver.ResolveAgentID(claudeDir, projectPath, resolvedSessionID, queryAgentID)
+		resolvedAgentID, err = resolver.ResolveAgentID(projectDir, resolvedSessionID, queryAgentID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve agent ID: %w", err)
 		}
