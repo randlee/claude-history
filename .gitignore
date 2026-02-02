@@ -3,6 +3,7 @@
 #
 # Binaries for programs and plugins
 bin/
+src/claude-history
 *.exe
 *.exe~
 *.dll
