@@ -505,6 +505,76 @@ p {
 .message-row {
     display: flex;
     width: 100%;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+/* Avatar placeholder - base styles */
+.avatar {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+}
+
+/* Avatar for user messages */
+.avatar.user {
+    background: hsl(var(--blue-100));
+    color: hsl(var(--blue-700));
+    order: -1;
+}
+
+.avatar.user::before {
+    content: "U";
+}
+
+/* Avatar for assistant messages */
+.avatar.assistant {
+    background: hsl(var(--green-100));
+    color: hsl(var(--green-700));
+    order: 1;
+}
+
+.avatar.assistant::before {
+    content: "A";
+}
+
+/* Avatar for system messages */
+.avatar.system {
+    background: hsl(var(--neutral-200));
+    color: hsl(var(--neutral-600));
+    order: -1;
+}
+
+.avatar.system::before {
+    content: "S";
+}
+
+/* Avatar for queue operations */
+.avatar.queue-operation {
+    background: hsl(var(--orange-100));
+    color: hsl(var(--orange-700));
+    order: -1;
+}
+
+.avatar.queue-operation::before {
+    content: "T";
+}
+
+/* Avatar for summaries */
+.avatar.summary {
+    background: hsl(var(--purple-100));
+    color: hsl(var(--purple-700));
+    order: -1;
+}
+
+.avatar.summary::before {
+    content: "\2211"; /* Sigma symbol */
 }
 
 /* User messages - align left */
@@ -513,7 +583,7 @@ p {
 }
 
 .message-row.user .message-bubble {
-    max-width: 70%;
+    max-width: 80%;
     background: var(--user-bg);
     border: 1px solid var(--user-border);
     border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-sm);
@@ -530,10 +600,11 @@ p {
 /* Assistant messages - align right */
 .message-row.assistant {
     justify-content: flex-end;
+    flex-direction: row-reverse;
 }
 
 .message-row.assistant .message-bubble {
-    max-width: 70%;
+    max-width: 80%;
     background: var(--assistant-bg);
     border: 1px solid var(--assistant-border);
     border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
@@ -547,6 +618,88 @@ p {
     color: var(--assistant-accent);
 }
 
+/* System messages - centered, full width */
+.message-row.system {
+    justify-content: flex-start;
+}
+
+.message-row.system .message-bubble {
+    max-width: 80%;
+    background: var(--system-bg);
+    border: 1px solid var(--system-border);
+    border-radius: var(--radius-lg);
+}
+
+.message-row.system .message-bubble:hover {
+    background: var(--system-bg-hover);
+}
+
+.message-row.system .message-header .role {
+    color: var(--system-accent);
+}
+
+/* Queue operation messages - left aligned with special styling */
+.message-row.queue-operation {
+    justify-content: flex-start;
+}
+
+.message-row.queue-operation .message-bubble {
+    max-width: 80%;
+    background: var(--queue-bg);
+    border: 1px solid var(--queue-border);
+    border-radius: var(--radius-lg);
+}
+
+.message-row.queue-operation .message-bubble:hover {
+    background: var(--queue-bg-hover);
+}
+
+.message-row.queue-operation .message-header .role {
+    color: var(--queue-accent);
+}
+
+/* Summary messages - left aligned with special styling */
+.message-row.summary {
+    justify-content: flex-start;
+}
+
+.message-row.summary .message-bubble {
+    max-width: 80%;
+    background: var(--summary-bg);
+    border: 1px solid var(--summary-border);
+    border-radius: var(--radius-lg);
+}
+
+.message-row.summary .message-bubble:hover {
+    background: var(--summary-bg-hover);
+}
+
+.message-row.summary .message-header .role {
+    color: var(--summary-accent);
+}
+
+/* Unknown message type - default styling */
+.message-row.unknown {
+    justify-content: flex-start;
+}
+
+.message-row.unknown .message-bubble {
+    max-width: 80%;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+}
+
+.message-row.unknown .avatar {
+    background: hsl(var(--neutral-200));
+    color: hsl(var(--neutral-600));
+    order: -1;
+}
+
+.message-row.unknown .avatar::before {
+    content: "?";
+}
+
 /* Message bubble - base styles */
 .message-bubble {
     padding: var(--space-4);
@@ -557,10 +710,11 @@ p {
 /* Message header */
 .message-header {
     display: flex;
-    justify-content: space-between;
+    gap: var(--space-2);
     align-items: center;
     margin-bottom: var(--space-2);
     font-size: var(--text-xs);
+    flex-wrap: wrap;
 }
 
 .message-header .role {
@@ -571,6 +725,13 @@ p {
 
 .message-header .timestamp {
     color: var(--text-muted);
+    margin-left: auto;
+}
+
+.message-header .agent-id {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
 }
 
 /* Message content */
@@ -578,6 +739,34 @@ p {
     white-space: pre-wrap;
     word-break: break-word;
     line-height: var(--leading-relaxed);
+}
+
+/* Dark mode avatar adjustments */
+@media (prefers-color-scheme: dark) {
+    .avatar.user {
+        background: hsla(var(--blue-800), 0.6);
+        color: hsl(var(--blue-200));
+    }
+
+    .avatar.assistant {
+        background: hsla(var(--green-800), 0.6);
+        color: hsl(var(--green-200));
+    }
+
+    .avatar.system {
+        background: hsl(var(--neutral-700));
+        color: hsl(var(--neutral-300));
+    }
+
+    .avatar.queue-operation {
+        background: hsla(var(--orange-800), 0.6);
+        color: hsl(var(--orange-200));
+    }
+
+    .avatar.summary {
+        background: hsla(var(--purple-800), 0.6);
+        color: hsl(var(--purple-200));
+    }
 }
 
 /* ============================================
@@ -955,9 +1144,20 @@ pre code {
     }
 
     /* Chat bubbles take more width on mobile */
-    .message-row.user .message-bubble,
-    .message-row.assistant .message-bubble {
+    .message-row .message-bubble {
         max-width: 90%;
+    }
+
+    /* Smaller avatars on mobile */
+    .avatar {
+        width: 28px;
+        height: 28px;
+        font-size: var(--text-xs);
+    }
+
+    /* Reduce gap on mobile */
+    .message-row {
+        gap: var(--space-2);
     }
 
     .entry {
