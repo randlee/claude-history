@@ -514,6 +514,21 @@ func TestAgentMatch_DescriptionTruncation(t *testing.T) {
 	}
 }
 
+func TestResolveSessionID_NonexistentDirectory(t *testing.T) {
+	nonexistentDir := filepath.Join(t.TempDir(), "does-not-exist")
+
+	_, err := ResolveSessionID(nonexistentDir, "test")
+
+	if err == nil {
+		t.Fatal("Expected error for nonexistent directory, got nil")
+	}
+
+	// Should get a "no sessions found" error (empty results)
+	if !strings.Contains(err.Error(), "no sessions found") {
+		t.Errorf("Expected 'no sessions found' error, got: %v", err)
+	}
+}
+
 func TestFormatSessionAmbiguityError(t *testing.T) {
 	matches := []SessionMatch{
 		{

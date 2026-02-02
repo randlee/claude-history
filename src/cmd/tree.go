@@ -9,6 +9,7 @@ import (
 	"github.com/randlee/claude-history/internal/output"
 	"github.com/randlee/claude-history/pkg/agent"
 	"github.com/randlee/claude-history/pkg/paths"
+	"github.com/randlee/claude-history/pkg/resolver"
 	"github.com/randlee/claude-history/pkg/session"
 )
 
@@ -77,6 +78,13 @@ func runTree(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("no sessions found in project")
 		}
 		sessionID = sessions[0].ID
+	} else {
+		// Resolve session ID prefix
+		resolvedSessionID, err := resolver.ResolveSessionID(projectDir, sessionID)
+		if err != nil {
+			return fmt.Errorf("failed to resolve session ID: %w", err)
+		}
+		sessionID = resolvedSessionID
 	}
 
 	// Build the tree
