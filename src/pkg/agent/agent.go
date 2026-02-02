@@ -69,17 +69,16 @@ func parseAgentType(agentID string) string {
 	return ""
 }
 
-// FindAgentSpawns scans a session file to find queue-operation entries that spawn agents.
+// FindAgentSpawns scans a session file to find entries that spawn agents.
 // Returns a map of agent ID to the UUID of the entry that spawned it.
+// Agent spawns are detected via user entries with toolUseResult where status is "async_launched".
 func FindAgentSpawns(sessionFilePath string) (map[string]string, error) {
 	spawns := make(map[string]string)
 
 	err := jsonl.ScanInto(sessionFilePath, func(entry models.ConversationEntry) error {
-		if entry.Type == models.EntryTypeQueueOperation {
-			// Queue operations that spawn agents have an agentId
-			if entry.AgentID != "" {
-				spawns[entry.AgentID] = entry.UUID
-			}
+		if entry.IsAgentSpawn() {
+			agentID := entry.GetSpawnedAgentID()
+			spawns[agentID] = entry.UUID
 		}
 		return nil
 	})

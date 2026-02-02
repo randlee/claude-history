@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,6 +21,28 @@ func mustWriteFile(t *testing.T, path string, data []byte) {
 	if err := os.WriteFile(path, data, 0600); err != nil {
 		t.Fatalf("WriteFile(%q) failed: %v", path, err)
 	}
+}
+
+// createAgentSpawnEntry creates a JSONL entry representing an agent spawn.
+// This uses the toolUseResult format with status "async_launched".
+func createAgentSpawnEntry(uuid, sessionID, agentID, sourceToolAssistantUUID string) string {
+	entry := map[string]any{
+		"uuid":      uuid,
+		"sessionId": sessionID,
+		"type":      "user",
+		"timestamp": "2026-01-15T10:00:00Z",
+		"toolUseResult": map[string]any{
+			"isAsync":     true,
+			"status":      "async_launched",
+			"agentId":     agentID,
+			"description": "Test agent spawn",
+		},
+	}
+	if sourceToolAssistantUUID != "" {
+		entry["sourceToolAssistantUUID"] = sourceToolAssistantUUID
+	}
+	data, _ := json.Marshal(entry)
+	return string(data) + "\n"
 }
 
 func TestParseAgentType(t *testing.T) {
@@ -97,11 +120,12 @@ func TestFindAgentSpawns(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionFile := filepath.Join(tmpDir, "session.jsonl")
 
-	content := `{"uuid":"1","type":"user"}
-{"uuid":"2","type":"queue-operation","agentId":"a12eb64"}
-{"uuid":"3","type":"assistant"}
-{"uuid":"4","type":"queue-operation","agentId":"a68b8c0"}
-`
+	// Create content using toolUseResult format for agent spawns
+	content := `{"uuid":"1","type":"user"}` + "\n"
+	content += createAgentSpawnEntry("2", "test-session", "a12eb64", "assistant-1")
+	content += `{"uuid":"3","type":"assistant"}` + "\n"
+	content += createAgentSpawnEntry("4", "test-session", "a68b8c0", "assistant-2")
+
 	mustWriteFile(t, sessionFile, []byte(content))
 
 	spawns, err := FindAgentSpawns(sessionFile)
@@ -126,12 +150,12 @@ func TestBuildTree(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
 
-	// Create main session file
+	// Create main session file with toolUseResult-based agent spawn
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"1","sessionId":"` + sessionID + `","type":"user"}
-{"uuid":"2","sessionId":"` + sessionID + `","type":"assistant"}
-{"uuid":"3","sessionId":"` + sessionID + `","type":"queue-operation","agentId":"a12eb64"}
-`
+	sessionContent := `{"uuid":"1","sessionId":"` + sessionID + `","type":"user"}` + "\n"
+	sessionContent += `{"uuid":"2","sessionId":"` + sessionID + `","type":"assistant"}` + "\n"
+	sessionContent += createAgentSpawnEntry("3", sessionID, "a12eb64", "2")
+
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	// Create agent file
@@ -197,13 +221,13 @@ func TestBuildNestedTree_SingleLevel(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
 
-	// Create main session file with queue-operations spawning agents
+	// Create main session file with toolUseResult-based agent spawns
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"main-1","sessionId":"` + sessionID + `","type":"user"}
-{"uuid":"main-2","sessionId":"` + sessionID + `","type":"assistant"}
-{"uuid":"spawn-1","sessionId":"` + sessionID + `","type":"queue-operation","agentId":"a12eb64","parentUuid":"main-2"}
-{"uuid":"spawn-2","sessionId":"` + sessionID + `","type":"queue-operation","agentId":"a68b8c0","parentUuid":"main-2"}
-`
+	sessionContent := `{"uuid":"main-1","sessionId":"` + sessionID + `","type":"user"}` + "\n"
+	sessionContent += `{"uuid":"main-2","sessionId":"` + sessionID + `","type":"assistant"}` + "\n"
+	sessionContent += createAgentSpawnEntry("spawn-1", sessionID, "a12eb64", "main-2")
+	sessionContent += createAgentSpawnEntry("spawn-2", sessionID, "a68b8c0", "main-2")
+
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	// Create agent files
@@ -254,9 +278,10 @@ func TestBuildNestedTree_TwoLevelsDeep(t *testing.T) {
 
 	// Create main session file - spawns agent-a12eb64
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"main-1","sessionId":"` + sessionID + `","type":"user"}
-{"uuid":"spawn-a12","sessionId":"` + sessionID + `","type":"queue-operation","agentId":"a12eb64"}
-`
+	sessionContent := `{"uuid":"main-1","sessionId":"` + sessionID + `","type":"user"}` + "\n"
+	sessionContent += `{"uuid":"main-2","sessionId":"` + sessionID + `","type":"assistant"}` + "\n"
+	sessionContent += createAgentSpawnEntry("spawn-a12", sessionID, "a12eb64", "main-2")
+
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	// Create session directory and subagents
@@ -264,11 +289,11 @@ func TestBuildNestedTree_TwoLevelsDeep(t *testing.T) {
 	subagentsDir := filepath.Join(sessionDir, "subagents")
 	mustMkdirAll(t, subagentsDir)
 
-	// Agent a12eb64 spawns agent nested-child
-	agent1Content := `{"uuid":"a1-1","type":"user"}
-{"uuid":"spawn-nested","type":"queue-operation","agentId":"nested-child","parentUuid":"a12eb64"}
-{"uuid":"a1-2","type":"assistant"}
-`
+	// Agent a12eb64 spawns nested-child (using toolUseResult)
+	agent1Content := `{"uuid":"a1-1","type":"user"}` + "\n"
+	agent1Content += `{"uuid":"a1-2","type":"assistant"}` + "\n"
+	agent1Content += createAgentSpawnEntry("spawn-nested", sessionID, "nested-child", "a12eb64")
+
 	nestedContent := `{"uuid":"n1","type":"user"}
 {"uuid":"n2","type":"assistant"}
 `
@@ -310,9 +335,10 @@ func TestBuildNestedTree_ThreeLevelsDeep(t *testing.T) {
 
 	// Main session spawns level1
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"main-1","type":"user"}
-{"uuid":"spawn-l1","type":"queue-operation","agentId":"level1"}
-`
+	sessionContent := `{"uuid":"main-1","type":"user"}` + "\n"
+	sessionContent += `{"uuid":"main-2","type":"assistant"}` + "\n"
+	sessionContent += createAgentSpawnEntry("spawn-l1", sessionID, "level1", "main-2")
+
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	sessionDir := filepath.Join(tmpDir, sessionID)
@@ -320,13 +346,15 @@ func TestBuildNestedTree_ThreeLevelsDeep(t *testing.T) {
 	mustMkdirAll(t, subagentsDir)
 
 	// level1 spawns level2
-	level1Content := `{"uuid":"l1-1","type":"user"}
-{"uuid":"spawn-l2","type":"queue-operation","agentId":"level2","parentUuid":"level1"}
-`
+	level1Content := `{"uuid":"l1-1","type":"user"}` + "\n"
+	level1Content += `{"uuid":"l1-2","type":"assistant"}` + "\n"
+	level1Content += createAgentSpawnEntry("spawn-l2", sessionID, "level2", "level1")
+
 	// level2 spawns level3
-	level2Content := `{"uuid":"l2-1","type":"user"}
-{"uuid":"spawn-l3","type":"queue-operation","agentId":"level3","parentUuid":"level2"}
-`
+	level2Content := `{"uuid":"l2-1","type":"user"}` + "\n"
+	level2Content += `{"uuid":"l2-2","type":"assistant"}` + "\n"
+	level2Content += createAgentSpawnEntry("spawn-l3", sessionID, "level3", "level2")
+
 	level3Content := `{"uuid":"l3-1","type":"user"}
 {"uuid":"l3-2","type":"assistant"}
 `
@@ -370,11 +398,12 @@ func TestBuildNestedTree_MultipleChildrenSameLevel(t *testing.T) {
 
 	// Main session spawns 3 agents
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"main-1","type":"user"}
-{"uuid":"spawn-a","type":"queue-operation","agentId":"agent-a"}
-{"uuid":"spawn-b","type":"queue-operation","agentId":"agent-b"}
-{"uuid":"spawn-c","type":"queue-operation","agentId":"agent-c"}
-`
+	sessionContent := `{"uuid":"main-1","type":"user"}` + "\n"
+	sessionContent += `{"uuid":"main-2","type":"assistant"}` + "\n"
+	sessionContent += createAgentSpawnEntry("spawn-a", sessionID, "agent-a", "main-2")
+	sessionContent += createAgentSpawnEntry("spawn-b", sessionID, "agent-b", "main-2")
+	sessionContent += createAgentSpawnEntry("spawn-c", sessionID, "agent-c", "main-2")
+
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	sessionDir := filepath.Join(tmpDir, sessionID)
@@ -412,21 +441,22 @@ func TestBuildNestedTree_OrphanedAgent(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
 
-	// Main session with no queue-operation for the orphan
+	// Main session with spawn entry only for known-agent
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"main-1","type":"user"}
-{"uuid":"spawn-known","type":"queue-operation","agentId":"known-agent"}
-`
+	sessionContent := `{"uuid":"main-1","type":"user"}` + "\n"
+	sessionContent += `{"uuid":"main-2","type":"assistant"}` + "\n"
+	sessionContent += createAgentSpawnEntry("spawn-known", sessionID, "known-agent", "main-2")
+
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	sessionDir := filepath.Join(tmpDir, sessionID)
 	subagentsDir := filepath.Join(sessionDir, "subagents")
 	mustMkdirAll(t, subagentsDir)
 
-	// Create both agents - orphan has no spawn record and parentUuid points to non-existent agent
+	// Create both agents - orphan has no spawn record
 	knownContent := `{"uuid":"k1","type":"user"}
 `
-	// Orphan claims a parent that doesn't exist
+	// Orphan has no spawn entry in main session or anywhere
 	orphanContent := `{"uuid":"o1","type":"user"}
 `
 	mustWriteFile(t, filepath.Join(subagentsDir, "agent-known-agent.jsonl"), []byte(knownContent))
@@ -568,24 +598,27 @@ func TestBuildNestedTree_CircularReference(t *testing.T) {
 
 	// Main session spawns agent-a
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"main-1","type":"user"}
-{"uuid":"spawn-a","type":"queue-operation","agentId":"agent-a"}
-`
+	sessionContent := `{"uuid":"main-1","type":"user"}` + "\n"
+	sessionContent += `{"uuid":"main-2","type":"assistant"}` + "\n"
+	sessionContent += createAgentSpawnEntry("spawn-a", sessionID, "agent-a", "main-2")
+
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	sessionDir := filepath.Join(tmpDir, sessionID)
 	subagentsDir := filepath.Join(sessionDir, "subagents")
 	mustMkdirAll(t, subagentsDir)
 
-	// agent-a spawns agent-b with parentUuid = agent-a
-	agentAContent := `{"uuid":"a1","type":"user"}
-{"uuid":"spawn-b","type":"queue-operation","agentId":"agent-b","parentUuid":"agent-a"}
-`
-	// agent-b tries to spawn with parentUuid = agent-a (circular back to grandparent)
+	// agent-a spawns agent-b with sourceToolAssistantUUID = agent-a
+	agentAContent := `{"uuid":"a1","type":"user"}` + "\n"
+	agentAContent += `{"uuid":"a2","type":"assistant"}` + "\n"
+	agentAContent += createAgentSpawnEntry("spawn-b", sessionID, "agent-b", "agent-a")
+
+	// agent-b tries to spawn with sourceToolAssistantUUID = agent-a (circular back to grandparent)
 	// This shouldn't cause infinite loops
-	agentBContent := `{"uuid":"b1","type":"user"}
-{"uuid":"spawn-c","type":"queue-operation","agentId":"agent-c","parentUuid":"agent-a"}
-`
+	agentBContent := `{"uuid":"b1","type":"user"}` + "\n"
+	agentBContent += `{"uuid":"b2","type":"assistant"}` + "\n"
+	agentBContent += createAgentSpawnEntry("spawn-c", sessionID, "agent-c", "agent-a")
+
 	agentCContent := `{"uuid":"c1","type":"user"}
 `
 	mustWriteFile(t, filepath.Join(subagentsDir, "agent-agent-a.jsonl"), []byte(agentAContent))
@@ -605,9 +638,9 @@ func TestBuildNestedTree_CircularReference(t *testing.T) {
 
 	// All agents should be in the tree somewhere
 	total := CountTotalEntries(tree)
-	// main(2) + agent-a(2) + agent-b(2) + agent-c(1) = 7
-	if total != 7 {
-		t.Errorf("Total entries = %d, want 7", total)
+	// main(3) + agent-a(3) + agent-b(3) + agent-c(1) = 10
+	if total != 10 {
+		t.Errorf("Total entries = %d, want 10", total)
 	}
 }
 
@@ -617,19 +650,21 @@ func TestBuildNestedTree_SelfReferencingAgent(t *testing.T) {
 
 	// Main session spawns self-ref agent
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"main-1","type":"user"}
-{"uuid":"spawn-self","type":"queue-operation","agentId":"self-ref"}
-`
+	sessionContent := `{"uuid":"main-1","type":"user"}` + "\n"
+	sessionContent += `{"uuid":"main-2","type":"assistant"}` + "\n"
+	sessionContent += createAgentSpawnEntry("spawn-self", sessionID, "self-ref", "main-2")
+
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	sessionDir := filepath.Join(tmpDir, sessionID)
 	subagentsDir := filepath.Join(sessionDir, "subagents")
 	mustMkdirAll(t, subagentsDir)
 
-	// Agent with self-reference in parentUuid
-	selfRefContent := `{"uuid":"s1","type":"user"}
-{"uuid":"spawn-nested","type":"queue-operation","agentId":"nested","parentUuid":"self-ref"}
-`
+	// Agent that spawns nested with sourceToolAssistantUUID pointing to self-ref
+	selfRefContent := `{"uuid":"s1","type":"user"}` + "\n"
+	selfRefContent += `{"uuid":"s2","type":"assistant"}` + "\n"
+	selfRefContent += createAgentSpawnEntry("spawn-nested", sessionID, "nested", "self-ref")
+
 	nestedContent := `{"uuid":"n1","type":"user"}
 `
 	mustWriteFile(t, filepath.Join(subagentsDir, "agent-self-ref.jsonl"), []byte(selfRefContent))
@@ -663,11 +698,13 @@ func TestBuildNestedTree_InvalidParentUUID(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
 
-	// Main session spawns agent with invalid parentUuid format
+	// Main session spawns agent with invalid sourceToolAssistantUUID
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"main-1","type":"user"}
-{"uuid":"spawn-1","type":"queue-operation","agentId":"agent-1","parentUuid":"!!!invalid!!!"}
-`
+	sessionContent := `{"uuid":"main-1","type":"user"}` + "\n"
+	sessionContent += `{"uuid":"main-2","type":"assistant"}` + "\n"
+	// Agent spawn with invalid parent reference
+	sessionContent += createAgentSpawnEntry("spawn-1", sessionID, "agent-1", "!!!invalid!!!")
+
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	sessionDir := filepath.Join(tmpDir, sessionID)
@@ -696,11 +733,12 @@ func TestBuildNestedTree_MissingSubagentsDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
 
-	// Create session file with queue-operation
+	// Create session file with agent spawn entry
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"main-1","type":"user"}
-{"uuid":"spawn-1","type":"queue-operation","agentId":"phantom-agent"}
-`
+	sessionContent := `{"uuid":"main-1","type":"user"}` + "\n"
+	sessionContent += `{"uuid":"main-2","type":"assistant"}` + "\n"
+	sessionContent += createAgentSpawnEntry("spawn-1", sessionID, "phantom-agent", "main-2")
+
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
 	// Don't create the session directory or subagents directory

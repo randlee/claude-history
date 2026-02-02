@@ -12,6 +12,9 @@ import (
 
 // createTestSession creates a mock session JSONL file with test data.
 // Returns the full path to the created session file.
+//
+// Note: This creates a minimal session without agent spawning. For sessions
+// with agents, use createTestSessionWithAgentSpawn or manually add spawn entries.
 func createTestSession(t *testing.T, dir, sessionID, firstPrompt string, timestamp time.Time) string {
 	t.Helper()
 
@@ -53,6 +56,14 @@ func createTestSession(t *testing.T, dir, sessionID, firstPrompt string, timesta
 
 // createTestAgent creates a mock agent JSONL file.
 // Returns the full path to the created agent file.
+//
+// The agent file entry includes:
+// - agentId: The agent's identifier (matches real Claude Code format)
+// - parentUuid: null (indicating this is the first entry in the agent)
+// - sessionId: Extracted from the session directory path
+//
+// Note: In real Claude Code, agent files contain entries with agentId field set,
+// and the first entry typically has parentUuid: null.
 func createTestAgent(t *testing.T, sessionDir, agentID, description string) string {
 	t.Helper()
 
@@ -63,10 +74,17 @@ func createTestAgent(t *testing.T, sessionDir, agentID, description string) stri
 
 	filePath := filepath.Join(subagentsDir, "agent-"+agentID+".jsonl")
 
-	// Create agent entry
+	// Extract session ID from directory name (last 36 characters is UUID)
+	sessionID := sessionDir[len(sessionDir)-36:]
+
+	// Create agent entry with proper agentId field (matching real Claude Code format)
+	// In real Claude Code, agent file entries have:
+	// - agentId set to the agent's ID
+	// - parentUuid: null for the first entry
+	// - sessionId matching the parent session
 	agentEntry := models.ConversationEntry{
 		Type:      models.EntryTypeUser,
-		SessionID: sessionDir[len(sessionDir)-36:], // Extract session ID from dir name
+		SessionID: sessionID,
 		AgentID:   agentID,
 		Timestamp: time.Now().Format(time.RFC3339Nano),
 		Message:   json.RawMessage(`{"role":"user","content":"` + description + `"}`),
