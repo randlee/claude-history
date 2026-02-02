@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -16,13 +17,14 @@ import (
 )
 
 var (
-	queryStart     string
-	queryEnd       string
-	queryTypes     string
-	querySessionID string
-	queryAgentID   string
-	queryTools     string // --tool flag
-	queryToolMatch string // --tool-match flag
+	queryStart        string
+	queryEnd          string
+	queryTypes        string
+	querySessionID    string
+	queryAgentID      string
+	queryTools        string // --tool flag
+	queryToolMatch    string // --tool-match flag
+	queryIncludeAgents bool  // --include-agents flag
 )
 
 // knownTools is used for validation warnings when unknown tool types are specified
@@ -50,6 +52,12 @@ Examples:
   # Query specific session
   claude-history query /path/to/project --session 679761ba-80c0-4cd3-a586-cc6a1fc56308
 
+  # Query specific agent (reads agent's JSONL file directly)
+  claude-history query /path/to/project --session <session-id> --agent <agent-id>
+
+  # Query session including all subagent entries
+  claude-history query /path/to/project --session <session-id> --include-agents
+
   # Filter by tool type
   claude-history query /path/to/project --tool bash
   claude-history query /path/to/project --tool bash,read,write
@@ -59,7 +67,15 @@ Examples:
 
   # Output formats
   claude-history query /path/to/project --format json
-  claude-history query /path/to/project --format summary`,
+  claude-history query /path/to/project --format summary
+
+Agent Queries:
+  When --agent is specified, the command reads the agent's JSONL file directly
+  instead of filtering the main session file. This provides accurate results
+  for agent-specific queries, as agent entries are stored in separate files.
+
+  When --include-agents is specified, entries from all subagents are included
+  in the query results, recursively gathering entries from nested agents.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runQuery,
 }
@@ -71,9 +87,10 @@ func init() {
 	queryCmd.Flags().StringVar(&queryEnd, "end", "", "End date (ISO 8601 format)")
 	queryCmd.Flags().StringVar(&queryTypes, "type", "", "Entry types to include (comma-separated: user,assistant,system)")
 	queryCmd.Flags().StringVar(&querySessionID, "session", "", "Filter to specific session ID")
-	queryCmd.Flags().StringVar(&queryAgentID, "agent", "", "Filter to specific agent ID")
+	queryCmd.Flags().StringVar(&queryAgentID, "agent", "", "Query specific agent (reads agent's JSONL file directly)")
 	queryCmd.Flags().StringVar(&queryTools, "tool", "", "Filter by tool types (comma-separated: bash,read,write)")
 	queryCmd.Flags().StringVar(&queryToolMatch, "tool-match", "", "Filter by tool input regex pattern")
+	queryCmd.Flags().BoolVar(&queryIncludeAgents, "include-agents", false, "Include entries from all subagents")
 }
 
 func runQuery(cmd *cobra.Command, args []string) error {
@@ -111,8 +128,13 @@ func runQuery(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Build filter options with resolved IDs
-	filterOpts, err := buildFilterOptions(resolvedAgentID)
+	// Validate flag combinations
+	if queryIncludeAgents && resolvedAgentID != "" {
+		return fmt.Errorf("--include-agents and --agent cannot be used together")
+	}
+
+	// Build filter options (don't pass agent ID since we read agent file directly)
+	filterOpts, err := buildFilterOptions("")
 	if err != nil {
 		return err
 	}
@@ -121,12 +143,28 @@ func runQuery(cmd *cobra.Command, args []string) error {
 	var allEntries []models.ConversationEntry
 
 	if resolvedSessionID != "" {
-		// Query specific session
-		entries, err := querySession(projectDir, resolvedSessionID, filterOpts)
-		if err != nil {
-			return err
+		if resolvedAgentID != "" {
+			// Query specific agent - read agent's JSONL file directly
+			entries, err := queryAgentFile(projectDir, resolvedSessionID, resolvedAgentID, filterOpts)
+			if err != nil {
+				return err
+			}
+			allEntries = entries
+		} else if queryIncludeAgents {
+			// Query session including all subagent entries
+			entries, err := querySessionWithAgents(projectDir, resolvedSessionID, filterOpts)
+			if err != nil {
+				return err
+			}
+			allEntries = entries
+		} else {
+			// Query main session file only
+			entries, err := querySession(projectDir, resolvedSessionID, filterOpts)
+			if err != nil {
+				return err
+			}
+			allEntries = entries
 		}
-		allEntries = entries
 	} else {
 		// Query all sessions in project
 		sessions, err := session.ListSessions(projectDir)
@@ -135,8 +173,15 @@ func runQuery(cmd *cobra.Command, args []string) error {
 		}
 
 		for _, s := range sessions {
-			entries, err := querySession(projectDir, s.ID, filterOpts)
-			if err != nil {
+			var entries []models.ConversationEntry
+			var queryErr error
+
+			if queryIncludeAgents {
+				entries, queryErr = querySessionWithAgents(projectDir, s.ID, filterOpts)
+			} else {
+				entries, queryErr = querySession(projectDir, s.ID, filterOpts)
+			}
+			if queryErr != nil {
 				// Skip sessions that can't be read
 				continue
 			}
@@ -153,10 +198,9 @@ func runQuery(cmd *cobra.Command, args []string) error {
 }
 
 func querySession(projectDir string, sessionID string, opts session.FilterOptions) ([]models.ConversationEntry, error) {
-	sessionPath := paths.Exists
-	filePath := projectDir + "/" + sessionID + ".jsonl"
+	filePath := filepath.Join(projectDir, sessionID+".jsonl")
 
-	if !sessionPath(filePath) {
+	if !paths.Exists(filePath) {
 		return nil, fmt.Errorf("session file not found: %s", filePath)
 	}
 
@@ -169,6 +213,80 @@ func querySession(projectDir string, sessionID string, opts session.FilterOption
 	filtered := session.FilterEntries(entries, opts)
 
 	return filtered, nil
+}
+
+// getAgentPath returns the path to an agent's JSONL file.
+// It first checks the standard location, then falls back to recursive search for nested agents.
+func getAgentPath(projectDir, sessionID, agentID string) (string, error) {
+	sessionDir := filepath.Join(projectDir, sessionID)
+
+	// Try standard location first
+	agentPath := filepath.Join(sessionDir, "subagents", "agent-"+agentID+".jsonl")
+	if paths.Exists(agentPath) {
+		return agentPath, nil
+	}
+
+	// Fallback: recursive search for nested agents
+	agentFiles, err := paths.ListAgentFiles(sessionDir)
+	if err == nil {
+		if path, ok := agentFiles[agentID]; ok {
+			return path, nil
+		}
+	}
+
+	return "", fmt.Errorf("agent not found: %s", agentID)
+}
+
+// queryAgentFile reads and queries an agent's JSONL file directly.
+func queryAgentFile(projectDir, sessionID, agentID string, opts session.FilterOptions) ([]models.ConversationEntry, error) {
+	agentPath, err := getAgentPath(projectDir, sessionID, agentID)
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := session.ReadSession(agentPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read agent file: %w", err)
+	}
+
+	// Apply filters
+	filtered := session.FilterEntries(entries, opts)
+
+	return filtered, nil
+}
+
+// querySessionWithAgents queries the main session and all subagent files.
+func querySessionWithAgents(projectDir, sessionID string, opts session.FilterOptions) ([]models.ConversationEntry, error) {
+	var allEntries []models.ConversationEntry
+
+	// First, query the main session file
+	mainEntries, err := querySession(projectDir, sessionID, opts)
+	if err != nil {
+		return nil, err
+	}
+	allEntries = append(allEntries, mainEntries...)
+
+	// Then, query all agent files
+	sessionDir := filepath.Join(projectDir, sessionID)
+	agentFiles, err := paths.ListAgentFiles(sessionDir)
+	if err != nil {
+		// No agents or error listing - just return main entries
+		return allEntries, nil
+	}
+
+	for _, agentPath := range agentFiles {
+		entries, err := session.ReadSession(agentPath)
+		if err != nil {
+			// Skip agents that can't be read
+			continue
+		}
+
+		// Apply filters
+		filtered := session.FilterEntries(entries, opts)
+		allEntries = append(allEntries, filtered...)
+	}
+
+	return allEntries, nil
 }
 
 func buildFilterOptions(resolvedAgentID string) (session.FilterOptions, error) {
