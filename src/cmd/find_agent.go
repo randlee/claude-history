@@ -12,6 +12,7 @@ import (
 
 	"github.com/randlee/claude-history/pkg/agent"
 	"github.com/randlee/claude-history/pkg/paths"
+	"github.com/randlee/claude-history/pkg/resolver"
 )
 
 var (
@@ -78,8 +79,17 @@ func runFindAgent(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("project not found: %s", projectPath)
 	}
 
-	// Build find options
-	opts, err := buildFindOptions()
+	// Resolve session ID prefix if provided
+	var resolvedSessionID string
+	if findSessionID != "" {
+		resolvedSessionID, err = resolver.ResolveSessionID(projectDir, findSessionID)
+		if err != nil {
+			return fmt.Errorf("failed to resolve session ID: %w", err)
+		}
+	}
+
+	// Build find options with resolved session ID
+	opts, err := buildFindOptions(resolvedSessionID)
 	if err != nil {
 		return err
 	}
@@ -99,7 +109,7 @@ func runFindAgent(cmd *cobra.Command, args []string) error {
 	return outputAgentMatches(matches, format)
 }
 
-func buildFindOptions() (agent.FindAgentsOptions, error) {
+func buildFindOptions(resolvedSessionID string) (agent.FindAgentsOptions, error) {
 	var opts agent.FindAgentsOptions
 
 	// Explored pattern
@@ -142,8 +152,8 @@ func buildFindOptions() (agent.FindAgentsOptions, error) {
 		opts.EndTime = t
 	}
 
-	// Session ID
-	opts.SessionID = findSessionID
+	// Session ID (use resolved session ID)
+	opts.SessionID = resolvedSessionID
 
 	return opts, nil
 }
