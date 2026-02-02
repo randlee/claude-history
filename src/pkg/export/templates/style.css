@@ -1,4 +1,392 @@
-/* Claude History Export Styles */
+/* Claude History Export Styles
+ * Phase 10: CSS Variable System & Chat Bubble Layout
+ * ================================================== */
+
+/* ============================================
+ * CSS VARIABLE SYSTEM - HSL Color Palette
+ * ============================================ */
+
+:root {
+    /* ------------------------------------------
+     * Base Color Palette (HSL values)
+     * ------------------------------------------ */
+
+    /* Neutral palette */
+    --neutral-50: 210 20% 98%;
+    --neutral-100: 210 17% 95%;
+    --neutral-200: 210 14% 89%;
+    --neutral-300: 210 11% 79%;
+    --neutral-400: 210 8% 60%;
+    --neutral-500: 210 7% 46%;
+    --neutral-600: 210 9% 36%;
+    --neutral-700: 210 12% 27%;
+    --neutral-800: 210 17% 17%;
+    --neutral-900: 210 24% 10%;
+    --neutral-950: 210 30% 6%;
+
+    /* Blue palette (user messages, info) */
+    --blue-50: 214 100% 97%;
+    --blue-100: 214 95% 93%;
+    --blue-200: 213 97% 87%;
+    --blue-300: 212 96% 78%;
+    --blue-400: 213 94% 68%;
+    --blue-500: 217 91% 60%;
+    --blue-600: 221 83% 53%;
+    --blue-700: 224 76% 48%;
+    --blue-800: 226 71% 40%;
+    --blue-900: 224 64% 33%;
+    --blue-950: 226 57% 21%;
+
+    /* Green palette (assistant messages, success) */
+    --green-50: 138 76% 97%;
+    --green-100: 141 84% 93%;
+    --green-200: 141 79% 85%;
+    --green-300: 142 77% 73%;
+    --green-400: 142 69% 58%;
+    --green-500: 142 71% 45%;
+    --green-600: 142 76% 36%;
+    --green-700: 142 72% 29%;
+    --green-800: 143 64% 24%;
+    --green-900: 144 61% 20%;
+    --green-950: 145 80% 10%;
+
+    /* Orange palette (queue operations, warnings) */
+    --orange-50: 33 100% 96%;
+    --orange-100: 34 100% 92%;
+    --orange-200: 32 98% 83%;
+    --orange-300: 31 97% 72%;
+    --orange-400: 27 96% 61%;
+    --orange-500: 25 95% 53%;
+    --orange-600: 21 90% 48%;
+    --orange-700: 17 88% 40%;
+    --orange-800: 15 79% 34%;
+    --orange-900: 15 75% 28%;
+    --orange-950: 13 81% 15%;
+
+    /* Red palette (errors) */
+    --red-50: 0 86% 97%;
+    --red-100: 0 93% 94%;
+    --red-200: 0 96% 89%;
+    --red-300: 0 94% 82%;
+    --red-400: 0 91% 71%;
+    --red-500: 0 84% 60%;
+    --red-600: 0 72% 51%;
+    --red-700: 0 74% 42%;
+    --red-800: 0 70% 35%;
+    --red-900: 0 63% 31%;
+    --red-950: 0 75% 15%;
+
+    /* Purple palette (subagents, agents) */
+    --purple-50: 270 100% 98%;
+    --purple-100: 269 100% 95%;
+    --purple-200: 269 100% 92%;
+    --purple-300: 269 97% 85%;
+    --purple-400: 270 95% 75%;
+    --purple-500: 271 91% 65%;
+    --purple-600: 271 81% 56%;
+    --purple-700: 272 72% 47%;
+    --purple-800: 273 67% 39%;
+    --purple-900: 274 66% 32%;
+    --purple-950: 274 87% 21%;
+
+    /* Teal palette (tools) */
+    --teal-50: 166 76% 97%;
+    --teal-100: 167 85% 89%;
+    --teal-200: 168 84% 78%;
+    --teal-300: 171 77% 64%;
+    --teal-400: 172 66% 50%;
+    --teal-500: 173 80% 40%;
+    --teal-600: 175 84% 32%;
+    --teal-700: 175 77% 26%;
+    --teal-800: 176 69% 22%;
+    --teal-900: 176 61% 19%;
+    --teal-950: 179 84% 10%;
+
+    /* Yellow/Amber palette (system messages) */
+    --amber-50: 48 100% 96%;
+    --amber-100: 48 96% 89%;
+    --amber-200: 48 97% 77%;
+    --amber-300: 46 97% 65%;
+    --amber-400: 43 96% 56%;
+    --amber-500: 38 92% 50%;
+    --amber-600: 32 95% 44%;
+    --amber-700: 26 90% 37%;
+    --amber-800: 23 83% 31%;
+    --amber-900: 22 78% 26%;
+    --amber-950: 21 92% 14%;
+
+    /* ------------------------------------------
+     * Light Mode Theme (Default)
+     * ------------------------------------------ */
+
+    /* Background colors */
+    --bg-primary: hsl(var(--neutral-50));
+    --bg-secondary: hsl(var(--neutral-100));
+    --bg-tertiary: hsl(var(--neutral-200));
+    --bg-elevated: hsl(0 0% 100%);
+    --bg-overlay: hsla(var(--neutral-950), 0.5);
+
+    /* Text colors */
+    --text-primary: hsl(var(--neutral-900));
+    --text-secondary: hsl(var(--neutral-600));
+    --text-tertiary: hsl(var(--neutral-500));
+    --text-muted: hsl(var(--neutral-400));
+    --text-inverse: hsl(var(--neutral-50));
+
+    /* Border colors */
+    --border-primary: hsl(var(--neutral-200));
+    --border-secondary: hsl(var(--neutral-300));
+    --border-focus: hsl(var(--blue-500));
+
+    /* Semantic colors */
+    --color-success: hsl(var(--green-600));
+    --color-success-bg: hsl(var(--green-50));
+    --color-success-border: hsl(var(--green-200));
+
+    --color-error: hsl(var(--red-600));
+    --color-error-bg: hsl(var(--red-50));
+    --color-error-border: hsl(var(--red-200));
+
+    --color-warning: hsl(var(--orange-600));
+    --color-warning-bg: hsl(var(--orange-50));
+    --color-warning-border: hsl(var(--orange-200));
+
+    --color-info: hsl(var(--blue-600));
+    --color-info-bg: hsl(var(--blue-50));
+    --color-info-border: hsl(var(--blue-200));
+
+    /* User message colors */
+    --user-bg: hsl(var(--blue-50));
+    --user-bg-hover: hsl(var(--blue-100));
+    --user-border: hsl(var(--blue-300));
+    --user-accent: hsl(var(--blue-600));
+    --user-text: hsl(var(--blue-900));
+
+    /* Assistant message colors */
+    --assistant-bg: hsl(var(--green-50));
+    --assistant-bg-hover: hsl(var(--green-100));
+    --assistant-border: hsl(var(--green-300));
+    --assistant-accent: hsl(var(--green-600));
+    --assistant-text: hsl(var(--green-900));
+
+    /* System message colors */
+    --system-bg: hsl(var(--neutral-100));
+    --system-bg-hover: hsl(var(--neutral-200));
+    --system-border: hsl(var(--neutral-300));
+    --system-accent: hsl(var(--neutral-600));
+    --system-text: hsl(var(--neutral-700));
+
+    /* Queue/Operation colors */
+    --queue-bg: hsl(var(--orange-50));
+    --queue-bg-hover: hsl(var(--orange-100));
+    --queue-border: hsl(var(--orange-300));
+    --queue-accent: hsl(var(--orange-600));
+    --queue-text: hsl(var(--orange-900));
+
+    /* Summary colors */
+    --summary-bg: hsl(var(--purple-50));
+    --summary-bg-hover: hsl(var(--purple-100));
+    --summary-border: hsl(var(--purple-300));
+    --summary-accent: hsl(var(--purple-600));
+    --summary-text: hsl(var(--purple-900));
+
+    /* Overlay colors (tool, agent, thinking, system) */
+    --tool-overlay-bg: hsl(var(--teal-50));
+    --tool-overlay-border: hsl(var(--teal-300));
+    --tool-overlay-accent: hsl(var(--teal-600));
+    --tool-overlay-header: hsl(var(--teal-100));
+
+    --agent-overlay-bg: hsl(var(--purple-50));
+    --agent-overlay-border: hsl(var(--purple-400));
+    --agent-overlay-accent: hsl(var(--purple-600));
+    --agent-overlay-header: hsl(var(--purple-100));
+
+    --thinking-overlay-bg: hsl(var(--neutral-100));
+    --thinking-overlay-border: hsl(var(--neutral-300));
+    --thinking-overlay-accent: hsl(var(--neutral-500));
+    --thinking-overlay-header: hsl(var(--neutral-200));
+
+    --system-overlay-bg: hsl(var(--amber-50));
+    --system-overlay-border: hsl(var(--amber-300));
+    --system-overlay-accent: hsl(var(--amber-600));
+    --system-overlay-header: hsl(var(--amber-100));
+
+    /* Shadow values */
+    --shadow-sm: 0 1px 2px 0 hsla(var(--neutral-900), 0.05);
+    --shadow-md: 0 4px 6px -1px hsla(var(--neutral-900), 0.1), 0 2px 4px -2px hsla(var(--neutral-900), 0.1);
+    --shadow-lg: 0 10px 15px -3px hsla(var(--neutral-900), 0.1), 0 4px 6px -4px hsla(var(--neutral-900), 0.1);
+
+    /* Spacing scale */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+
+    /* Border radius */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --radius-full: 9999px;
+
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 250ms ease;
+    --transition-slow: 350ms ease;
+}
+
+/* ============================================
+ * Dark Mode Theme
+ * ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Background colors */
+        --bg-primary: hsl(var(--neutral-900));
+        --bg-secondary: hsl(var(--neutral-800));
+        --bg-tertiary: hsl(var(--neutral-700));
+        --bg-elevated: hsl(var(--neutral-800));
+        --bg-overlay: hsla(var(--neutral-950), 0.8);
+
+        /* Text colors */
+        --text-primary: hsl(var(--neutral-100));
+        --text-secondary: hsl(var(--neutral-300));
+        --text-tertiary: hsl(var(--neutral-400));
+        --text-muted: hsl(var(--neutral-500));
+        --text-inverse: hsl(var(--neutral-900));
+
+        /* Border colors */
+        --border-primary: hsl(var(--neutral-700));
+        --border-secondary: hsl(var(--neutral-600));
+        --border-focus: hsl(var(--blue-400));
+
+        /* Semantic colors */
+        --color-success: hsl(var(--green-400));
+        --color-success-bg: hsla(var(--green-900), 0.5);
+        --color-success-border: hsl(var(--green-700));
+
+        --color-error: hsl(var(--red-400));
+        --color-error-bg: hsla(var(--red-900), 0.5);
+        --color-error-border: hsl(var(--red-700));
+
+        --color-warning: hsl(var(--orange-400));
+        --color-warning-bg: hsla(var(--orange-900), 0.5);
+        --color-warning-border: hsl(var(--orange-700));
+
+        --color-info: hsl(var(--blue-400));
+        --color-info-bg: hsla(var(--blue-900), 0.5);
+        --color-info-border: hsl(var(--blue-700));
+
+        /* User message colors (dark) */
+        --user-bg: hsla(var(--blue-900), 0.6);
+        --user-bg-hover: hsla(var(--blue-800), 0.6);
+        --user-border: hsl(var(--blue-600));
+        --user-accent: hsl(var(--blue-400));
+        --user-text: hsl(var(--blue-100));
+
+        /* Assistant message colors (dark) */
+        --assistant-bg: hsla(var(--green-900), 0.6);
+        --assistant-bg-hover: hsla(var(--green-800), 0.6);
+        --assistant-border: hsl(var(--green-600));
+        --assistant-accent: hsl(var(--green-400));
+        --assistant-text: hsl(var(--green-100));
+
+        /* System message colors (dark) */
+        --system-bg: hsl(var(--neutral-800));
+        --system-bg-hover: hsl(var(--neutral-700));
+        --system-border: hsl(var(--neutral-600));
+        --system-accent: hsl(var(--neutral-400));
+        --system-text: hsl(var(--neutral-300));
+
+        /* Queue/Operation colors (dark) */
+        --queue-bg: hsla(var(--orange-900), 0.6);
+        --queue-bg-hover: hsla(var(--orange-800), 0.6);
+        --queue-border: hsl(var(--orange-600));
+        --queue-accent: hsl(var(--orange-400));
+        --queue-text: hsl(var(--orange-100));
+
+        /* Summary colors (dark) */
+        --summary-bg: hsla(var(--purple-900), 0.6);
+        --summary-bg-hover: hsla(var(--purple-800), 0.6);
+        --summary-border: hsl(var(--purple-500));
+        --summary-accent: hsl(var(--purple-400));
+        --summary-text: hsl(var(--purple-100));
+
+        /* Overlay colors (dark mode) */
+        --tool-overlay-bg: hsla(var(--teal-900), 0.5);
+        --tool-overlay-border: hsl(var(--teal-600));
+        --tool-overlay-accent: hsl(var(--teal-400));
+        --tool-overlay-header: hsla(var(--teal-800), 0.6);
+
+        --agent-overlay-bg: hsla(var(--purple-900), 0.5);
+        --agent-overlay-border: hsl(var(--purple-500));
+        --agent-overlay-accent: hsl(var(--purple-400));
+        --agent-overlay-header: hsla(var(--purple-800), 0.6);
+
+        --thinking-overlay-bg: hsl(var(--neutral-800));
+        --thinking-overlay-border: hsl(var(--neutral-600));
+        --thinking-overlay-accent: hsl(var(--neutral-400));
+        --thinking-overlay-header: hsl(var(--neutral-700));
+
+        --system-overlay-bg: hsla(var(--amber-900), 0.5);
+        --system-overlay-border: hsl(var(--amber-600));
+        --system-overlay-accent: hsl(var(--amber-400));
+        --system-overlay-header: hsla(var(--amber-800), 0.6);
+
+        /* Shadow values (dark mode) */
+        --shadow-sm: 0 1px 2px 0 hsla(0, 0%, 0%, 0.3);
+        --shadow-md: 0 4px 6px -1px hsla(0, 0%, 0%, 0.4), 0 2px 4px -2px hsla(0, 0%, 0%, 0.3);
+        --shadow-lg: 0 10px 15px -3px hsla(0, 0%, 0%, 0.4), 0 4px 6px -4px hsla(0, 0%, 0%, 0.3);
+    }
+}
+
+/* ============================================
+ * TYPOGRAPHY SYSTEM
+ * ============================================ */
+
+:root {
+    /* Font families */
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+    --font-mono: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+    /* Font sizes */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+
+    /* Line heights */
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.625;
+    --leading-loose: 2;
+
+    /* Font weights */
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+
+    /* Letter spacing */
+    --tracking-tight: -0.025em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.025em;
+    --tracking-wider: 0.05em;
+}
+
+/* ============================================
+ * BASE STYLES
+ * ============================================ */
 
 * {
     box-sizing: border-box;
@@ -6,152 +394,297 @@
 
 body {
     margin: 0;
-    padding: 1rem;
-    background: #fafafa;
-    color: #333;
-    line-height: 1.5;
+    padding: var(--space-4);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
+
+/* Typography hierarchy */
+h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    font-weight: var(--font-semibold);
+    line-height: var(--leading-tight);
+}
+
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl); }
+h4 { font-size: var(--text-lg); }
+h5 { font-size: var(--text-base); }
+h6 { font-size: var(--text-sm); }
+
+p {
+    margin: 0 0 var(--space-4) 0;
+}
+
+/* ============================================
+ * CONVERSATION CONTAINER
+ * ============================================ */
 
 .conversation {
     max-width: 900px;
     margin: 0 auto;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
+/* ============================================
+ * HEADER STYLES
+ * ============================================ */
+
 .header {
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-4);
+    border-bottom: 2px solid var(--border-primary);
 }
 
 .header h1 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1.5rem;
-    font-weight: 600;
+    margin: 0 0 var(--space-2) 0;
+    font-size: var(--text-2xl);
+    font-weight: var(--font-semibold);
 }
 
 .header .meta {
-    color: #666;
-    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
 }
 
 .header .meta span {
-    margin-right: 1rem;
+    margin-right: var(--space-4);
 }
 
+/* ============================================
+ * CONTROLS
+ * ============================================ */
+
 .controls {
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    margin-bottom: var(--space-4);
+    padding: var(--space-2);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
 }
 
 .controls button {
-    margin-right: 0.5rem;
-    padding: 0.375rem 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: #fff;
+    margin-right: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
     cursor: pointer;
-    font-size: 0.875rem;
+    transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 
 .controls button:hover {
-    background: #f5f5f5;
+    background: var(--bg-secondary);
+    border-color: var(--border-focus);
 }
 
+.controls button:focus {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+}
+
+/* ============================================
+ * CHAT BUBBLE LAYOUT
+ * ============================================ */
+
+.messages-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Message row - base layout */
+.message-row {
+    display: flex;
+    width: 100%;
+}
+
+/* User messages - align left */
+.message-row.user {
+    justify-content: flex-start;
+}
+
+.message-row.user .message-bubble {
+    max-width: 70%;
+    background: var(--user-bg);
+    border: 1px solid var(--user-border);
+    border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-sm);
+}
+
+.message-row.user .message-bubble:hover {
+    background: var(--user-bg-hover);
+}
+
+.message-row.user .message-header .role {
+    color: var(--user-accent);
+}
+
+/* Assistant messages - align right */
+.message-row.assistant {
+    justify-content: flex-end;
+}
+
+.message-row.assistant .message-bubble {
+    max-width: 70%;
+    background: var(--assistant-bg);
+    border: 1px solid var(--assistant-border);
+    border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
+}
+
+.message-row.assistant .message-bubble:hover {
+    background: var(--assistant-bg-hover);
+}
+
+.message-row.assistant .message-header .role {
+    color: var(--assistant-accent);
+}
+
+/* Message bubble - base styles */
+.message-bubble {
+    padding: var(--space-4);
+    box-shadow: var(--shadow-md);
+    transition: background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Message header */
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+    font-size: var(--text-xs);
+}
+
+.message-header .role {
+    font-weight: var(--font-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+}
+
+.message-header .timestamp {
+    color: var(--text-muted);
+}
+
+/* Message content */
+.message-content {
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: var(--leading-relaxed);
+}
+
+/* ============================================
+ * LEGACY ENTRY STYLES (backward compatibility)
+ * ============================================ */
+
 .entry {
-    padding: 1rem;
-    margin: 0.5rem 0;
-    border-radius: 8px;
+    padding: var(--space-4);
+    margin: var(--space-2) 0;
+    border-radius: var(--radius-lg);
+    transition: background var(--transition-fast);
 }
 
 .entry.user {
-    background: #e3f2fd;
-    border-left: 4px solid #1976d2;
+    background: var(--user-bg);
+    border-left: 4px solid var(--user-accent);
 }
 
 .entry.assistant {
-    background: #e8f5e9;
-    border-left: 4px solid #388e3c;
+    background: var(--assistant-bg);
+    border-left: 4px solid var(--assistant-accent);
 }
 
 .entry.system {
-    background: #f5f5f5;
-    border-left: 4px solid #757575;
+    background: var(--system-bg);
+    border-left: 4px solid var(--system-accent);
 }
 
 .entry.queue-operation {
-    background: #fff3e0;
-    border-left: 4px solid #f57c00;
+    background: var(--queue-bg);
+    border-left: 4px solid var(--queue-accent);
 }
 
 .entry.summary {
-    background: #fce4ec;
-    border-left: 4px solid #c2185b;
+    background: var(--summary-bg);
+    border-left: 4px solid var(--summary-accent);
 }
 
 .entry-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
-    font-size: 0.75rem;
-    color: #666;
+    margin-bottom: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
 }
 
 .entry-type {
-    font-weight: 600;
+    font-weight: var(--font-semibold);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--tracking-wider);
 }
 
-.entry.user .entry-type { color: #1976d2; }
-.entry.assistant .entry-type { color: #388e3c; }
-.entry.system .entry-type { color: #757575; }
-.entry.queue-operation .entry-type { color: #f57c00; }
+.entry.user .entry-type { color: var(--user-accent); }
+.entry.assistant .entry-type { color: var(--assistant-accent); }
+.entry.system .entry-type { color: var(--system-accent); }
+.entry.queue-operation .entry-type { color: var(--queue-accent); }
+.entry.summary .entry-type { color: var(--summary-accent); }
 
 .entry-content {
     white-space: pre-wrap;
     word-break: break-word;
 }
 
+/* ============================================
+ * TOOL CALL STYLES
+ * ============================================ */
+
 .tool-call {
-    margin: 0.5rem 0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    margin: var(--space-2) 0;
+    border: 1px solid var(--tool-overlay-border);
+    border-radius: var(--radius-md);
     overflow: hidden;
+    background: var(--tool-overlay-bg);
 }
 
 .tool-header {
-    padding: 0.5rem;
-    background: #fafafa;
+    padding: var(--space-2) var(--space-3);
+    background: var(--tool-overlay-header);
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: background var(--transition-fast);
 }
 
 .tool-header:hover {
-    background: #f0f0f0;
+    background: var(--tool-overlay-border);
 }
 
 .tool-name {
-    font-weight: 600;
-    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    font-size: 0.875rem;
+    font-weight: var(--font-semibold);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--tool-overlay-accent);
 }
 
 .tool-toggle {
-    color: #666;
-    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    transition: transform var(--transition-fast);
 }
 
 .tool-body {
-    padding: 0.5rem;
-    background: #fff;
-    border-top: 1px solid #eee;
+    padding: var(--space-3);
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--tool-overlay-border);
 }
 
 .tool-body.hidden {
@@ -161,57 +694,115 @@ body {
 .tool-input,
 .tool-output {
     overflow-x: auto;
-    font-size: 0.875rem;
+    font-size: var(--text-sm);
 }
 
 .tool-input {
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px dashed #eee;
+    margin-bottom: var(--space-2);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px dashed var(--border-primary);
 }
 
 .tool-input h4,
 .tool-output h4 {
-    margin: 0 0 0.25rem 0;
-    font-size: 0.75rem;
-    color: #666;
+    margin: 0 0 var(--space-1) 0;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--tracking-wider);
 }
 
+/* ============================================
+ * COLOR-CODED OVERLAY FOUNDATIONS
+ * ============================================ */
+
+/* Tool overlay - blue/teal tones */
+.tool-overlay {
+    background: var(--tool-overlay-bg);
+    border: 1px solid var(--tool-overlay-border);
+    border-radius: var(--radius-md);
+}
+
+.tool-overlay .overlay-header {
+    background: var(--tool-overlay-header);
+    color: var(--tool-overlay-accent);
+}
+
+/* Agent overlay - purple/violet tones */
+.agent-overlay {
+    background: var(--agent-overlay-bg);
+    border: 2px solid var(--agent-overlay-border);
+    border-radius: var(--radius-lg);
+}
+
+.agent-overlay .overlay-header {
+    background: var(--agent-overlay-header);
+    color: var(--agent-overlay-accent);
+}
+
+/* Thinking overlay - gray/muted tones */
+.thinking-overlay {
+    background: var(--thinking-overlay-bg);
+    border: 1px solid var(--thinking-overlay-border);
+    border-radius: var(--radius-md);
+}
+
+.thinking-overlay .overlay-header {
+    background: var(--thinking-overlay-header);
+    color: var(--thinking-overlay-accent);
+}
+
+/* System overlay - yellow/amber tones */
+.system-overlay {
+    background: var(--system-overlay-bg);
+    border: 1px solid var(--system-overlay-border);
+    border-radius: var(--radius-md);
+}
+
+.system-overlay .overlay-header {
+    background: var(--system-overlay-header);
+    color: var(--system-overlay-accent);
+}
+
+/* ============================================
+ * SUBAGENT STYLES
+ * ============================================ */
+
 .subagent {
-    margin: 1rem 0;
-    border: 2px solid #673ab7;
-    border-radius: 8px;
+    margin: var(--space-4) 0;
+    border: 2px solid var(--agent-overlay-border);
+    border-radius: var(--radius-lg);
     overflow: hidden;
+    background: var(--agent-overlay-bg);
 }
 
 .subagent-header {
-    padding: 0.75rem;
-    background: #ede7f6;
+    padding: var(--space-3);
+    background: var(--agent-overlay-header);
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    transition: background var(--transition-fast);
 }
 
 .subagent-header:hover {
-    background: #e1d5f5;
+    background: var(--agent-overlay-border);
 }
 
 .subagent-title {
-    font-weight: 600;
-    color: #673ab7;
+    font-weight: var(--font-semibold);
+    color: var(--agent-overlay-accent);
 }
 
 .subagent-meta {
-    font-size: 0.75rem;
-    color: #666;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
 }
 
 .subagent-content {
-    padding: 1rem;
-    background: #faf8ff;
+    padding: var(--space-4);
+    background: var(--agent-overlay-bg);
 }
 
 .subagent-content:empty {
@@ -219,63 +810,193 @@ body {
 }
 
 .subagent-loading {
-    color: #666;
+    color: var(--text-secondary);
     font-style: italic;
 }
 
+/* ============================================
+ * ANIMATION & TRANSITION UTILITIES
+ * ============================================ */
+
+/* Collapsible expand/collapse */
+.collapsible {
+    overflow: hidden;
+    transition: max-height var(--transition-normal), opacity var(--transition-normal);
+}
+
+.collapsible.collapsed {
+    max-height: 0;
+    opacity: 0;
+}
+
+.collapsible.expanded {
+    max-height: 2000px; /* Large enough for most content */
+    opacity: 1;
+}
+
+/* Chevron rotation for collapsibles */
+.chevron {
+    display: inline-block;
+    transition: transform var(--transition-fast);
+}
+
+.chevron.rotated {
+    transform: rotate(90deg);
+}
+
+.chevron.down {
+    transform: rotate(0deg);
+}
+
+.chevron.down.rotated {
+    transform: rotate(180deg);
+}
+
+/* Smooth fade transitions */
+.fade-in {
+    animation: fadeIn var(--transition-normal) ease forwards;
+}
+
+.fade-out {
+    animation: fadeOut var(--transition-normal) ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+/* Slide transitions */
+.slide-down {
+    animation: slideDown var(--transition-normal) ease forwards;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 2000px;
+    }
+}
+
+/* Hover lift effect */
+.hover-lift {
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* ============================================
+ * CODE STYLES
+ * ============================================ */
+
 pre {
     margin: 0;
-    padding: 0.5rem;
-    background: #f5f5f5;
-    border-radius: 4px;
+    padding: var(--space-3);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
     white-space: pre-wrap;
     word-break: break-word;
-    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    font-size: 0.8125rem;
-    line-height: 1.4;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: var(--leading-snug);
+    overflow-x: auto;
 }
 
 code {
-    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-family: var(--font-mono);
     font-size: 0.875em;
-    background: rgba(0, 0, 0, 0.05);
-    padding: 0.125rem 0.25rem;
-    border-radius: 3px;
+    background: var(--bg-tertiary);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
 }
 
-/* Responsive design */
+pre code {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+}
+
+/* ============================================
+ * RESPONSIVE DESIGN
+ * ============================================ */
+
 @media (max-width: 768px) {
     body {
-        padding: 0.5rem;
+        padding: var(--space-2);
     }
 
     .conversation {
         max-width: 100%;
     }
 
+    /* Chat bubbles take more width on mobile */
+    .message-row.user .message-bubble,
+    .message-row.assistant .message-bubble {
+        max-width: 90%;
+    }
+
     .entry {
-        padding: 0.75rem;
-        margin: 0.25rem 0;
+        padding: var(--space-3);
+        margin: var(--space-1) 0;
     }
 
     .header h1 {
-        font-size: 1.25rem;
+        font-size: var(--text-xl);
     }
 
     .controls button {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
+        padding: var(--space-1) var(--space-2);
+        font-size: var(--text-xs);
     }
 
     pre {
-        font-size: 0.75rem;
+        font-size: var(--text-xs);
     }
 }
 
-/* Print styles */
+/* ============================================
+ * PRINT STYLES
+ * ============================================ */
+
 @media print {
+    :root {
+        /* Force light mode for printing */
+        --bg-primary: #fff;
+        --bg-secondary: #f5f5f5;
+        --bg-elevated: #fff;
+        --text-primary: #000;
+        --text-secondary: #333;
+        --border-primary: #ddd;
+    }
+
     body {
         background: #fff;
+        padding: 0;
     }
 
     .controls {
@@ -286,14 +1007,34 @@ code {
         display: block;
     }
 
+    .collapsible.collapsed {
+        max-height: none;
+        opacity: 1;
+    }
+
     .subagent-content {
         display: block;
     }
 
     .entry {
         break-inside: avoid;
+        box-shadow: none;
+    }
+
+    .message-bubble {
+        box-shadow: none;
+    }
+
+    /* Remove animations for print */
+    * {
+        animation: none !important;
+        transition: none !important;
     }
 }
+
+/* ============================================
+ * CLIPBOARD COPY FUNCTIONALITY
+ * ============================================ */
 
 /* Copy button styles */
 .copy-btn {
@@ -398,103 +1139,8 @@ code {
     flex-shrink: 0;
 }
 
-/* Dark mode support */
+/* Dark mode copy button styles */
 @media (prefers-color-scheme: dark) {
-    body {
-        background: #1a1a1a;
-        color: #e0e0e0;
-    }
-
-    .header {
-        border-bottom-color: #333;
-    }
-
-    .controls {
-        background: #2a2a2a;
-        border-color: #444;
-    }
-
-    .controls button {
-        background: #2a2a2a;
-        border-color: #555;
-        color: #e0e0e0;
-    }
-
-    .controls button:hover {
-        background: #333;
-    }
-
-    .entry.user {
-        background: #1e3a5f;
-        border-left-color: #42a5f5;
-    }
-
-    .entry.assistant {
-        background: #1e4d2b;
-        border-left-color: #66bb6a;
-    }
-
-    .entry.system {
-        background: #2a2a2a;
-        border-left-color: #9e9e9e;
-    }
-
-    .entry.queue-operation {
-        background: #4a3019;
-        border-left-color: #ffb74d;
-    }
-
-    .entry.user .entry-type { color: #42a5f5; }
-    .entry.assistant .entry-type { color: #66bb6a; }
-    .entry.system .entry-type { color: #9e9e9e; }
-    .entry.queue-operation .entry-type { color: #ffb74d; }
-
-    .tool-call {
-        border-color: #444;
-    }
-
-    .tool-header {
-        background: #2a2a2a;
-    }
-
-    .tool-header:hover {
-        background: #333;
-    }
-
-    .tool-body {
-        background: #1f1f1f;
-        border-top-color: #333;
-    }
-
-    .subagent {
-        border-color: #9575cd;
-    }
-
-    .subagent-header {
-        background: #2d2340;
-    }
-
-    .subagent-header:hover {
-        background: #3a2d52;
-    }
-
-    .subagent-title {
-        color: #b39ddb;
-    }
-
-    .subagent-content {
-        background: #1f1a2e;
-    }
-
-    pre {
-        background: #2a2a2a;
-    }
-
-    code {
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    /* Dark mode copy button styles */
     .copy-btn:hover {
         background: rgba(255, 255, 255, 0.1);
     }
@@ -516,4 +1162,46 @@ code {
     .copy-toast-error {
         background: #c62828;
     }
+}
+
+/* ============================================
+ * UTILITY CLASSES
+ * ============================================ */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.text-success {
+    color: var(--color-success);
+}
+
+.text-error {
+    color: var(--color-error);
+}
+
+.text-warning {
+    color: var(--color-warning);
+}
+
+.text-info {
+    color: var(--color-info);
 }
