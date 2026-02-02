@@ -38,7 +38,7 @@ func createTestSession(t *testing.T, dir, sessionID, firstPrompt string, timesta
 	if err != nil {
 		t.Fatalf("failed to create session file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	encoder := json.NewEncoder(f)
 	if err := encoder.Encode(userEntry); err != nil {
@@ -76,7 +76,7 @@ func createTestAgent(t *testing.T, sessionDir, agentID, description string) stri
 	if err != nil {
 		t.Fatalf("failed to create agent file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	encoder := json.NewEncoder(f)
 	if err := encoder.Encode(agentEntry); err != nil {
@@ -167,7 +167,7 @@ func createEmptySession(t *testing.T, dir, sessionID string) string {
 	if err != nil {
 		t.Fatalf("failed to create empty session file: %v", err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	return filePath
 }
@@ -201,7 +201,7 @@ func createSessionWithNoUserMessages(t *testing.T, dir, sessionID string) string
 	if err != nil {
 		t.Fatalf("failed to create session file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	encoder := json.NewEncoder(f)
 	if err := encoder.Encode(systemEntry); err != nil {
@@ -261,7 +261,7 @@ func createTestSessionDirect(tb testing.TB, dir, sessionID, firstPrompt string, 
 	if err != nil {
 		tb.Fatalf("failed to create session file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	encoder := json.NewEncoder(f)
 	if err := encoder.Encode(userEntry); err != nil {
@@ -342,10 +342,10 @@ func createDeeplyNestedAgents(t *testing.T, projectDir, sessionID string, depth 
 
 		encoder := json.NewEncoder(f)
 		if err := encoder.Encode(agentEntry); err != nil {
-			f.Close()
+			_ = f.Close()
 			t.Fatalf("failed to write agent entry: %v", err)
 		}
-		f.Close()
+		_ = f.Close()
 
 		// Move to next level
 		currentDir = filepath.Join(currentDir, "subagents", "agent-"+agentID)

@@ -353,7 +353,7 @@ func createSessionFile(t *testing.T, projectDir, sessionID, prompt string, times
 	if err != nil {
 		t.Fatalf("failed to create session file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	encoder := json.NewEncoder(f)
 	for _, entry := range entries {
@@ -385,7 +385,7 @@ func createAgentFile(t *testing.T, sessionDir, agentID, description string) {
 	if err != nil {
 		t.Fatalf("failed to create agent file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	encoder := json.NewEncoder(f)
 	if err := encoder.Encode(entry); err != nil {
