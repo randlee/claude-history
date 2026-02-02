@@ -9,6 +9,7 @@ import (
 	"github.com/randlee/claude-history/internal/output"
 	"github.com/randlee/claude-history/pkg/encoding"
 	"github.com/randlee/claude-history/pkg/paths"
+	"github.com/randlee/claude-history/pkg/resolver"
 )
 
 var (
@@ -65,7 +66,19 @@ func runResolve(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("project path required with --session and --agent")
 		}
 
-		agentPath, err := paths.AgentFile(claudeDir, projectPath, resolveSessionID, resolveAgentID)
+		// Resolve session ID prefix
+		fullSessionID, err := resolver.ResolveSessionID(projectPath, resolveSessionID)
+		if err != nil {
+			return fmt.Errorf("failed to resolve session ID: %w", err)
+		}
+
+		// Resolve agent ID prefix
+		fullAgentID, err := resolver.ResolveAgentID(projectPath, fullSessionID, resolveAgentID)
+		if err != nil {
+			return fmt.Errorf("failed to resolve agent ID: %w", err)
+		}
+
+		agentPath, err := paths.AgentFile(claudeDir, projectPath, fullSessionID, fullAgentID)
 		if err != nil {
 			return err
 		}
@@ -80,7 +93,13 @@ func runResolve(cmd *cobra.Command, args []string) error {
 			return resolveSessionGlobal(resolveSessionID, outputFormat)
 		}
 
-		sessionPath, err := paths.SessionFile(claudeDir, projectPath, resolveSessionID)
+		// Resolve session ID prefix
+		fullSessionID, err := resolver.ResolveSessionID(projectPath, resolveSessionID)
+		if err != nil {
+			return fmt.Errorf("failed to resolve session ID: %w", err)
+		}
+
+		sessionPath, err := paths.SessionFile(claudeDir, projectPath, fullSessionID)
 		if err != nil {
 			return err
 		}

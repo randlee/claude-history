@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/randlee/claude-history/pkg/paths"
+	"github.com/randlee/claude-history/pkg/resolver"
 	"github.com/randlee/claude-history/pkg/session"
 )
 
@@ -76,6 +77,12 @@ func runExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid format: %s (must be 'html' or 'jsonl')", exportFormat)
 	}
 
+	// Resolve session ID prefix
+	resolvedSessionID, err := resolver.ResolveSessionID(projectPath, exportSessionID)
+	if err != nil {
+		return fmt.Errorf("failed to resolve session ID: %w", err)
+	}
+
 	// Get the project directory in Claude's storage
 	projectDir, err := paths.ProjectDir(claudeDir, projectPath)
 	if err != nil {
@@ -87,9 +94,9 @@ func runExport(cmd *cobra.Command, args []string) error {
 	}
 
 	// Validate session exists
-	sessionFile := filepath.Join(projectDir, exportSessionID+".jsonl")
+	sessionFile := filepath.Join(projectDir, resolvedSessionID+".jsonl")
 	if !paths.Exists(sessionFile) {
-		return fmt.Errorf("session not found: %s", exportSessionID)
+		return fmt.Errorf("session not found: %s", resolvedSessionID)
 	}
 
 	// Get session info for display
@@ -101,7 +108,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 	// Generate output directory if not specified
 	outputDir := exportOutputDir
 	if outputDir == "" {
-		outputDir = generateTempExportPath(exportSessionID)
+		outputDir = generateTempExportPath(resolvedSessionID)
 	}
 
 	// Resolve output directory to absolute path
