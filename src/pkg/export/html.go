@@ -64,29 +64,39 @@ func RenderAgentFragment(agentID string, entries []models.ConversationEntry) (st
 	return sb.String(), nil
 }
 
-// renderEntry renders a single conversation entry as HTML.
+// renderEntry renders a single conversation entry as HTML using the chat bubble layout.
 func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult) string {
 	var sb strings.Builder
 
 	entryClass := getEntryClass(entry.Type)
-	timestamp := formatTimestamp(entry.Timestamp)
+	roleLabel := getRoleLabel(entry.Type)
+	timestamp := formatTimestampReadable(entry.Timestamp)
 
-	sb.WriteString(fmt.Sprintf(`<div class="entry %s" data-uuid="%s">`, entryClass, escapeHTML(entry.UUID)))
+	// Message row with alignment based on type
+	sb.WriteString(fmt.Sprintf(`<div class="message-row %s" data-uuid="%s">`, entryClass, escapeHTML(entry.UUID)))
 	sb.WriteString("\n")
 
-	// Entry header with timestamp and type
-	sb.WriteString(`  <div class="entry-header">`)
-	sb.WriteString(fmt.Sprintf(`<span class="timestamp">%s</span>`, escapeHTML(timestamp)))
-	sb.WriteString(fmt.Sprintf(` <span class="type">%s</span>`, escapeHTML(string(entry.Type))))
+	// Avatar placeholder
+	sb.WriteString(fmt.Sprintf(`  <div class="avatar %s" aria-hidden="true"></div>`, entryClass))
+	sb.WriteString("\n")
+
+	// Message bubble
+	sb.WriteString(`  <div class="message-bubble">`)
+	sb.WriteString("\n")
+
+	// Message header with role and timestamp
+	sb.WriteString(`    <div class="message-header">`)
+	sb.WriteString(fmt.Sprintf(`<span class="role">%s</span>`, escapeHTML(roleLabel)))
 	if entry.AgentID != "" {
 		sb.WriteString(fmt.Sprintf(` <span class="agent-id">[%s]%s</span>`,
 			escapeHTML(entry.AgentID),
 			renderCopyButton(entry.AgentID, "agent-id", "Copy agent ID")))
 	}
+	sb.WriteString(fmt.Sprintf(` <span class="timestamp">%s</span>`, escapeHTML(timestamp)))
 	sb.WriteString("</div>\n")
 
-	// Entry content
-	sb.WriteString(`  <div class="content">`)
+	// Message content
+	sb.WriteString(`    <div class="message-content">`)
 
 	// Get text content
 	textContent := entry.GetTextContent()
@@ -109,10 +119,38 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 		}
 	}
 
-	sb.WriteString("</div>\n")
-	sb.WriteString("</div>\n")
+	sb.WriteString("</div>\n")   // Close message-content
+	sb.WriteString("  </div>\n") // Close message-bubble
+	sb.WriteString("</div>\n")   // Close message-row
 
 	return sb.String()
+}
+
+// getRoleLabel returns a human-readable label for the entry type.
+func getRoleLabel(entryType models.EntryType) string {
+	switch entryType {
+	case models.EntryTypeUser:
+		return "User"
+	case models.EntryTypeAssistant:
+		return "Assistant"
+	case models.EntryTypeSystem:
+		return "System"
+	case models.EntryTypeQueueOperation:
+		return "Agent Task"
+	case models.EntryTypeSummary:
+		return "Summary"
+	default:
+		return string(entryType)
+	}
+}
+
+// formatTimestampReadable formats a timestamp for display as a readable time (e.g., "2:30 PM").
+func formatTimestampReadable(timestamp string) string {
+	t, err := time.Parse(time.RFC3339Nano, timestamp)
+	if err != nil {
+		return timestamp
+	}
+	return t.Format("3:04 PM")
 }
 
 // renderToolCall renders a single tool call as an expandable HTML section.
