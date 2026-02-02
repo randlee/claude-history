@@ -1,10 +1,10 @@
 # Claude History CLI Tool - Project Plan
 
-**Document Version**: 2.6
+**Document Version**: 2.7
 **Created**: 2026-02-01
-**Updated**: 2026-02-02 (Phase 7 & 8 completion, Phase 9 planning)
+**Updated**: 2026-02-02 (Phase 9 completion)
 **Language**: Go
-**Status**: In Development (Phase 9 planned, ready for implementation)
+**Status**: In Development (Phase 9 complete, future enhancements planned)
 
 ---
 
@@ -170,15 +170,13 @@ src/claude-history/
 - ✅ Phase 6: HTML Export (export package implementation - 91%+ test coverage)
 - ✅ Phase 7: Prefix Matching (session/agent ID prefix resolution with disambiguation)
 - ✅ Phase 8: Export Integration (wire pkg/export to cmd/export)
+- ✅ Phase 9: Data Model Alignment (fix agent spawn detection, query --agent flag)
 
 ### In Progress
 (None)
 
-### Planned (Critical)
-- 🔲 Phase 9: Data Model Alignment (fix agent spawn detection - currently uses wrong entry type)
-
-### Upcoming Phases
-- Phase 9: Data Model Alignment (sprints 9a-9d defined below)
+### Planned
+(Future enhancements - see Next Steps section)
 
 ---
 
@@ -1274,12 +1272,12 @@ export.ExportSession(projectPath, sessionID string, opts export.ExportOptions) (
 
 ---
 
-### Phase 9: Data Model Alignment 🔲 PLANNED
+### Phase 9: Data Model Alignment ✅ COMPLETE
 
 **Priority**: CRITICAL
-**Status**: Planning complete, ready for implementation
-**Created**: 2026-02-02
-**Blocking**: Correct agent tree building, query accuracy
+**Completed**: 2026-02-02
+**PR**: #19 (merged to develop)
+**Development Method**: Parallel background dev agents on sc-git-worktrees
 
 #### Background: Critical Data Model Mismatch
 
@@ -1523,22 +1521,29 @@ After all dev sprints complete:
 - [ ] CI passes on all platforms (macOS, Ubuntu, Windows)
 - [ ] **100% pass**: Commit and create PR to develop
 
-#### Implementation Summary (To be filled after completion)
+#### Implementation Summary (2026-02-02) ✅
 
-**Execution Method**: Parallel background dev agents on dedicated sc-git-worktrees
+**Execution Method**: Parallel background dev agents on dedicated sc-git-worktrees + QA verification
 
 | Sprint | Agent | Deliverables | Coverage |
 |--------|-------|--------------|----------|
-| 9a | TBD | `pkg/models/entry.go` updates, ToolUseResult | TBD |
-| 9b | TBD | `pkg/agent/tree.go` rewrite | TBD |
-| 9c | TBD | Test fixture updates | N/A |
-| 9d | TBD | `cmd/query.go` agent query fix | TBD |
+| 9a | Dev #1 | `pkg/models/entry.go` - ToolUseResult struct, helper methods | 90.8% |
+| 9b | Dev #2 | `pkg/agent/tree.go` - Fixed buildSpawnInfoMap, nested parent resolution | 87.9% |
+| 9c | Dev #3 | Test fixtures - Updated to real Claude Code format, both legacy + modern | N/A |
+| 9d | Dev #4 | `cmd/query.go` - `--agent` flag for direct file reading, `--include-agents` | - |
 
-**QA Reviews**: Background QA agent verification
+**QA Reviews**: Background QA agent verified all requirements met
 
-**Total Impact**: TBD
+**Total Impact**:
+- 12 files changed, +1,718 lines
+- `pkg/models/entry_test.go` created (519 lines)
+- `pkg/agent/tree_test.go` created (421 lines)
+- `cmd/query_test.go` created (365 lines)
+- All 11 test packages pass
+- Zero lint errors
+- Cross-platform CI passes (macOS, Ubuntu, Windows)
 
-**PR**: TBD
+**PR**: #19 (merged to develop)
 
 #### Files to Create/Modify
 | Sprint | File | Action | Dev Agent |
@@ -1592,9 +1597,7 @@ Session: 679761ba
 - [x] Handle edge cases: circular references, orphaned agents, self-refs
 - [x] Unit tests for nested tree building (13 new tests, 80.8% coverage)
 
-> ⚠️ **Note**: Phase 5c implementation assumed queue-operation entries contain agent spawn info.
-> Analysis in Phase 9 revealed this is incorrect - agent spawns are in `user` entries with `toolUseResult`.
-> See Phase 9 for the fix plan.
+> ✅ **Fixed in Phase 9**: The original Phase 5c implementation incorrectly assumed queue-operation entries contain agent spawn info. Phase 9 corrected this - agent spawns are detected via `user` entries with `toolUseResult` where `status == "async_launched"`.
 
 ---
 
@@ -1763,11 +1766,9 @@ The web UI for viewing Claude Code history (separate project):
 
 ---
 
-**Next Steps**:
-1. **Phase 9 (CRITICAL)**: Fix data model alignment - agent spawn detection uses wrong entry type
-2. Complete Phase 7 & 8 integration work
-3. Future enhancements:
-   - Agent resurrection command integration
-   - Interactive HTML export viewer improvements
-   - Additional export formats (Markdown, PDF)
-   - Session comparison/diff tooling
+**Next Steps** (Future Enhancements):
+1. Agent resurrection command integration
+2. Interactive HTML export viewer improvements
+3. Additional export formats (Markdown, PDF)
+4. Session comparison/diff tooling
+5. Performance optimization for large sessions
