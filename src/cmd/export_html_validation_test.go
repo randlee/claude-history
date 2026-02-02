@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -154,9 +155,12 @@ func TestHTML_XSSPrevention(t *testing.T) {
 		t.Error("XSS: script tag not properly escaped")
 	}
 
-	// Verify img onerror is escaped
-	if strings.Contains(htmlContent, "onerror=") {
-		t.Error("XSS: onerror attribute not properly escaped")
+	// Verify img tag with onerror is escaped (the dangerous pattern is <img...onerror=)
+	if strings.Contains(htmlContent, "<img") && strings.Contains(htmlContent, " onerror=") {
+		// Check if it's really unescaped (not &lt;img)
+		if strings.Contains(htmlContent, "<img src=") || strings.Contains(htmlContent, "<img ") {
+			t.Error("XSS: img tag with onerror not properly escaped")
+		}
 	}
 
 	// Verify escaped versions are present
@@ -246,10 +250,11 @@ func TestHTML_LongToolInputs(t *testing.T) {
 	// Create a very long command string
 	longCommand := strings.Repeat("echo 'test'; ", 500) // ~5000 chars
 
-	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"long-tool-session","uuid":"entry-1","message":"Run a long command"}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"long-tool-session","uuid":"entry-2","message":"Running command","content":[{"type":"text","text":"Running command"},{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"` + longCommand + `"}}]}
-{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"long-tool-session","uuid":"entry-3","content":[{"type":"tool_result","tool_use_id":"tool-1","content":"Success"}]}
-`
+	// Create properly formatted message fields (JSON structure directly, not as string)
+	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"long-tool-session","uuid":"entry-1","message":"Run a long command"}
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"long-tool-session","uuid":"entry-2","message":[{"type":"text","text":"Running command"},{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"%s"}}]}
+{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"long-tool-session","uuid":"entry-3","message":[{"type":"tool_result","tool_use_id":"tool-1","content":"Success"}]}
+`, longCommand)
 
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {
@@ -302,9 +307,11 @@ func TestHTML_ExpandableSections(t *testing.T) {
 	tmpDir, projectDir, projectPath := setupTestProject(t, "expandable-test")
 
 	sessionID := "expandable-session"
+
+	// Create properly formatted message fields (JSON structure directly, not as string)
 	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"expandable-session","uuid":"entry-1","message":"Read a file"}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"expandable-session","uuid":"entry-2","message":"Reading file","content":[{"type":"text","text":"Reading file"},{"type":"tool_use","id":"tool-1","name":"Read","input":{"file_path":"/test/file.txt"}}]}
-{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"expandable-session","uuid":"entry-3","content":[{"type":"tool_result","tool_use_id":"tool-1","content":"File contents here"}]}
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"expandable-session","uuid":"entry-2","message":[{"type":"text","text":"Reading file"},{"type":"tool_use","id":"tool-1","name":"Read","input":{"file_path":"/test/file.txt"}}]}
+{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"expandable-session","uuid":"entry-3","message":[{"type":"tool_result","tool_use_id":"tool-1","content":"File contents here"}]}
 {"type":"queue-operation","timestamp":"2026-02-01T10:01:00Z","sessionId":"expandable-session","uuid":"queue-1","agentId":"test-agent"}
 `
 

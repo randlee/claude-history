@@ -146,11 +146,6 @@ func runExport(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(os.Stderr, "  Total agents: %d\n", result.TotalAgents)
 	fmt.Fprintln(os.Stderr)
 
-	// For HTML format: generate HTML (Phase 8b will implement this)
-	if exportFormat == "html" {
-		fmt.Fprintln(os.Stderr, "Warning: HTML export not yet implemented, JSONL files copied only")
-	}
-
 	// Print success message
 	fmt.Fprintf(os.Stderr, "✓ Export created at: %s\n", result.OutputDir)
 

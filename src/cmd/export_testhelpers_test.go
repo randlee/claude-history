@@ -21,9 +21,10 @@ func createTestSessionWithAgents(t *testing.T, projectDir string, agentCount int
 	sessionID := "12345678-1234-1234-1234-123456789abc"
 
 	// Create session content with realistic entries
+	// Note: message field contains JSON structure directly (not as a string)
 	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":"Create a test application"}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":"I'll help you create a test application.","content":[{"type":"text","text":"I'll help you create a test application."},{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"mkdir test-app"}}]}
-{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"%s","uuid":"entry-3","content":[{"type":"tool_result","tool_use_id":"tool-1","content":""}]}
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":[{"type":"text","text":"I'll help you create a test application."},{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"mkdir test-app"}}]}
+{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"%s","uuid":"entry-3","message":[{"type":"tool_result","tool_use_id":"tool-1","content":""}]}
 `, sessionID, sessionID, sessionID)
 
 	// Add queue-operation entries for spawning agents

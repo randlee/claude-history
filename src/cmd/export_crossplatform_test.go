@@ -467,7 +467,9 @@ func TestExport_AbsoluteVsRelative(t *testing.T) {
 	relOutputDir := "export-relative"
 	exportOutputDir = relOutputDir
 
-	err = runExport(exportCmd, []string{"abs-rel-test"})
+	// Use absolute path even when testing relative output directory
+	// The project path should always be absolute for proper resolution
+	err = runExport(exportCmd, []string{projectPath})
 	if err != nil {
 		t.Fatalf("Export with relative path failed: %v", err)
 	}

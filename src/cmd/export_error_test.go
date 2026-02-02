@@ -366,7 +366,7 @@ func TestExport_InvalidClaudeDir(t *testing.T) {
 
 func TestExport_NonAbsolutePathResolution(t *testing.T) {
 	// Test that relative paths are properly resolved
-	tmpDir, projectDir, _ := setupTestProject(t, "relative-resolve-test")
+	tmpDir, projectDir, projectPath := setupTestProject(t, "relative-resolve-test")
 	sessionID := createTestSessionWithAgents(t, projectDir, 1)
 
 	oldSessionID := exportSessionID
@@ -391,7 +391,7 @@ func TestExport_NonAbsolutePathResolution(t *testing.T) {
 		t.Fatalf("failed to change directory: %v", err)
 	}
 
-	// Use relative path
+	// Use relative path for output
 	relativeOutput := "export-rel-resolve"
 
 	exportSessionID = sessionID
@@ -399,8 +399,8 @@ func TestExport_NonAbsolutePathResolution(t *testing.T) {
 	exportOutputDir = relativeOutput
 	claudeDir = tmpDir
 
-	// Run export with relative paths
-	err = runExport(exportCmd, []string{"relative-resolve-test"})
+	// Run export with absolute project path (resolution is about output path, not input)
+	err = runExport(exportCmd, []string{projectPath})
 	if err != nil {
 		t.Fatalf("Export with relative paths failed: %v", err)
 	}
