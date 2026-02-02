@@ -134,15 +134,12 @@ func buildSpawnInfoMap(sessionPath string, sessionDir string, agents []models.Ag
 		_ = jsonl.ScanInto(agent.FilePath, func(entry models.ConversationEntry) error {
 			if entry.IsAgentSpawn() {
 				agentID := entry.GetSpawnedAgentID()
-				parentUUID := entry.SourceToolAssistantUUID
-				// For nested agents, if parentUUID is empty, the parent is this agent
-				if parentUUID == "" {
-					parentUUID = agent.ID
-				}
+				// For nested agents spawned from this agent's file,
+				// the parent is this agent (identified by agent.ID), not the entry UUID
 				result[agentID] = &SpawnInfo{
 					AgentID:    agentID,
 					SpawnUUID:  entry.UUID,
-					ParentUUID: parentUUID,
+					ParentUUID: agent.ID, // Use agent ID as parent, not entry UUID
 				}
 			}
 			return nil

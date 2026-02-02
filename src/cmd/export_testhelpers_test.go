@@ -15,6 +15,12 @@ import (
 
 // createTestSessionWithAgents creates a realistic test session with the specified number of agents.
 // Returns the project directory path, the session ID, and the Claude directory.
+//
+// Agent spawn detection uses two mechanisms (for backward compatibility):
+// 1. Legacy: queue-operation entries with agentId field
+// 2. Modern (real Claude Code): user entries with toolUseResult containing agent spawn info
+//
+// This function creates BOTH formats to ensure tests work with current and future implementations.
 func createTestSessionWithAgents(t *testing.T, projectDir string, agentCount int) string {
 	t.Helper()
 
@@ -23,17 +29,31 @@ func createTestSessionWithAgents(t *testing.T, projectDir string, agentCount int
 	// Create session content with realistic entries
 	// Note: message field contains JSON structure directly (not as a string)
 	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":"Create a test application"}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":[{"type":"text","text":"I'll help you create a test application."},{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"mkdir test-app"}}]}
-{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"%s","uuid":"entry-3","message":[{"type":"tool_result","tool_use_id":"tool-1","content":""}]}
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":[{"type":"text","text":"I'll help you create a test application."},{"type":"tool_use","id":"toolu_01Task","name":"Task","input":{"prompt":"Help with task"}}]}
+{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"%s","uuid":"entry-3","message":[{"type":"tool_result","tool_use_id":"toolu_01Task","content":""}]}
 `, sessionID, sessionID, sessionID)
 
-	// Add agent spawn entries using toolUseResult format
+	// Add entries for spawning agents using BOTH legacy and modern formats
 	for i := 0; i < agentCount; i++ {
 		agentID := fmt.Sprintf("agent-%d", i+1)
-		// Agent spawns are user entries with toolUseResult containing status="async_launched"
-		spawnEntry := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:%02d:00Z","sessionId":"%s","uuid":"spawn-%d","sourceToolAssistantUUID":"entry-2","toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"%s","description":"Spawned agent %d"}}
-`, i+1, sessionID, i+1, agentID, i+1)
-		sessionContent += spawnEntry
+		toolUseID := fmt.Sprintf("toolu_01Agent%d", i+1)
+		assistantUUID := fmt.Sprintf("assistant-%d", i+1)
+		spawnUUID := fmt.Sprintf("spawn-%d", i+1)
+
+		// Modern format: assistant entry with Task tool_use, followed by user entry with toolUseResult
+		// This matches real Claude Code format for agent spawning
+		assistantEntry := fmt.Sprintf(`{"type":"assistant","timestamp":"2026-02-01T10:%02d:00Z","sessionId":"%s","uuid":"%s","message":[{"type":"text","text":"I'll spawn an agent for this task."},{"type":"tool_use","id":"%s","name":"Task","input":{"prompt":"Task prompt for agent %d"}}]}
+`, i+1, sessionID, assistantUUID, toolUseID, i+1)
+
+		// User entry with toolUseResult - this is how Claude Code actually records agent spawns
+		spawnEntry := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:%02d:01Z","sessionId":"%s","uuid":"%s","parentUuid":"%s","sourceToolAssistantUUID":"%s","message":[{"type":"tool_result","tool_use_id":"%s","content":[]}],"toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"%s","description":"Task prompt for agent %d","prompt":"Task prompt for agent %d","outputFile":"/tmp/claude/tasks/%s.output"}}
+`, i+1, sessionID, spawnUUID, assistantUUID, assistantUUID, toolUseID, agentID, i+1, i+1, agentID)
+
+		// Legacy format: queue-operation entry (for backward compatibility with existing code)
+		queueEntry := fmt.Sprintf(`{"type":"queue-operation","timestamp":"2026-02-01T10:%02d:02Z","sessionId":"%s","uuid":"queue-%d","agentId":"%s"}
+`, i+1, sessionID, i+1, agentID)
+
+		sessionContent += assistantEntry + spawnEntry + queueEntry
 	}
 
 	// Create main session file
@@ -51,9 +71,10 @@ func createTestSessionWithAgents(t *testing.T, projectDir string, agentCount int
 
 	for i := 0; i < agentCount; i++ {
 		agentID := fmt.Sprintf("agent-%d", i+1)
-		agentContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:%02d:05Z","sessionId":"%s","uuid":"%s-entry-1","message":"Task prompt for agent %d"}
-{"type":"assistant","timestamp":"2026-02-01T10:%02d:10Z","sessionId":"%s","uuid":"%s-entry-2","message":"Agent %d response"}
-`, i+1, sessionID, agentID, i+1, i+1, sessionID, agentID, i+1)
+		// Agent file entries include agentId field as in real Claude Code
+		agentContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:%02d:05Z","sessionId":"%s","agentId":"%s","uuid":"%s-entry-1","parentUuid":null,"message":"Task prompt for agent %d"}
+{"type":"assistant","timestamp":"2026-02-01T10:%02d:10Z","sessionId":"%s","agentId":"%s","uuid":"%s-entry-2","message":[{"type":"text","text":"Agent %d response"}]}
+`, i+1, sessionID, agentID, agentID, i+1, i+1, sessionID, agentID, agentID, i+1)
 
 		agentFile := filepath.Join(subagentsDir, fmt.Sprintf("agent-%s.jsonl", agentID))
 		if err := os.WriteFile(agentFile, []byte(agentContent), 0644); err != nil {
@@ -66,18 +87,42 @@ func createTestSessionWithAgents(t *testing.T, projectDir string, agentCount int
 
 // createNestedAgentStructure creates a more complex nested agent structure.
 // Creates a hierarchy: main session -> agent-parent -> agent-child-1 and agent-child-2.
+//
+// This function uses BOTH legacy (queue-operation) and modern (user entry with toolUseResult)
+// formats for agent spawning to ensure backward compatibility.
 func createNestedAgentStructure(t *testing.T, projectDir, sessionID string) {
 	t.Helper()
 
 	sessionDir := filepath.Join(projectDir, sessionID)
 	subagentsDir := filepath.Join(sessionDir, "subagents")
 
-	// Create parent agent with toolUseResult-based spawns
-	parentContent := `{"type":"user","timestamp":"2026-02-01T11:00:00Z","uuid":"parent-entry-1","message":"Parent agent task"}
-{"type":"assistant","timestamp":"2026-02-01T11:00:05Z","uuid":"parent-entry-2","message":"Parent agent response"}
-{"type":"user","timestamp":"2026-02-01T11:01:00Z","uuid":"parent-spawn-1","sourceToolAssistantUUID":"parent","toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"child-1","description":"Spawned child-1"}}
-{"type":"user","timestamp":"2026-02-01T11:02:00Z","uuid":"parent-spawn-2","sourceToolAssistantUUID":"parent","toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"child-2","description":"Spawned child-2"}}
-`
+	// Add a spawn entry for "parent" to the main session file
+	// This links main session -> parent agent
+	mainSessionFile := filepath.Join(projectDir, sessionID+".jsonl")
+	parentSpawnEntry := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:30:00Z","sessionId":"%s","uuid":"spawn-parent","sourceToolAssistantUUID":"entry-2","message":[{"type":"tool_result","tool_use_id":"toolu_01Parent","content":[]}],"toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"parent","description":"Parent agent task","prompt":"Parent agent task","outputFile":"/tmp/claude/tasks/parent.output"}}
+`, sessionID)
+	f, err := os.OpenFile(mainSessionFile, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		t.Fatalf("failed to open main session file: %v", err)
+	}
+	if _, err := f.WriteString(parentSpawnEntry); err != nil {
+		f.Close()
+		t.Fatalf("failed to append parent spawn entry: %v", err)
+	}
+	f.Close()
+
+	// Create parent agent with BOTH spawn formats for child agents
+	// Modern format: assistant with Task tool_use + user with toolUseResult
+	// Legacy format: queue-operation entries
+	parentContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T11:00:00Z","sessionId":"%s","agentId":"parent","uuid":"parent-entry-1","parentUuid":null,"message":"Parent agent task"}
+{"type":"assistant","timestamp":"2026-02-01T11:00:05Z","sessionId":"%s","agentId":"parent","uuid":"parent-entry-2","message":[{"type":"text","text":"Parent agent response. I'll spawn child agents."},{"type":"tool_use","id":"toolu_child1","name":"Task","input":{"prompt":"Child 1 task"}}]}
+{"type":"user","timestamp":"2026-02-01T11:01:00Z","sessionId":"%s","agentId":"parent","uuid":"parent-spawn-1","parentUuid":"parent-entry-2","sourceToolAssistantUUID":"parent-entry-2","message":[{"type":"tool_result","tool_use_id":"toolu_child1","content":[]}],"toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"child-1","description":"Child 1 task","prompt":"Child 1 task","outputFile":"/tmp/claude/tasks/child-1.output"}}
+{"type":"queue-operation","timestamp":"2026-02-01T11:01:01Z","sessionId":"%s","uuid":"parent-queue-1","agentId":"child-1"}
+{"type":"assistant","timestamp":"2026-02-01T11:01:30Z","sessionId":"%s","agentId":"parent","uuid":"parent-entry-3","message":[{"type":"tool_use","id":"toolu_child2","name":"Task","input":{"prompt":"Child 2 task"}}]}
+{"type":"user","timestamp":"2026-02-01T11:02:00Z","sessionId":"%s","agentId":"parent","uuid":"parent-spawn-2","parentUuid":"parent-entry-3","sourceToolAssistantUUID":"parent-entry-3","message":[{"type":"tool_result","tool_use_id":"toolu_child2","content":[]}],"toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"child-2","description":"Child 2 task","prompt":"Child 2 task","outputFile":"/tmp/claude/tasks/child-2.output"}}
+{"type":"queue-operation","timestamp":"2026-02-01T11:02:01Z","sessionId":"%s","uuid":"parent-queue-2","agentId":"child-2"}
+`, sessionID, sessionID, sessionID, sessionID, sessionID, sessionID, sessionID)
+
 	parentFile := filepath.Join(subagentsDir, "agent-parent.jsonl")
 	if err := os.WriteFile(parentFile, []byte(parentContent), 0644); err != nil {
 		t.Fatalf("failed to create parent agent file: %v", err)
@@ -90,12 +135,12 @@ func createNestedAgentStructure(t *testing.T, projectDir, sessionID string) {
 		t.Fatalf("failed to create nested subagents directory: %v", err)
 	}
 
-	// Create child agents
+	// Create child agents with proper agentId field
 	for i := 1; i <= 2; i++ {
 		childID := fmt.Sprintf("child-%d", i)
-		childContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T11:%02d:00Z","uuid":"%s-entry-1","message":"Child agent %d task"}
-{"type":"assistant","timestamp":"2026-02-01T11:%02d:05Z","uuid":"%s-entry-2","message":"Child agent %d response"}
-`, i+2, childID, i, i+2, childID, i)
+		childContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T11:%02d:00Z","sessionId":"%s","agentId":"%s","uuid":"%s-entry-1","parentUuid":null,"message":"Child agent %d task"}
+{"type":"assistant","timestamp":"2026-02-01T11:%02d:05Z","sessionId":"%s","agentId":"%s","uuid":"%s-entry-2","message":[{"type":"text","text":"Child agent %d response"}]}
+`, i+2, sessionID, childID, childID, i, i+2, sessionID, childID, childID, i)
 
 		childFile := filepath.Join(nestedSubagentsDir, fmt.Sprintf("agent-%s.jsonl", childID))
 		if err := os.WriteFile(childFile, []byte(childContent), 0644); err != nil {
