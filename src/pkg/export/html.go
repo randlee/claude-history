@@ -381,10 +381,26 @@ const htmlHeader = `<!DOCTYPE html>
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
+<div class="page-header">
+    <div class="controls" role="toolbar" aria-label="Conversation controls">
+        <div class="controls-group">
+            <button id="expand-all-btn" type="button" data-shortcut="Ctrl+K" title="Expand all tool calls (Ctrl+K)">Expand All</button>
+            <button id="collapse-all-btn" type="button" title="Collapse all tool calls">Collapse All</button>
+        </div>
+        <div class="controls-separator" aria-hidden="true"></div>
+        <div class="search-container">
+            <input type="search" id="search-box" placeholder="Search messages..." aria-label="Search messages" data-shortcut="Ctrl+F" title="Search messages (Ctrl+F)">
+            <button id="search-prev-btn" type="button" class="search-nav-btn" title="Previous match (Shift+Enter)" aria-label="Previous match">&lt;</button>
+            <button id="search-next-btn" type="button" class="search-nav-btn" title="Next match (Enter)" aria-label="Next match">&gt;</button>
+            <span class="search-results" aria-live="polite"></span>
+        </div>
+    </div>
+</div>
 `
 
 const htmlFooter = `    <script src="static/script.js"></script>
     <script src="static/clipboard.js"></script>
+    <script src="static/controls.js"></script>
 </body>
 </html>
 `
