@@ -1481,3 +1481,675 @@ pre code {
 .text-info {
     color: var(--color-info);
 }
+
+/* ============================================
+ * COLOR-CODED TOOL OVERLAYS (Sprint 10d)
+ * ============================================ */
+
+/* Tool overlay base styles */
+.tool-overlay {
+    margin: var(--space-3) 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: box-shadow var(--transition-fast);
+}
+
+.tool-overlay:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* Tool header styling */
+.tool-overlay .tool-header {
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: background var(--transition-fast);
+}
+
+.tool-overlay .tool-icon {
+    font-size: var(--text-lg);
+    flex-shrink: 0;
+}
+
+.tool-overlay .tool-name {
+    font-weight: var(--font-semibold);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+}
+
+.tool-overlay .tool-hint {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.tool-overlay .tool-char-count {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.tool-overlay .chevron {
+    font-size: var(--text-sm);
+    transition: transform var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.tool-overlay.expanded .chevron.down {
+    transform: rotate(180deg);
+}
+
+/* Tool body styling */
+.tool-overlay .tool-body {
+    border-top: 1px solid var(--border-primary);
+    background: var(--bg-elevated);
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height var(--transition-normal), opacity var(--transition-normal), padding var(--transition-normal);
+    padding: 0 var(--space-3);
+}
+
+.tool-overlay.expanded .tool-body {
+    max-height: 5000px;
+    opacity: 1;
+    padding: var(--space-3);
+}
+
+.tool-overlay .tool-section {
+    margin-bottom: var(--space-3);
+}
+
+.tool-overlay .tool-section:last-child {
+    margin-bottom: 0;
+}
+
+.tool-overlay .tool-section h4 {
+    margin: 0 0 var(--space-1) 0;
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+}
+
+.tool-overlay .tool-id-value {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    background: var(--bg-secondary);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.tool-overlay .tool-input,
+.tool-overlay .tool-output {
+    position: relative;
+    margin: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.tool-overlay .tool-input .copy-btn,
+.tool-overlay .tool-output .copy-btn {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+}
+
+.tool-overlay .tool-output.error {
+    background: var(--color-error-bg);
+    border-color: var(--color-error-border);
+    color: var(--color-error);
+}
+
+/* Tool-specific color classes - Bash (teal/cyan) */
+.tool-bash {
+    background: var(--tool-overlay-bg);
+    border: 1px solid var(--tool-overlay-border);
+}
+
+.tool-bash .tool-header {
+    background: var(--tool-overlay-header);
+}
+
+.tool-bash .tool-header:hover {
+    background: var(--tool-overlay-border);
+}
+
+.tool-bash .tool-name {
+    color: var(--tool-overlay-accent);
+}
+
+/* Tool-specific color classes - Read (blue) */
+.tool-read {
+    background: hsl(var(--blue-50));
+    border: 1px solid hsl(var(--blue-300));
+}
+
+.tool-read .tool-header {
+    background: hsl(var(--blue-100));
+}
+
+.tool-read .tool-header:hover {
+    background: hsl(var(--blue-200));
+}
+
+.tool-read .tool-name {
+    color: hsl(var(--blue-700));
+}
+
+/* Tool-specific color classes - Write (green) */
+.tool-write {
+    background: hsl(var(--green-50));
+    border: 1px solid hsl(var(--green-300));
+}
+
+.tool-write .tool-header {
+    background: hsl(var(--green-100));
+}
+
+.tool-write .tool-header:hover {
+    background: hsl(var(--green-200));
+}
+
+.tool-write .tool-name {
+    color: hsl(var(--green-700));
+}
+
+/* Tool-specific color classes - Edit (amber/orange) */
+.tool-edit {
+    background: hsl(var(--amber-50));
+    border: 1px solid hsl(var(--amber-300));
+}
+
+.tool-edit .tool-header {
+    background: hsl(var(--amber-100));
+}
+
+.tool-edit .tool-header:hover {
+    background: hsl(var(--amber-200));
+}
+
+.tool-edit .tool-name {
+    color: hsl(var(--amber-700));
+}
+
+/* Tool-specific color classes - Grep/Search (purple) */
+.tool-grep,
+.tool-websearch,
+.tool-search {
+    background: hsl(var(--purple-50));
+    border: 1px solid hsl(var(--purple-300));
+}
+
+.tool-grep .tool-header,
+.tool-websearch .tool-header,
+.tool-search .tool-header {
+    background: hsl(var(--purple-100));
+}
+
+.tool-grep .tool-header:hover,
+.tool-websearch .tool-header:hover,
+.tool-search .tool-header:hover {
+    background: hsl(var(--purple-200));
+}
+
+.tool-grep .tool-name,
+.tool-websearch .tool-name,
+.tool-search .tool-name {
+    color: hsl(var(--purple-700));
+}
+
+/* Tool-specific color classes - Glob/Files (neutral) */
+.tool-glob {
+    background: hsl(var(--neutral-100));
+    border: 1px solid hsl(var(--neutral-300));
+}
+
+.tool-glob .tool-header {
+    background: hsl(var(--neutral-200));
+}
+
+.tool-glob .tool-header:hover {
+    background: hsl(var(--neutral-300));
+}
+
+.tool-glob .tool-name {
+    color: hsl(var(--neutral-700));
+}
+
+/* Tool-specific color classes - Task/Agent (violet) */
+.tool-task {
+    background: var(--agent-overlay-bg);
+    border: 2px solid var(--agent-overlay-border);
+}
+
+.tool-task .tool-header {
+    background: var(--agent-overlay-header);
+}
+
+.tool-task .tool-header:hover {
+    background: var(--agent-overlay-border);
+}
+
+.tool-task .tool-name {
+    color: var(--agent-overlay-accent);
+}
+
+/* Tool-specific color classes - Web (teal) */
+.tool-webfetch {
+    background: var(--tool-overlay-bg);
+    border: 1px solid var(--tool-overlay-border);
+}
+
+.tool-webfetch .tool-header {
+    background: var(--tool-overlay-header);
+}
+
+.tool-webfetch .tool-header:hover {
+    background: var(--tool-overlay-border);
+}
+
+.tool-webfetch .tool-name {
+    color: var(--tool-overlay-accent);
+}
+
+/* Tool-specific color classes - Notebook (orange) */
+.tool-notebook {
+    background: hsl(var(--orange-50));
+    border: 1px solid hsl(var(--orange-300));
+}
+
+.tool-notebook .tool-header {
+    background: hsl(var(--orange-100));
+}
+
+.tool-notebook .tool-header:hover {
+    background: hsl(var(--orange-200));
+}
+
+.tool-notebook .tool-name {
+    color: hsl(var(--orange-700));
+}
+
+/* Tool-specific color classes - Todo (neutral with accent) */
+.tool-todo {
+    background: hsl(var(--neutral-100));
+    border: 1px solid hsl(var(--neutral-300));
+}
+
+.tool-todo .tool-header {
+    background: hsl(var(--neutral-200));
+}
+
+.tool-todo .tool-header:hover {
+    background: hsl(var(--neutral-300));
+}
+
+.tool-todo .tool-name {
+    color: hsl(var(--neutral-700));
+}
+
+/* Tool-specific color classes - Skill (teal accent) */
+.tool-skill {
+    background: var(--tool-overlay-bg);
+    border: 1px solid var(--tool-overlay-border);
+}
+
+.tool-skill .tool-header {
+    background: var(--tool-overlay-header);
+}
+
+.tool-skill .tool-header:hover {
+    background: var(--tool-overlay-border);
+}
+
+.tool-skill .tool-name {
+    color: var(--tool-overlay-accent);
+}
+
+/* Tool-specific color classes - Unknown (default teal) */
+.tool-unknown {
+    background: var(--tool-overlay-bg);
+    border: 1px solid var(--tool-overlay-border);
+}
+
+.tool-unknown .tool-header {
+    background: var(--tool-overlay-header);
+}
+
+.tool-unknown .tool-header:hover {
+    background: var(--tool-overlay-border);
+}
+
+.tool-unknown .tool-name {
+    color: var(--tool-overlay-accent);
+}
+
+/* ============================================
+ * ENHANCED SUBAGENT OVERLAY (Sprint 10d)
+ * ============================================ */
+
+.subagent-overlay {
+    margin: var(--space-4) 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: box-shadow var(--transition-fast);
+}
+
+.subagent-overlay:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+.subagent-overlay .subagent-header {
+    padding: var(--space-3) var(--space-4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: background var(--transition-fast);
+}
+
+.subagent-overlay .agent-icon {
+    font-size: var(--text-xl);
+    flex-shrink: 0;
+}
+
+.subagent-overlay .subagent-title {
+    font-weight: var(--font-semibold);
+    font-size: var(--text-base);
+}
+
+.subagent-overlay .subagent-meta {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.subagent-overlay .deep-dive-btn {
+    margin-left: auto;
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--agent-overlay-accent);
+    background: transparent;
+    border: 1px solid var(--agent-overlay-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.subagent-overlay .deep-dive-btn:hover {
+    background: var(--agent-overlay-header);
+    border-color: var(--agent-overlay-accent);
+}
+
+.subagent-overlay .deep-dive-btn:active {
+    transform: scale(0.98);
+}
+
+.subagent-overlay .chevron {
+    font-size: var(--text-sm);
+    transition: transform var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.subagent-overlay.expanded .chevron.down {
+    transform: rotate(180deg);
+}
+
+.subagent-overlay .subagent-metadata {
+    padding: var(--space-2) var(--space-4);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-primary);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    font-size: var(--text-xs);
+}
+
+.subagent-overlay .subagent-metadata .meta-item {
+    color: var(--text-secondary);
+}
+
+.subagent-overlay .subagent-content {
+    border-top: 1px solid var(--agent-overlay-border);
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height var(--transition-normal), opacity var(--transition-normal), padding var(--transition-normal);
+    padding: 0 var(--space-4);
+}
+
+.subagent-overlay.expanded .subagent-content {
+    max-height: none;
+    opacity: 1;
+    padding: var(--space-4);
+}
+
+/* ============================================
+ * THINKING BLOCK OVERLAY (Sprint 10d)
+ * ============================================ */
+
+.thinking-overlay {
+    margin: var(--space-3) 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: box-shadow var(--transition-fast);
+}
+
+.thinking-overlay:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+.thinking-overlay .thinking-header {
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: background var(--transition-fast);
+}
+
+.thinking-overlay .thinking-icon {
+    font-size: var(--text-lg);
+    flex-shrink: 0;
+}
+
+.thinking-overlay .thinking-title {
+    font-weight: var(--font-medium);
+    font-size: var(--text-sm);
+    color: var(--thinking-overlay-accent);
+}
+
+.thinking-overlay .thinking-char-count {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.thinking-overlay .chevron {
+    font-size: var(--text-sm);
+    transition: transform var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.thinking-overlay.expanded .chevron.down {
+    transform: rotate(180deg);
+}
+
+.thinking-overlay .thinking-body {
+    border-top: 1px solid var(--thinking-overlay-border);
+    background: var(--bg-elevated);
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height var(--transition-normal), opacity var(--transition-normal), padding var(--transition-normal);
+    padding: 0 var(--space-3);
+}
+
+.thinking-overlay.expanded .thinking-body {
+    max-height: 2000px;
+    opacity: 1;
+    padding: var(--space-3);
+}
+
+.thinking-overlay .thinking-content {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ============================================
+ * DARK MODE TOOL OVERLAYS (Sprint 10d)
+ * ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    /* Tool-specific color classes - Read (blue) dark mode */
+    .tool-read {
+        background: hsla(var(--blue-900), 0.5);
+        border-color: hsl(var(--blue-600));
+    }
+
+    .tool-read .tool-header {
+        background: hsla(var(--blue-800), 0.6);
+    }
+
+    .tool-read .tool-header:hover {
+        background: hsla(var(--blue-700), 0.6);
+    }
+
+    .tool-read .tool-name {
+        color: hsl(var(--blue-300));
+    }
+
+    /* Tool-specific color classes - Write (green) dark mode */
+    .tool-write {
+        background: hsla(var(--green-900), 0.5);
+        border-color: hsl(var(--green-600));
+    }
+
+    .tool-write .tool-header {
+        background: hsla(var(--green-800), 0.6);
+    }
+
+    .tool-write .tool-header:hover {
+        background: hsla(var(--green-700), 0.6);
+    }
+
+    .tool-write .tool-name {
+        color: hsl(var(--green-300));
+    }
+
+    /* Tool-specific color classes - Edit (amber) dark mode */
+    .tool-edit {
+        background: hsla(var(--amber-900), 0.5);
+        border-color: hsl(var(--amber-600));
+    }
+
+    .tool-edit .tool-header {
+        background: hsla(var(--amber-800), 0.6);
+    }
+
+    .tool-edit .tool-header:hover {
+        background: hsla(var(--amber-700), 0.6);
+    }
+
+    .tool-edit .tool-name {
+        color: hsl(var(--amber-300));
+    }
+
+    /* Tool-specific color classes - Grep/Search (purple) dark mode */
+    .tool-grep,
+    .tool-websearch,
+    .tool-search {
+        background: hsla(var(--purple-900), 0.5);
+        border-color: hsl(var(--purple-600));
+    }
+
+    .tool-grep .tool-header,
+    .tool-websearch .tool-header,
+    .tool-search .tool-header {
+        background: hsla(var(--purple-800), 0.6);
+    }
+
+    .tool-grep .tool-header:hover,
+    .tool-websearch .tool-header:hover,
+    .tool-search .tool-header:hover {
+        background: hsla(var(--purple-700), 0.6);
+    }
+
+    .tool-grep .tool-name,
+    .tool-websearch .tool-name,
+    .tool-search .tool-name {
+        color: hsl(var(--purple-300));
+    }
+
+    /* Tool-specific color classes - Glob (neutral) dark mode */
+    .tool-glob {
+        background: hsl(var(--neutral-800));
+        border-color: hsl(var(--neutral-600));
+    }
+
+    .tool-glob .tool-header {
+        background: hsl(var(--neutral-700));
+    }
+
+    .tool-glob .tool-header:hover {
+        background: hsl(var(--neutral-600));
+    }
+
+    .tool-glob .tool-name {
+        color: hsl(var(--neutral-300));
+    }
+
+    /* Tool-specific color classes - Notebook (orange) dark mode */
+    .tool-notebook {
+        background: hsla(var(--orange-900), 0.5);
+        border-color: hsl(var(--orange-600));
+    }
+
+    .tool-notebook .tool-header {
+        background: hsla(var(--orange-800), 0.6);
+    }
+
+    .tool-notebook .tool-header:hover {
+        background: hsla(var(--orange-700), 0.6);
+    }
+
+    .tool-notebook .tool-name {
+        color: hsl(var(--orange-300));
+    }
+
+    /* Tool-specific color classes - Todo (neutral) dark mode */
+    .tool-todo {
+        background: hsl(var(--neutral-800));
+        border-color: hsl(var(--neutral-600));
+    }
+
+    .tool-todo .tool-header {
+        background: hsl(var(--neutral-700));
+    }
+
+    .tool-todo .tool-header:hover {
+        background: hsl(var(--neutral-600));
+    }
+
+    .tool-todo .tool-name {
+        color: hsl(var(--neutral-300));
+    }
+
+    /* Deep dive button dark mode */
+    .subagent-overlay .deep-dive-btn {
+        color: var(--agent-overlay-accent);
+    }
+
+    .subagent-overlay .deep-dive-btn:hover {
+        background: hsla(var(--purple-800), 0.4);
+    }
+}
