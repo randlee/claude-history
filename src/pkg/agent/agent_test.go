@@ -22,6 +22,30 @@ func mustWriteFile(t *testing.T, path string, data []byte) {
 	}
 }
 
+// createAgentSpawnEntryModern creates a modern-format agent spawn entry (user with toolUseResult).
+// This matches the real Claude Code format where agent spawns are recorded as user entries
+// with toolUseResult containing agent spawn information.
+func createAgentSpawnEntryModern(sessionID, uuid, parentUUID, toolUseID, agentID, description string) string {
+	return `{"type":"user","sessionId":"` + sessionID + `","uuid":"` + uuid + `","parentUuid":"` + parentUUID + `","sourceToolAssistantUUID":"` + parentUUID + `","message":[{"type":"tool_result","tool_use_id":"` + toolUseID + `","content":[]}],"toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"` + agentID + `","description":"` + description + `","prompt":"` + description + `","outputFile":"/tmp/claude/tasks/` + agentID + `.output"}}
+`
+}
+
+// createAssistantWithTaskTool creates an assistant entry with a Task tool_use.
+func createAssistantWithTaskTool(sessionID, uuid, toolUseID, prompt string) string {
+	return `{"type":"assistant","sessionId":"` + sessionID + `","uuid":"` + uuid + `","message":[{"type":"text","text":"I'll spawn an agent."},{"type":"tool_use","id":"` + toolUseID + `","name":"Task","input":{"prompt":"` + prompt + `"}}]}
+`
+}
+
+// createAgentFileEntry creates an entry for an agent file with proper agentId field.
+func createAgentFileEntry(sessionID, agentID, uuid, entryType, message string) string {
+	if entryType == "user" {
+		return `{"type":"user","sessionId":"` + sessionID + `","agentId":"` + agentID + `","uuid":"` + uuid + `","parentUuid":null,"message":"` + message + `"}
+`
+	}
+	return `{"type":"assistant","sessionId":"` + sessionID + `","agentId":"` + agentID + `","uuid":"` + uuid + `","message":[{"type":"text","text":"` + message + `"}]}
+`
+}
+
 func TestParseAgentType(t *testing.T) {
 	tests := []struct {
 		agentID  string
@@ -45,15 +69,16 @@ func TestParseAgentType(t *testing.T) {
 
 func TestDiscoverAgents(t *testing.T) {
 	tmpDir := t.TempDir()
-	sessionDir := filepath.Join(tmpDir, "679761ba-80c0-4cd3-a586-cc6a1fc56308")
+	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
+	sessionDir := filepath.Join(tmpDir, sessionID)
 	subagentsDir := filepath.Join(sessionDir, "subagents")
 	mustMkdirAll(t, subagentsDir)
 
-	// Create agent files
-	agent1Content := `{"uuid":"1","sessionId":"test","type":"user"}
-{"uuid":"2","sessionId":"test","type":"assistant"}
+	// Create agent files with proper agentId field (matching real Claude Code format)
+	agent1Content := `{"uuid":"1","sessionId":"` + sessionID + `","agentId":"a12eb64","type":"user","parentUuid":null,"message":"Agent task"}
+{"uuid":"2","sessionId":"` + sessionID + `","agentId":"a12eb64","type":"assistant","message":[{"type":"text","text":"Agent response"}]}
 `
-	agent2Content := `{"uuid":"1","sessionId":"test","type":"system"}
+	agent2Content := `{"uuid":"1","sessionId":"` + sessionID + `","agentId":"aprompt_suggestion-abc","type":"system","message":"System event"}
 `
 	mustWriteFile(t, filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte(agent1Content))
 	mustWriteFile(t, filepath.Join(subagentsDir, "agent-aprompt_suggestion-abc.jsonl"), []byte(agent2Content))
@@ -93,10 +118,15 @@ func TestDiscoverAgents(t *testing.T) {
 	}
 }
 
+// TestFindAgentSpawns tests detection using LEGACY queue-operation format.
+// This is the original Claude Code format where agent spawns are recorded as queue-operation entries.
+// Note: Modern Claude Code uses user entries with toolUseResult for agent spawning,
+// but the code still supports queue-operation for backward compatibility.
 func TestFindAgentSpawns(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionFile := filepath.Join(tmpDir, "session.jsonl")
 
+	// Legacy format: queue-operation entries with agentId
 	content := `{"uuid":"1","type":"user"}
 {"uuid":"2","type":"queue-operation","agentId":"a12eb64"}
 {"uuid":"3","type":"assistant"}
@@ -122,11 +152,45 @@ func TestFindAgentSpawns(t *testing.T) {
 	}
 }
 
+// TestFindAgentSpawns_BothFormats tests detection with both legacy and modern formats present.
+// Real Claude Code may emit both formats for compatibility, so we should handle both.
+func TestFindAgentSpawns_BothFormats(t *testing.T) {
+	tmpDir := t.TempDir()
+	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
+	sessionFile := filepath.Join(tmpDir, "session.jsonl")
+
+	// Content includes both modern (user with toolUseResult) and legacy (queue-operation) formats
+	// The current implementation only detects queue-operation, but the test data shows both formats
+	// so future implementations can detect modern format when data model is updated.
+	content := `{"uuid":"1","type":"user","sessionId":"` + sessionID + `"}
+{"uuid":"2","type":"assistant","sessionId":"` + sessionID + `","message":[{"type":"text","text":"I'll spawn an agent."},{"type":"tool_use","id":"toolu_01","name":"Task","input":{"prompt":"Task 1"}}]}
+{"uuid":"3","type":"user","sessionId":"` + sessionID + `","parentUuid":"2","sourceToolAssistantUUID":"2","message":[{"type":"tool_result","tool_use_id":"toolu_01","content":[]}],"toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"a12eb64","description":"Task 1","prompt":"Task 1","outputFile":"/tmp/claude/tasks/a12eb64.output"}}
+{"uuid":"4","type":"queue-operation","sessionId":"` + sessionID + `","agentId":"a12eb64"}
+{"uuid":"5","type":"assistant","sessionId":"` + sessionID + `"}
+`
+	mustWriteFile(t, sessionFile, []byte(content))
+
+	spawns, err := FindAgentSpawns(sessionFile)
+	if err != nil {
+		t.Fatalf("FindAgentSpawns() error: %v", err)
+	}
+
+	// Current implementation detects via queue-operation
+	if len(spawns) != 1 {
+		t.Errorf("FindAgentSpawns() found %d spawns, want 1 (from queue-operation)", len(spawns))
+	}
+
+	if spawns["a12eb64"] != "4" {
+		t.Errorf("Spawn for a12eb64 = %q, want '4'", spawns["a12eb64"])
+	}
+}
+
+// TestBuildTree tests tree building with legacy queue-operation spawn format.
 func TestBuildTree(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
 
-	// Create main session file
+	// Create main session file with legacy queue-operation format
 	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
 	sessionContent := `{"uuid":"1","sessionId":"` + sessionID + `","type":"user"}
 {"uuid":"2","sessionId":"` + sessionID + `","type":"assistant"}
@@ -134,13 +198,13 @@ func TestBuildTree(t *testing.T) {
 `
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
-	// Create agent file
+	// Create agent file with proper agentId field
 	sessionDir := filepath.Join(tmpDir, sessionID)
 	subagentsDir := filepath.Join(sessionDir, "subagents")
 	mustMkdirAll(t, subagentsDir)
 
-	agentContent := `{"uuid":"a1","type":"user"}
-{"uuid":"a2","type":"assistant"}
+	agentContent := `{"uuid":"a1","sessionId":"` + sessionID + `","agentId":"a12eb64","type":"user","parentUuid":null}
+{"uuid":"a2","sessionId":"` + sessionID + `","agentId":"a12eb64","type":"assistant"}
 `
 	mustWriteFile(t, filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte(agentContent))
 
@@ -176,6 +240,58 @@ func TestBuildTree(t *testing.T) {
 	}
 }
 
+// TestBuildTree_ModernFormat tests tree building with session data in modern Claude Code format.
+// Modern format uses user entries with toolUseResult for agent spawning, but also includes
+// queue-operation entries for backward compatibility.
+func TestBuildTree_ModernFormat(t *testing.T) {
+	tmpDir := t.TempDir()
+	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
+
+	// Create main session file with BOTH modern and legacy formats
+	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
+	sessionContent := `{"uuid":"1","sessionId":"` + sessionID + `","type":"user","message":"Hello"}
+{"uuid":"2","sessionId":"` + sessionID + `","type":"assistant","message":[{"type":"text","text":"I'll help."},{"type":"tool_use","id":"toolu_01","name":"Task","input":{"prompt":"Explore"}}]}
+{"uuid":"3","sessionId":"` + sessionID + `","type":"user","parentUuid":"2","sourceToolAssistantUUID":"2","message":[{"type":"tool_result","tool_use_id":"toolu_01","content":[]}],"toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"a12eb64","description":"Explore","prompt":"Explore","outputFile":"/tmp/claude/tasks/a12eb64.output"}}
+{"uuid":"4","sessionId":"` + sessionID + `","type":"queue-operation","agentId":"a12eb64"}
+`
+	mustWriteFile(t, sessionFile, []byte(sessionContent))
+
+	// Create agent file
+	sessionDir := filepath.Join(tmpDir, sessionID)
+	subagentsDir := filepath.Join(sessionDir, "subagents")
+	mustMkdirAll(t, subagentsDir)
+
+	agentContent := `{"uuid":"a1","sessionId":"` + sessionID + `","agentId":"a12eb64","type":"user","parentUuid":null,"message":"Explore"}
+{"uuid":"a2","sessionId":"` + sessionID + `","agentId":"a12eb64","type":"assistant","message":[{"type":"text","text":"Exploring..."}]}
+`
+	mustWriteFile(t, filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte(agentContent))
+
+	tree, err := BuildTree(tmpDir, sessionID)
+	if err != nil {
+		t.Fatalf("BuildTree() error: %v", err)
+	}
+
+	if !tree.IsRoot {
+		t.Error("Root node should have IsRoot=true")
+	}
+
+	// With both modern and legacy entries, we have 4 entries in main session
+	if tree.EntryCount != 4 {
+		t.Errorf("Root entry count = %d, want 4", tree.EntryCount)
+	}
+
+	if len(tree.Children) != 1 {
+		t.Errorf("Root has %d children, want 1", len(tree.Children))
+	}
+
+	if len(tree.Children) > 0 {
+		child := tree.Children[0]
+		if child.AgentID != "a12eb64" {
+			t.Errorf("Child AgentID = %q, want 'a12eb64'", child.AgentID)
+		}
+	}
+}
+
 func TestCountTotalEntries(t *testing.T) {
 	root := &TreeNode{
 		EntryCount: 10,
@@ -193,6 +309,7 @@ func TestCountTotalEntries(t *testing.T) {
 	}
 }
 
+// TestBuildNestedTree_SingleLevel tests single-level nesting with legacy queue-operation format.
 func TestBuildNestedTree_SingleLevel(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
@@ -206,17 +323,17 @@ func TestBuildNestedTree_SingleLevel(t *testing.T) {
 `
 	mustWriteFile(t, sessionFile, []byte(sessionContent))
 
-	// Create agent files
+	// Create agent files with proper agentId field
 	sessionDir := filepath.Join(tmpDir, sessionID)
 	subagentsDir := filepath.Join(sessionDir, "subagents")
 	mustMkdirAll(t, subagentsDir)
 
-	agent1Content := `{"uuid":"a1-1","type":"user"}
-{"uuid":"a1-2","type":"assistant"}
+	agent1Content := `{"uuid":"a1-1","sessionId":"` + sessionID + `","agentId":"a12eb64","type":"user","parentUuid":null}
+{"uuid":"a1-2","sessionId":"` + sessionID + `","agentId":"a12eb64","type":"assistant"}
 `
-	agent2Content := `{"uuid":"a2-1","type":"user"}
-{"uuid":"a2-2","type":"assistant"}
-{"uuid":"a2-3","type":"assistant"}
+	agent2Content := `{"uuid":"a2-1","sessionId":"` + sessionID + `","agentId":"a68b8c0","type":"user","parentUuid":null}
+{"uuid":"a2-2","sessionId":"` + sessionID + `","agentId":"a68b8c0","type":"assistant"}
+{"uuid":"a2-3","sessionId":"` + sessionID + `","agentId":"a68b8c0","type":"assistant"}
 `
 	mustWriteFile(t, filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte(agent1Content))
 	mustWriteFile(t, filepath.Join(subagentsDir, "agent-a68b8c0.jsonl"), []byte(agent2Content))
@@ -232,6 +349,65 @@ func TestBuildNestedTree_SingleLevel(t *testing.T) {
 
 	if tree.EntryCount != 4 {
 		t.Errorf("Root entry count = %d, want 4", tree.EntryCount)
+	}
+
+	if len(tree.Children) != 2 {
+		t.Errorf("Root has %d children, want 2", len(tree.Children))
+	}
+
+	// Verify both agents are direct children of root
+	childIDs := make(map[string]bool)
+	for _, child := range tree.Children {
+		childIDs[child.AgentID] = true
+	}
+	if !childIDs["a12eb64"] || !childIDs["a68b8c0"] {
+		t.Errorf("Expected children a12eb64 and a68b8c0, got %v", childIDs)
+	}
+}
+
+// TestBuildNestedTree_SingleLevel_ModernFormat tests single-level nesting with modern toolUseResult format.
+func TestBuildNestedTree_SingleLevel_ModernFormat(t *testing.T) {
+	tmpDir := t.TempDir()
+	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
+
+	// Create main session file with BOTH modern and legacy formats for agent spawning
+	sessionFile := filepath.Join(tmpDir, sessionID+".jsonl")
+	sessionContent := `{"uuid":"main-1","sessionId":"` + sessionID + `","type":"user","message":"Hello"}
+{"uuid":"main-2","sessionId":"` + sessionID + `","type":"assistant","message":[{"type":"text","text":"I'll spawn agents."},{"type":"tool_use","id":"toolu_01","name":"Task","input":{"prompt":"Task 1"}}]}
+{"uuid":"spawn-1-modern","sessionId":"` + sessionID + `","type":"user","parentUuid":"main-2","sourceToolAssistantUUID":"main-2","message":[{"type":"tool_result","tool_use_id":"toolu_01","content":[]}],"toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"a12eb64","description":"Task 1","prompt":"Task 1","outputFile":"/tmp/claude/tasks/a12eb64.output"}}
+{"uuid":"spawn-1","sessionId":"` + sessionID + `","type":"queue-operation","agentId":"a12eb64","parentUuid":"main-2"}
+{"uuid":"main-3","sessionId":"` + sessionID + `","type":"assistant","message":[{"type":"tool_use","id":"toolu_02","name":"Task","input":{"prompt":"Task 2"}}]}
+{"uuid":"spawn-2-modern","sessionId":"` + sessionID + `","type":"user","parentUuid":"main-3","sourceToolAssistantUUID":"main-3","message":[{"type":"tool_result","tool_use_id":"toolu_02","content":[]}],"toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"a68b8c0","description":"Task 2","prompt":"Task 2","outputFile":"/tmp/claude/tasks/a68b8c0.output"}}
+{"uuid":"spawn-2","sessionId":"` + sessionID + `","type":"queue-operation","agentId":"a68b8c0","parentUuid":"main-3"}
+`
+	mustWriteFile(t, sessionFile, []byte(sessionContent))
+
+	// Create agent files with proper agentId field
+	sessionDir := filepath.Join(tmpDir, sessionID)
+	subagentsDir := filepath.Join(sessionDir, "subagents")
+	mustMkdirAll(t, subagentsDir)
+
+	agent1Content := `{"uuid":"a1-1","sessionId":"` + sessionID + `","agentId":"a12eb64","type":"user","parentUuid":null,"message":"Task 1"}
+{"uuid":"a1-2","sessionId":"` + sessionID + `","agentId":"a12eb64","type":"assistant","message":[{"type":"text","text":"Working on task 1"}]}
+`
+	agent2Content := `{"uuid":"a2-1","sessionId":"` + sessionID + `","agentId":"a68b8c0","type":"user","parentUuid":null,"message":"Task 2"}
+{"uuid":"a2-2","sessionId":"` + sessionID + `","agentId":"a68b8c0","type":"assistant","message":[{"type":"text","text":"Working on task 2"}]}
+`
+	mustWriteFile(t, filepath.Join(subagentsDir, "agent-a12eb64.jsonl"), []byte(agent1Content))
+	mustWriteFile(t, filepath.Join(subagentsDir, "agent-a68b8c0.jsonl"), []byte(agent2Content))
+
+	tree, err := BuildNestedTree(tmpDir, sessionID)
+	if err != nil {
+		t.Fatalf("BuildNestedTree() error: %v", err)
+	}
+
+	if !tree.IsRoot {
+		t.Error("Root node should have IsRoot=true")
+	}
+
+	// Main session has 7 entries: user, assistant, spawn-modern, queue-op, assistant, spawn-modern, queue-op
+	if tree.EntryCount != 7 {
+		t.Errorf("Root entry count = %d, want 7", tree.EntryCount)
 	}
 
 	if len(tree.Children) != 2 {
