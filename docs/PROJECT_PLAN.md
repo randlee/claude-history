@@ -1688,6 +1688,72 @@ Created: 2026-01-28 19:20:58
 - Inline code with background
 - Links with hover states
 
+#### Development Workflow
+
+**CRITICAL**: All development MUST follow this workflow using sc-git-worktree:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 1. CREATE WORKTREES (sc-git-worktree)                                   │
+│    MANDATORY: Use sc-git-worktree for all development work              │
+│    - Main feature worktree from develop                                 │
+│    - Parallel worktrees for independent sprints                         │
+│    - Isolated environments prevent conflicts                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 2. DEPLOY BACKGROUND DEV AGENT                                          │
+│    MANDATORY: Use background Task agents for all implementation         │
+│    - Each sprint gets dedicated background dev agent                    │
+│    - Agent works in isolated worktree                                   │
+│    - No manual code changes - agents do all implementation              │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 3. DEPLOY BACKGROUND QA AGENT (MANDATORY - NO EXCEPTIONS)               │
+│    CRITICAL: Every dev sprint MUST be followed by dedicated QA sprint   │
+│                                                                         │
+│    ┌─────────────┐                        ┌─────────────┐                │
+│    │  Dev Agent  │ ───── completes ────▶  │  QA Agent   │                │
+│    │  (Sprint X) │                       │  (Sprint X)  │                │
+│    └─────────────┘                        └─────────────┘                │
+│           │                                      │                      │
+│           │                                      │                      │
+│           ▼                                      ▼                      │
+│    Implementation                         Comprehensive Review          │
+│    - Write code                           - Run full test suite         │
+│    - Write tests                          - Verify coverage >85%        │
+│    - Follow requirements                  - Check for edge cases        │
+│                                           - Verify lint passes          │
+│                                           - Manual testing               │
+│                                           - Find gaps/issues             │
+│                                                                         │
+│    QA MUST VERIFY:                                                      │
+│    ✓ 100% test pass rate (`go test ./...`)                              │
+│    ✓ Coverage >85% for new code                                         │
+│    ✓ Zero lint errors (`golangci-lint run`)                             │
+│    ✓ Edge cases tested (nil, empty, errors)                             │
+│    ✓ Cross-platform compatibility                                       │
+│    ✓ Manual verification with real data                                 │
+│    ✓ Performance acceptable                                              │
+│                                                                         │
+│    IF ISSUES FOUND → Return to Dev Agent for fixes                      │
+│    ONLY WHEN QA APPROVES → Proceed to PR                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 4. PR TO DEVELOP (only after QA approval)                               │
+│    - Push branch, create PR                                             │
+│    - Wait for CI checks                                                 │
+│    - Merge after approval                                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│ 5. CLEANUP WORKTREES (sc-git-worktree)                                  │
+│    - Remove worktrees after merge                                       │
+│    - Delete local branches                                              │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Key Principles**:
+1. **sc-git-worktree is MANDATORY** - Never work directly in main worktree
+2. **Background agents are MANDATORY** - No manual implementation
+3. **QA agent per sprint is MANDATORY** - No sprint is complete without QA approval
+4. **No shortcuts** - Every sprint follows full workflow
+5. **Quality gates enforced** - QA must approve before merge
+
 #### Development Sprints (Parallel Execution via sc-git-worktree)
 
 **Sprint 10a: CSS Foundation & Color System** (Background Dev Agent #1) 🔲
@@ -1711,6 +1777,44 @@ Parallel: Start immediately
   - [ ] Test color contrast ratios (WCAG AA)
   - [ ] Test dark mode color adaptation
   - [ ] Coverage target: >90%
+
+**Sprint 10a-QA: CSS Foundation QA** (Background QA Agent #1) 🔲
+```
+MANDATORY: Must run after Sprint 10a dev agent completes
+Same worktree: wt/phase10-css-foundation
+```
+**QA Checklist**:
+- [ ] Run full test suite: `go test ./pkg/export/... -v`
+  - [ ] Verify 100% test pass rate (zero failures)
+  - [ ] No skipped tests without justification
+- [ ] Check coverage: `go test ./pkg/export/templates/... -cover`
+  - [ ] Verify >90% coverage for new CSS validation code
+  - [ ] Identify any untested edge cases
+- [ ] Run linter: `golangci-lint run ./pkg/export/...`
+  - [ ] Zero errors, zero warnings
+- [ ] Manual verification:
+  - [ ] Export test session to HTML
+  - [ ] Verify CSS variables are defined correctly
+  - [ ] Test light mode appearance
+  - [ ] Test dark mode appearance (toggle system preference)
+  - [ ] Verify color contrast meets WCAG AA (use browser DevTools)
+  - [ ] Test chat bubble layout renders correctly
+  - [ ] Test typography hierarchy is clear
+  - [ ] Test animations are smooth (60fps)
+- [ ] Cross-browser testing:
+  - [ ] Chrome/Edge (latest)
+  - [ ] Firefox (latest)
+  - [ ] Safari (latest)
+- [ ] Edge cases:
+  - [ ] Very long messages wrap correctly
+  - [ ] Empty messages render without breaking
+  - [ ] Special characters in content don't break styling
+- [ ] Performance:
+  - [ ] Page load time with new CSS < 1 second
+  - [ ] No CSS-related console errors
+- [ ] **Result**: PASS ✅ or FAIL ❌ (with detailed issues)
+  - [ ] If FAIL: Return to Dev Agent with issue list
+  - [ ] If PASS: Approve for PR
 
 **Sprint 10b: Chat Bubble Layout** (Background Dev Agent #2) 🔲
 ```
@@ -1745,6 +1849,41 @@ Depends: Sprint 10a (needs CSS variables)
   - [ ] Test chat bubble HTML generation
   - [ ] Test layout for different message types
   - [ ] Coverage target: >85%
+
+**Sprint 10b-QA: Chat Bubble Layout QA** (Background QA Agent #2) 🔲
+```
+MANDATORY: Must run after Sprint 10b dev agent completes
+Same worktree: wt/phase10-chat-layout
+Depends: Sprint 10a-QA approval
+```
+**QA Checklist**:
+- [ ] Run full test suite: `go test ./pkg/export/... -v`
+  - [ ] Verify 100% test pass rate
+- [ ] Check coverage: `go test ./pkg/export/... -cover`
+  - [ ] Verify >85% coverage for html_chat.go
+- [ ] Run linter: `golangci-lint run ./pkg/export/...`
+  - [ ] Zero errors, zero warnings
+- [ ] Manual verification:
+  - [ ] Export test session with user and assistant messages
+  - [ ] Verify user messages are left-aligned
+  - [ ] Verify assistant messages are right-aligned
+  - [ ] Test chat bubble max-width works correctly
+  - [ ] Test message wrapping on long content
+  - [ ] Test timestamp formatting is readable
+  - [ ] Test avatar placeholders render correctly
+  - [ ] Test visual distinction between user/assistant
+- [ ] Responsive testing:
+  - [ ] Desktop (1920x1080)
+  - [ ] Tablet (768x1024)
+  - [ ] Mobile (375x667)
+- [ ] Edge cases:
+  - [ ] Very short messages (1 word)
+  - [ ] Very long messages (1000+ characters)
+  - [ ] Messages with only whitespace
+  - [ ] Messages with special characters
+- [ ] **Result**: PASS ✅ or FAIL ❌
+  - [ ] If FAIL: Return to Dev Agent with issue list
+  - [ ] If PASS: Approve for PR
 
 **Sprint 10c: Copy-to-Clipboard Infrastructure** (Background Dev Agent #3) 🔲
 ```
@@ -1784,6 +1923,48 @@ Parallel: With 10a/10b
   - [ ] Test copy button generation
   - [ ] Test metadata extraction
   - [ ] Coverage target: >90%
+
+**Sprint 10c-QA: Copy-to-Clipboard QA** (Background QA Agent #3) 🔲
+```
+MANDATORY: Must run after Sprint 10c dev agent completes
+Same worktree: wt/phase10-clipboard
+```
+**QA Checklist**:
+- [ ] Run full test suite: `go test ./pkg/export/... -v`
+  - [ ] Verify 100% test pass rate
+- [ ] Check coverage: `go test ./pkg/export/... -cover`
+  - [ ] Verify >90% coverage for clipboard.go
+- [ ] Run linter: `golangci-lint run ./pkg/export/...`
+  - [ ] Zero errors, zero warnings
+- [ ] Manual verification:
+  - [ ] Export test session to HTML
+  - [ ] Test copy agent ID button works
+  - [ ] Test copy file path button works
+  - [ ] Test copy session ID button works
+  - [ ] Test copy tool ID button works
+  - [ ] Test copy JSONL path button works
+  - [ ] Verify visual feedback on copy (checkmark animation)
+  - [ ] Verify toast notifications appear
+  - [ ] Test tooltip shows correct text
+  - [ ] Test metadata included in data attributes
+- [ ] Browser compatibility:
+  - [ ] Chrome (clipboard API)
+  - [ ] Firefox (clipboard API)
+  - [ ] Safari (clipboard API)
+  - [ ] Test fallback for older browsers
+- [ ] Agent resurrection workflow:
+  - [ ] Copy agent ID from HTML
+  - [ ] Paste in text editor
+  - [ ] Verify full UUID copied (not truncated)
+  - [ ] Verify format is correct for resurrection
+- [ ] Edge cases:
+  - [ ] Very long paths (>200 characters)
+  - [ ] Paths with special characters
+  - [ ] Rapid multiple copies
+  - [ ] Copy while another copy animating
+- [ ] **Result**: PASS ✅ or FAIL ❌
+  - [ ] If FAIL: Return to Dev Agent with issue list
+  - [ ] If PASS: Approve for PR
 
 **Sprint 10d: Color-Coded Expandable Overlays** (Background Dev Agent #4) 🔲
 ```
@@ -1848,6 +2029,34 @@ Depends: Sprint 10a (needs CSS variables)
   - [ ] Test thinking block generation
   - [ ] Coverage target: >85%
 
+**Sprint 10d-QA: Color-Coded Overlays QA** (Background QA Agent #4) 🔲
+```
+MANDATORY: Must run after Sprint 10d dev agent completes
+Same worktree: wt/phase10-overlays
+Depends: Sprint 10a-QA approval
+```
+**QA Checklist**:
+- [ ] Run full test suite: `go test ./pkg/export/... -v`
+- [ ] Check coverage: `go test ./pkg/export/... -cover` (>85%)
+- [ ] Run linter: `golangci-lint run ./pkg/export/...` (zero errors)
+- [ ] Manual verification:
+  - [ ] Export session with tools, subagents, thinking blocks
+  - [ ] Verify tool overlays have blue/teal background
+  - [ ] Verify subagent overlays have purple/violet background
+  - [ ] Verify thinking blocks have gray/muted background
+  - [ ] Test expand/collapse animations are smooth
+  - [ ] Test chevron rotates on collapse
+  - [ ] Test character count displays correctly
+  - [ ] Test tool-specific icons render (🔧 📄 ✏️ 🔍)
+  - [ ] Test "Deep Dive" button appears on subagents
+  - [ ] Test copy buttons work in overlays
+- [ ] Edge cases:
+  - [ ] Very long tool inputs (>10KB)
+  - [ ] Tool outputs with special characters
+  - [ ] Nested subagents render correctly
+  - [ ] Multiple thinking blocks in sequence
+- [ ] **Result**: PASS ✅ or FAIL ❌
+
 **Sprint 10e: Syntax Highlighting & Markdown** (Background Dev Agent #5) 🔲
 ```
 Worktree: wt/phase10-syntax
@@ -1879,6 +2088,38 @@ Parallel: With 10c/10d
   - [ ] Test code block extraction
   - [ ] Test language detection
   - [ ] Coverage target: >90%
+
+**Sprint 10e-QA: Syntax Highlighting & Markdown QA** (Background QA Agent #5) 🔲
+```
+MANDATORY: Must run after Sprint 10e dev agent completes
+Same worktree: wt/phase10-syntax
+```
+**QA Checklist**:
+- [ ] Run full test suite: `go test ./pkg/export/... -v`
+- [ ] Check coverage: `go test ./pkg/export/... -cover` (>90%)
+- [ ] Run linter: `golangci-lint run ./pkg/export/...` (zero errors)
+- [ ] Manual verification:
+  - [ ] Export session with code blocks and markdown
+  - [ ] Verify syntax highlighting works for all supported languages:
+    - [ ] Bash, Go, Python, JavaScript, JSON, YAML
+  - [ ] Verify correct theme applied (One Dark vs One Light)
+  - [ ] Test markdown rendering:
+    - [ ] Headers (h1-h6)
+    - [ ] Lists (ordered, unordered, nested)
+    - [ ] Tables with proper styling
+    - [ ] Blockquotes
+    - [ ] Task lists with checkboxes
+    - [ ] Inline code
+    - [ ] Links
+  - [ ] Test language badges display correctly
+  - [ ] Test copy buttons on code blocks
+  - [ ] Test code block newlines preserved
+- [ ] Edge cases:
+  - [ ] Unknown language (fallback rendering)
+  - [ ] Very long code blocks (>1000 lines)
+  - [ ] Code with special characters
+  - [ ] Mixed markdown and code
+- [ ] **Result**: PASS ✅ or FAIL ❌
 
 **Sprint 10f: Deep Dive Navigation** (Background Dev Agent #6) 🔲
 ```
@@ -1913,6 +2154,32 @@ Depends: Sprint 10d (needs overlay structure)
   - [ ] Test breadcrumb generation
   - [ ] Test nested structure
   - [ ] Coverage target: >85%
+
+**Sprint 10f-QA: Deep Dive Navigation QA** (Background QA Agent #6) 🔲
+```
+MANDATORY: Must run after Sprint 10f dev agent completes
+Same worktree: wt/phase10-navigation
+Depends: Sprint 10d-QA approval
+```
+**QA Checklist**:
+- [ ] Run full test suite: `go test ./pkg/export/... -v`
+- [ ] Check coverage: `go test ./pkg/export/... -cover` (>85%)
+- [ ] Run linter: `golangci-lint run ./pkg/export/...` (zero errors)
+- [ ] Manual verification:
+  - [ ] Export session with nested agents (3+ levels)
+  - [ ] Test "Deep Dive" button expands agent inline
+  - [ ] Verify breadcrumb trail updates correctly
+  - [ ] Test "Jump to Parent" button works
+  - [ ] Test smooth scroll to agent
+  - [ ] Test lazy-load for nested agents
+  - [ ] Verify nested indentation is progressive
+  - [ ] Test navigation with very deep nesting (5+ levels)
+- [ ] Edge cases:
+  - [ ] Agent with no subagents
+  - [ ] Circular reference handling
+  - [ ] Missing agent file (graceful error)
+  - [ ] Very large agent (1000+ entries)
+- [ ] **Result**: PASS ✅ or FAIL ❌
 
 **Sprint 10g: Interactive Controls** (Background Dev Agent #7) 🔲
 ```
@@ -1949,6 +2216,37 @@ Parallel: With 10e/10f
 - [ ] Create `pkg/export/controls_test.go`
   - [ ] Test control panel generation
   - [ ] Coverage target: >85%
+
+**Sprint 10g-QA: Interactive Controls QA** (Background QA Agent #7) 🔲
+```
+MANDATORY: Must run after Sprint 10g dev agent completes
+Same worktree: wt/phase10-controls
+```
+**QA Checklist**:
+- [ ] Run full test suite: `go test ./pkg/export/... -v`
+- [ ] Check coverage: `go test ./pkg/export/... -cover` (>85%)
+- [ ] Run linter: `golangci-lint run ./pkg/export/...` (zero errors)
+- [ ] Manual verification:
+  - [ ] Test "Expand All" button expands all collapsibles
+  - [ ] Test "Collapse All" button collapses all
+  - [ ] Test button text toggles correctly
+  - [ ] Test search finds text in messages
+  - [ ] Test search finds text in tool calls
+  - [ ] Test search highlighting works
+  - [ ] Test keyboard shortcuts:
+    - [ ] Ctrl+K toggles all
+    - [ ] Ctrl+F focuses search
+    - [ ] Ctrl+C copies agent ID
+    - [ ] Esc closes overlays
+  - [ ] Test localStorage persistence works
+  - [ ] Test smooth scroll to element
+  - [ ] Test sticky header (scrolls correctly)
+- [ ] Edge cases:
+  - [ ] Search with no results
+  - [ ] Search with special regex characters
+  - [ ] Rapid expand/collapse
+  - [ ] localStorage quota exceeded
+- [ ] **Result**: PASS ✅ or FAIL ❌
 
 **Sprint 10h: Header, Footer & Metadata** (Background Dev Agent #8) 🔲
 ```
@@ -2005,6 +2303,36 @@ Depends: Sprint 10g (needs controls)
   - [ ] Test metadata extraction
   - [ ] Coverage target: >85%
 
+**Sprint 10h-QA: Header/Footer QA** (Background QA Agent #8) 🔲
+```
+MANDATORY: Must run after Sprint 10h dev agent completes
+Same worktree: wt/phase10-chrome
+Depends: Sprint 10g-QA approval
+```
+**QA Checklist**:
+- [ ] Run full test suite: `go test ./pkg/export/... -v`
+- [ ] Check coverage: `go test ./pkg/export/... -cover` (>85%)
+- [ ] Run linter: `golangci-lint run ./pkg/export/...` (zero errors)
+- [ ] Manual verification:
+  - [ ] Verify header displays all metadata correctly
+  - [ ] Test session ID copy button in header
+  - [ ] Verify all metadata items are present and accurate
+  - [ ] Test sticky header behavior on scroll
+  - [ ] Test header shadow appears on scroll
+  - [ ] Verify footer info displays correctly
+  - [ ] Test source path copy button in footer
+  - [ ] Test keyboard shortcuts help expands/collapses
+  - [ ] Verify all keyboard shortcuts listed
+- [ ] Responsive testing:
+  - [ ] Header on desktop (1920x1080)
+  - [ ] Header on mobile (375x667)
+  - [ ] Metadata wraps correctly on small screens
+- [ ] Edge cases:
+  - [ ] Very long project paths
+  - [ ] Large session (10k+ messages)
+  - [ ] Many agents (50+)
+- [ ] **Result**: PASS ✅ or FAIL ❌
+
 **Sprint 10i: Integration & Polish** (Background Dev Agent #9) 🔲
 ```
 Worktree: wt/phase10-integration
@@ -2044,7 +2372,55 @@ Sequential: After all other sprints complete
   - [ ] Page break handling
   - [ ] Readable color scheme for paper
 
-#### QA Verification (Background QA Agent - MANDATORY) 🔲
+**Sprint 10i-QA: Integration QA** (Background QA Agent #9) 🔲
+```
+MANDATORY: Must run after Sprint 10i dev agent completes
+Same worktree: wt/phase10-integration
+Depends: All sprints 10a-10h QA approved
+```
+**QA Checklist**:
+- [ ] Run full test suite: `go test ./... -v`
+  - [ ] Verify 100% test pass rate
+  - [ ] All 11 test packages pass
+- [ ] Check coverage: `go test ./pkg/export/... -cover` (>85%)
+- [ ] Run linter: `golangci-lint run ./...` (zero errors)
+- [ ] Manual end-to-end testing:
+  - [ ] Export real session with all features enabled
+  - [ ] Verify all components work together:
+    - [ ] CSS variables and theming
+    - [ ] Chat bubble layout
+    - [ ] Copy buttons everywhere
+    - [ ] Color-coded overlays
+    - [ ] Syntax highlighting
+    - [ ] Deep dive navigation
+    - [ ] Interactive controls
+    - [ ] Header/footer metadata
+  - [ ] Test complete agent resurrection workflow
+  - [ ] Test with very large session (1000+ entries)
+  - [ ] Test with deeply nested agents (5+ levels)
+- [ ] Cross-platform verification:
+  - [ ] Build and test on macOS
+  - [ ] Build and test on Ubuntu (via CI)
+  - [ ] Build and test on Windows (via CI)
+- [ ] Browser compatibility:
+  - [ ] Chrome/Edge (Chromium)
+  - [ ] Firefox
+  - [ ] Safari
+- [ ] Performance validation:
+  - [ ] Page load time < 2 seconds
+  - [ ] Smooth 60fps animations
+  - [ ] No memory leaks
+  - [ ] localStorage works correctly
+- [ ] Accessibility check:
+  - [ ] Run axe DevTools audit (zero critical issues)
+  - [ ] Test keyboard navigation
+  - [ ] Test screen reader
+  - [ ] Verify WCAG 2.1 AA compliance
+- [ ] **Result**: PASS ✅ or FAIL ❌
+  - [ ] If FAIL: Return to Dev Agent with issue list
+  - [ ] If PASS: Proceed to Final QA Verification
+
+#### Final QA Verification (Background QA Agent - MANDATORY) 🔲
 
 After all dev sprints complete:
 - [ ] Run full test suite: `go test ./... -v`
