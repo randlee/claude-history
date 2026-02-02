@@ -123,13 +123,43 @@ func runExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
+	// Prepare export options
+	opts := export.ExportOptions{
+		OutputDir: outputDir,
+		ClaudeDir: claudeDir,
+	}
+
+	// Call export
+	result, err := export.ExportSession(projectPath, exportSessionID, opts)
+	if err != nil {
+		return fmt.Errorf("export failed: %w", err)
+	}
+
 	// Report export parameters
-	fmt.Fprintf(os.Stderr, "Exporting session %s\n", exportSessionID)
+	fmt.Fprintf(os.Stderr, "Exporting session %s\n", exportSessionID[:8])
 	fmt.Fprintf(os.Stderr, "  Project: %s\n", projectPath)
 	fmt.Fprintf(os.Stderr, "  Format: %s\n", exportFormat)
-	fmt.Fprintf(os.Stderr, "  Output: %s\n", outputDir)
+	fmt.Fprintf(os.Stderr, "  Output: %s\n", result.OutputDir)
 	if sessionInfo.FirstPrompt != "" {
 		fmt.Fprintf(os.Stderr, "  First prompt: %s\n", truncateString(sessionInfo.FirstPrompt, 60))
+	}
+	fmt.Fprintf(os.Stderr, "  Total agents: %d\n", result.TotalAgents)
+	fmt.Fprintln(os.Stderr)
+
+	// For HTML format: generate HTML (Phase 8b will implement this)
+	if exportFormat == "html" {
+		fmt.Fprintln(os.Stderr, "Warning: HTML export not yet implemented, JSONL files copied only")
+	}
+
+	// Print success message
+	fmt.Fprintf(os.Stderr, "✓ Export created at: %s\n", result.OutputDir)
+
+	// Print warnings if any
+	if len(result.Errors) > 0 {
+		fmt.Fprintln(os.Stderr, "\nWarnings encountered:")
+		for _, e := range result.Errors {
+			fmt.Fprintf(os.Stderr, "  - %s\n", e)
+		}
 	}
 
 	// Export JSONL files
