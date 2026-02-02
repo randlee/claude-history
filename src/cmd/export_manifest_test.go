@@ -221,9 +221,10 @@ func TestManifest_SourcePaths(t *testing.T) {
 		}
 
 		// Count file types
-		if fileType == "session" {
+		switch fileType {
+		case "session":
 			hasSessionFile = true
-		} else if fileType == "agent" {
+		case "agent":
 			agentFileCount++
 
 			// Agent files should have agent_id field

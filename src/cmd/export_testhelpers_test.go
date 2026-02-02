@@ -185,24 +185,6 @@ func parseHTML(t *testing.T, htmlPath string) *html.Node {
 	return doc
 }
 
-// extractTextContent extracts text content from an HTML node.
-func extractTextContent(node *html.Node) string {
-	if node == nil {
-		return ""
-	}
-
-	if node.Type == html.TextNode {
-		return node.Data
-	}
-
-	var sb strings.Builder
-	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		sb.WriteString(extractTextContent(child))
-	}
-
-	return sb.String()
-}
-
 // findHTMLNode searches for an HTML node by tag name.
 func findHTMLNode(node *html.Node, tagName string) *html.Node {
 	if node == nil {
