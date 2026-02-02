@@ -45,10 +45,10 @@ func TestRenderConversation_BasicStructure(t *testing.T) {
 	if !strings.Contains(html, `<title>Claude Conversation Export</title>`) {
 		t.Error("HTML missing title")
 	}
-	if !strings.Contains(html, `<link rel="stylesheet" href="style.css">`) {
+	if !strings.Contains(html, `<link rel="stylesheet" href="static/style.css">`) {
 		t.Error("HTML missing stylesheet link")
 	}
-	if !strings.Contains(html, `<script src="script.js"></script>`) {
+	if !strings.Contains(html, `<script src="static/script.js"></script>`) {
 		t.Error("HTML missing script tag")
 	}
 	if !strings.Contains(html, `<div class="conversation">`) {
