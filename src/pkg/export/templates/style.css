@@ -295,6 +295,109 @@ code {
     }
 }
 
+/* Copy button styles */
+.copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-left: 0.25rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
+    vertical-align: middle;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.copy-btn:active {
+    transform: scale(0.95);
+}
+
+.copy-btn .copy-icon {
+    font-style: normal;
+    font-size: 0.875rem;
+}
+
+.copy-btn.copy-success {
+    opacity: 1;
+    color: #388e3c;
+    background: rgba(56, 142, 60, 0.1);
+}
+
+.copy-btn.copy-error {
+    opacity: 1;
+    color: #d32f2f;
+    background: rgba(211, 47, 47, 0.1);
+}
+
+/* Copy button tooltip on hover */
+.copy-btn[title] {
+    position: relative;
+}
+
+/* Copy toast notification */
+.copy-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    padding: 0.5rem 1rem;
+    background: #333;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    z-index: 10000;
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.copy-toast-visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.copy-toast-error {
+    background: #d32f2f;
+}
+
+/* Inline copy button positioning */
+.entry-header .copy-btn,
+.tool-header .copy-btn,
+.subagent-header .copy-btn {
+    margin-left: 0.5rem;
+}
+
+/* Make sure copy buttons don't break layout */
+.agent-id,
+.session-id,
+.tool-id {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* File path copy button */
+.file-path {
+    display: inline-flex;
+    align-items: center;
+    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+.file-path .copy-btn {
+    flex-shrink: 0;
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
     body {
@@ -389,5 +492,28 @@ code {
 
     code {
         background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Dark mode copy button styles */
+    .copy-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .copy-btn.copy-success {
+        color: #66bb6a;
+        background: rgba(102, 187, 106, 0.15);
+    }
+
+    .copy-btn.copy-error {
+        color: #ef5350;
+        background: rgba(239, 83, 80, 0.15);
+    }
+
+    .copy-toast {
+        background: #424242;
+    }
+
+    .copy-toast-error {
+        background: #c62828;
     }
 }
