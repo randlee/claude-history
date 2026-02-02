@@ -67,13 +67,13 @@ func runResolve(cmd *cobra.Command, args []string) error {
 		}
 
 		// Resolve session ID prefix
-		fullSessionID, err := resolver.ResolveSessionID(projectPath, resolveSessionID)
+		fullSessionID, err := resolver.ResolveSessionID(claudeDir, projectPath, resolveSessionID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve session ID: %w", err)
 		}
 
 		// Resolve agent ID prefix
-		fullAgentID, err := resolver.ResolveAgentID(projectPath, fullSessionID, resolveAgentID)
+		fullAgentID, err := resolver.ResolveAgentID(claudeDir, projectPath, fullSessionID, resolveAgentID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve agent ID: %w", err)
 		}
@@ -94,7 +94,7 @@ func runResolve(cmd *cobra.Command, args []string) error {
 		}
 
 		// Resolve session ID prefix
-		fullSessionID, err := resolver.ResolveSessionID(projectPath, resolveSessionID)
+		fullSessionID, err := resolver.ResolveSessionID(claudeDir, projectPath, resolveSessionID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve session ID: %w", err)
 		}

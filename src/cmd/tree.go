@@ -80,7 +80,7 @@ func runTree(cmd *cobra.Command, args []string) error {
 		sessionID = sessions[0].ID
 	} else {
 		// Resolve session ID prefix
-		resolvedSessionID, err := resolver.ResolveSessionID(projectPath, sessionID)
+		resolvedSessionID, err := resolver.ResolveSessionID(claudeDir, projectPath, sessionID)
 		if err != nil {
 			return fmt.Errorf("failed to resolve session ID: %w", err)
 		}

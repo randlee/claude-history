@@ -30,12 +30,13 @@ type AgentMatch struct {
 
 // ResolveSessionID resolves a session ID prefix to a full session ID.
 // Returns an error if the prefix is ambiguous or matches no sessions.
-func ResolveSessionID(projectPath, prefix string) (string, error) {
+// claudeDir can be empty string to use default (~/.claude).
+func ResolveSessionID(claudeDir, projectPath, prefix string) (string, error) {
 	if prefix == "" {
 		return "", fmt.Errorf("session ID prefix cannot be empty")
 	}
 
-	matches, err := findMatchingSessionIDs(projectPath, prefix)
+	matches, err := findMatchingSessionIDs(claudeDir, projectPath, prefix)
 	if err != nil {
 		return "", fmt.Errorf("failed to list sessions: %w", err)
 	}
@@ -54,7 +55,8 @@ func ResolveSessionID(projectPath, prefix string) (string, error) {
 
 // ResolveAgentID resolves an agent ID prefix to a full agent ID within a session.
 // Returns an error if the prefix is ambiguous or matches no agents.
-func ResolveAgentID(projectPath, sessionID, prefix string) (string, error) {
+// claudeDir can be empty string to use default (~/.claude).
+func ResolveAgentID(claudeDir, projectPath, sessionID, prefix string) (string, error) {
 	if prefix == "" {
 		return "", fmt.Errorf("agent ID prefix cannot be empty")
 	}
@@ -63,7 +65,7 @@ func ResolveAgentID(projectPath, sessionID, prefix string) (string, error) {
 		return "", fmt.Errorf("session ID is required to resolve agent ID")
 	}
 
-	matches, err := findMatchingAgentIDs(projectPath, sessionID, prefix)
+	matches, err := findMatchingAgentIDs(claudeDir, projectPath, sessionID, prefix)
 	if err != nil {
 		return "", fmt.Errorf("failed to list agents: %w", err)
 	}
@@ -81,9 +83,9 @@ func ResolveAgentID(projectPath, sessionID, prefix string) (string, error) {
 }
 
 // findMatchingSessionIDs finds all sessions matching the given prefix.
-func findMatchingSessionIDs(projectPath, prefix string) ([]SessionMatch, error) {
-	// Get the encoded project directory (use empty string for default claude dir)
-	projectDir, err := paths.ProjectDir("", projectPath)
+func findMatchingSessionIDs(claudeDir, projectPath, prefix string) ([]SessionMatch, error) {
+	// Get the encoded project directory
+	projectDir, err := paths.ProjectDir(claudeDir, projectPath)
 	if err != nil {
 		return nil, err
 	}
@@ -116,9 +118,9 @@ func findMatchingSessionIDs(projectPath, prefix string) ([]SessionMatch, error) 
 }
 
 // findMatchingAgentIDs finds all agents matching the given prefix within a session.
-func findMatchingAgentIDs(projectPath, sessionID, prefix string) ([]AgentMatch, error) {
-	// Get the encoded project directory (use empty string for default claude dir)
-	projectDir, err := paths.ProjectDir("", projectPath)
+func findMatchingAgentIDs(claudeDir, projectPath, sessionID, prefix string) ([]AgentMatch, error) {
+	// Get the encoded project directory
+	projectDir, err := paths.ProjectDir(claudeDir, projectPath)
 	if err != nil {
 		return nil, err
 	}

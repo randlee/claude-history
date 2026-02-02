@@ -77,12 +77,6 @@ func runExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid format: %s (must be 'html' or 'jsonl')", exportFormat)
 	}
 
-	// Resolve session ID prefix
-	resolvedSessionID, err := resolver.ResolveSessionID(projectPath, exportSessionID)
-	if err != nil {
-		return fmt.Errorf("failed to resolve session ID: %w", err)
-	}
-
 	// Get the project directory in Claude's storage
 	projectDir, err := paths.ProjectDir(claudeDir, projectPath)
 	if err != nil {
@@ -91,6 +85,12 @@ func runExport(cmd *cobra.Command, args []string) error {
 
 	if !paths.Exists(projectDir) {
 		return fmt.Errorf("project not found: %s", projectPath)
+	}
+
+	// Resolve session ID prefix
+	resolvedSessionID, err := resolver.ResolveSessionID(claudeDir, projectPath, exportSessionID)
+	if err != nil {
+		return fmt.Errorf("failed to resolve session ID: %w", err)
 	}
 
 	// Validate session exists

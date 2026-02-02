@@ -51,6 +51,9 @@ func TestResolveSessionID(t *testing.T) {
 	_ = os.Setenv("HOME", tmpDir)
 	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
+	// Set claudeDir to the temporary .claude directory
+	claudeDir := filepath.Join(tmpDir, ".claude")
+
 	tests := []struct {
 		name        string
 		prefix      string
@@ -95,7 +98,7 @@ func TestResolveSessionID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ResolveSessionID(projectPath, tt.prefix)
+			got, err := ResolveSessionID(claudeDir, projectPath, tt.prefix)
 
 			if tt.wantErr {
 				if err == nil {
@@ -177,6 +180,9 @@ func TestResolveAgentID(t *testing.T) {
 	_ = os.Setenv("HOME", tmpDir)
 	defer func() { _ = os.Setenv("HOME", originalHome) }()
 
+	// Set claudeDir to the temporary .claude directory
+	claudeDir := filepath.Join(tmpDir, ".claude")
+
 	tests := []struct {
 		name        string
 		sessionID   string
@@ -229,7 +235,7 @@ func TestResolveAgentID(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ResolveAgentID(projectPath, tt.sessionID, tt.prefix)
+			got, err := ResolveAgentID(claudeDir, projectPath, tt.sessionID, tt.prefix)
 
 			if tt.wantErr {
 				if err == nil {
