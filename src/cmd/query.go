@@ -17,14 +17,14 @@ import (
 )
 
 var (
-	queryStart        string
-	queryEnd          string
-	queryTypes        string
-	querySessionID    string
-	queryAgentID      string
-	queryTools        string // --tool flag
-	queryToolMatch    string // --tool-match flag
-	queryIncludeAgents bool  // --include-agents flag
+	queryStart         string
+	queryEnd           string
+	queryTypes         string
+	querySessionID     string
+	queryAgentID       string
+	queryTools         string // --tool flag
+	queryToolMatch     string // --tool-match flag
+	queryIncludeAgents bool   // --include-agents flag
 )
 
 // knownTools is used for validation warnings when unknown tool types are specified

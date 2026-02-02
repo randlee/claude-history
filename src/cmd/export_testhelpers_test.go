@@ -101,15 +101,14 @@ func createNestedAgentStructure(t *testing.T, projectDir, sessionID string) {
 	mainSessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	parentSpawnEntry := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:30:00Z","sessionId":"%s","uuid":"spawn-parent","sourceToolAssistantUUID":"entry-2","message":[{"type":"tool_result","tool_use_id":"toolu_01Parent","content":[]}],"toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"parent","description":"Parent agent task","prompt":"Parent agent task","outputFile":"/tmp/claude/tasks/parent.output"}}
 `, sessionID)
-	f, err := os.OpenFile(mainSessionFile, os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(mainSessionFile, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		t.Fatalf("failed to open main session file: %v", err)
 	}
+	defer func() { _ = f.Close() }()
 	if _, err := f.WriteString(parentSpawnEntry); err != nil {
-		f.Close()
 		t.Fatalf("failed to append parent spawn entry: %v", err)
 	}
-	f.Close()
 
 	// Create parent agent with BOTH spawn formats for child agents
 	// Modern format: assistant with Task tool_use + user with toolUseResult
