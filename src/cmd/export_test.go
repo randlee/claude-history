@@ -375,7 +375,7 @@ func TestExportCmd_ValidSession(t *testing.T) {
 	exportOutputDir = outputDir
 	claudeDir = tmpDir
 
-	// Run the command - should succeed (stub implementation)
+	// Run the command - should succeed
 	err := runExport(exportCmd, []string{projectPath})
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -384,6 +384,18 @@ func TestExportCmd_ValidSession(t *testing.T) {
 	// Verify output directory was created
 	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
 		t.Error("Output directory should have been created")
+	}
+
+	// Verify source directory was created
+	sourceDir := filepath.Join(outputDir, "source")
+	if _, err := os.Stat(sourceDir); os.IsNotExist(err) {
+		t.Error("Source directory should have been created")
+	}
+
+	// Verify session file was copied
+	copiedSessionFile := filepath.Join(sourceDir, "session.jsonl")
+	if _, err := os.Stat(copiedSessionFile); os.IsNotExist(err) {
+		t.Error("Session file should have been copied to source directory")
 	}
 }
 
@@ -434,6 +446,32 @@ func TestExportCmd_JSONLFormat(t *testing.T) {
 	err := runExport(exportCmd, []string{projectPath})
 	if err != nil {
 		t.Errorf("Unexpected error with jsonl format: %v", err)
+	}
+
+	// Verify output directory was created
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		t.Error("Output directory should have been created")
+	}
+
+	// Verify source directory exists
+	sourceDir := filepath.Join(outputDir, "source")
+	if _, err := os.Stat(sourceDir); os.IsNotExist(err) {
+		t.Error("Source directory should have been created")
+	}
+
+	// Verify session file was copied
+	copiedSessionFile := filepath.Join(sourceDir, "session.jsonl")
+	if _, err := os.Stat(copiedSessionFile); os.IsNotExist(err) {
+		t.Error("Session file should have been copied")
+	}
+
+	// Verify content matches
+	copiedContent, err := os.ReadFile(copiedSessionFile)
+	if err != nil {
+		t.Fatalf("Failed to read copied session file: %v", err)
+	}
+	if string(copiedContent) != sessionContent {
+		t.Error("Copied session content does not match original")
 	}
 }
 
@@ -540,4 +578,134 @@ func TestExportCmd_RelativeOutputPath(t *testing.T) {
 	if _, err := os.Stat(relativeOutput); os.IsNotExist(err) {
 		t.Error("Output directory should have been created")
 	}
+}
+
+func TestExportCmd_WithAgents(t *testing.T) {
+	// Reset global variables
+	oldSessionID := exportSessionID
+	oldFormat := exportFormat
+	oldOutputDir := exportOutputDir
+	oldClaudeDir := claudeDir
+	defer func() {
+		exportSessionID = oldSessionID
+		exportFormat = oldFormat
+		exportOutputDir = oldOutputDir
+		claudeDir = oldClaudeDir
+	}()
+
+	// Create a temporary project directory structure
+	tmpDir := t.TempDir()
+	projectsDir := filepath.Join(tmpDir, "projects")
+
+	// Create a project path and encode it properly (cross-platform)
+	projectPath := filepath.Join(tmpDir, "myproject")
+	encodedName := encoding.EncodePath(projectPath)
+	encodedProjectDir := filepath.Join(projectsDir, encodedName)
+	if err := os.MkdirAll(encodedProjectDir, 0755); err != nil {
+		t.Fatalf("Failed to create project dir: %v", err)
+	}
+
+	// Create a session file
+	sessionID := "test-session-with-agents"
+	sessionFile := filepath.Join(encodedProjectDir, sessionID+".jsonl")
+	sessionContent := `{"uuid":"1","sessionId":"test-session-with-agents","type":"user","timestamp":"2026-02-01T18:00:00.000Z","message":"Test"}
+`
+	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0600); err != nil {
+		t.Fatalf("Failed to create session file: %v", err)
+	}
+
+	// Create agent files
+	sessionDir := filepath.Join(encodedProjectDir, sessionID)
+	subagentsDir := filepath.Join(sessionDir, "subagents")
+	if err := os.MkdirAll(subagentsDir, 0755); err != nil {
+		t.Fatalf("Failed to create subagents dir: %v", err)
+	}
+
+	// Create agent file
+	agentContent := `{"uuid":"agent-1","sessionId":"test-session-with-agents","type":"user","timestamp":"2026-02-01T18:01:00.000Z","message":"Agent message"}
+`
+	agentFile := filepath.Join(subagentsDir, "agent-abc123.jsonl")
+	if err := os.WriteFile(agentFile, []byte(agentContent), 0600); err != nil {
+		t.Fatalf("Failed to create agent file: %v", err)
+	}
+
+	// Create output directory
+	outputDir := filepath.Join(tmpDir, "export-with-agents")
+
+	// Set up test values
+	exportSessionID = sessionID
+	exportFormat = "jsonl"
+	exportOutputDir = outputDir
+	claudeDir = tmpDir
+
+	// Run the command
+	err := runExport(exportCmd, []string{projectPath})
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	// Verify agent was copied
+	copiedAgentFile := filepath.Join(outputDir, "source", "agents", "agent-abc123.jsonl")
+	if _, err := os.Stat(copiedAgentFile); os.IsNotExist(err) {
+		t.Error("Agent file should have been copied to source/agents directory")
+	}
+
+	// Verify agent content matches
+	copiedAgentContent, err := os.ReadFile(copiedAgentFile)
+	if err != nil {
+		t.Fatalf("Failed to read copied agent file: %v", err)
+	}
+	if string(copiedAgentContent) != agentContent {
+		t.Error("Copied agent content does not match original")
+	}
+}
+
+func TestExportCmd_AutoOutputDir(t *testing.T) {
+	// Reset global variables
+	oldSessionID := exportSessionID
+	oldFormat := exportFormat
+	oldOutputDir := exportOutputDir
+	oldClaudeDir := claudeDir
+	defer func() {
+		exportSessionID = oldSessionID
+		exportFormat = oldFormat
+		exportOutputDir = oldOutputDir
+		claudeDir = oldClaudeDir
+	}()
+
+	// Create a temporary project directory structure
+	tmpDir := t.TempDir()
+	projectsDir := filepath.Join(tmpDir, "projects")
+
+	// Create a project path and encode it properly (cross-platform)
+	projectPath := filepath.Join(tmpDir, "myproject")
+	encodedName := encoding.EncodePath(projectPath)
+	encodedProjectDir := filepath.Join(projectsDir, encodedName)
+	if err := os.MkdirAll(encodedProjectDir, 0755); err != nil {
+		t.Fatalf("Failed to create project dir: %v", err)
+	}
+
+	// Create a session file
+	sessionID := "abcd1234-5678-90ef-ghij-klmnopqrstuv"
+	sessionFile := filepath.Join(encodedProjectDir, sessionID+".jsonl")
+	sessionContent := `{"uuid":"1","sessionId":"abcd1234-5678-90ef-ghij-klmnopqrstuv","type":"user","timestamp":"2026-02-01T18:00:00.000Z","message":"Test"}
+`
+	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0600); err != nil {
+		t.Fatalf("Failed to create session file: %v", err)
+	}
+
+	// Set up test values - no output directory specified
+	exportSessionID = sessionID
+	exportFormat = "jsonl"
+	exportOutputDir = "" // Auto-generate
+	claudeDir = tmpDir
+
+	// Run the command
+	err := runExport(exportCmd, []string{projectPath})
+	if err != nil {
+		t.Errorf("Unexpected error with auto-generated output: %v", err)
+	}
+
+	// We can't easily verify the exact path, but we verified no error occurred
+	// The export package's tests verify the auto-generated path format
 }

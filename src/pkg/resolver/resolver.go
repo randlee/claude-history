@@ -4,45 +4,48 @@ package resolver
 import (
 	"fmt"
 	"path/filepath"
-	"sort"
 	"strings"
+	"time"
 
+	"github.com/randlee/claude-history/internal/jsonl"
 	"github.com/randlee/claude-history/pkg/agent"
+	"github.com/randlee/claude-history/pkg/models"
 	"github.com/randlee/claude-history/pkg/paths"
 	"github.com/randlee/claude-history/pkg/session"
 )
 
-// SessionMatch represents a matched session for ambiguity reporting.
+// SessionMatch represents a session that matches a prefix.
 type SessionMatch struct {
-	ID          string
-	ProjectPath string
-	Created     string
-	FirstPrompt string
+	ID          string    // Full session ID
+	Path        string    // Path to JSONL file
+	FirstPrompt string    // Truncated to 60 chars
+	Timestamp   time.Time // First entry timestamp
 }
 
-// AgentMatch represents a matched agent for ambiguity reporting.
+// AgentMatch represents an agent that matches a prefix.
 type AgentMatch struct {
-	ID         string
-	SessionID  string
-	AgentType  string
-	EntryCount int
+	ID          string    // Full agent ID
+	Path        string    // Path to agent JSONL file
+	Description string    // From Task spawn or first prompt
+	Timestamp   time.Time // First entry timestamp
 }
 
-// ResolveSessionID resolves a session ID prefix to a full session ID.
-// Returns an error if the prefix is ambiguous or matches no sessions.
-// claudeDir can be empty string to use default (~/.claude).
-func ResolveSessionID(claudeDir, projectPath, prefix string) (string, error) {
+// ResolveSessionID finds a session by prefix in a project directory.
+// If exactly 1 match is found, returns the full session ID.
+// If 0 matches, returns error.
+// If 2+ matches, returns detailed ambiguity error.
+func ResolveSessionID(projectDir, prefix string) (string, error) {
 	if prefix == "" {
 		return "", fmt.Errorf("session ID prefix cannot be empty")
 	}
 
-	matches, err := findMatchingSessionIDs(claudeDir, projectPath, prefix)
+	matches, err := findMatchingSessionIDs(projectDir, prefix)
 	if err != nil {
-		return "", fmt.Errorf("failed to list sessions: %w", err)
+		return "", err
 	}
 
 	if len(matches) == 0 {
-		return "", fmt.Errorf("no session found with ID prefix %q", prefix)
+		return "", fmt.Errorf("no session found with prefix '%s'", prefix)
 	}
 
 	if len(matches) == 1 {
@@ -53,25 +56,22 @@ func ResolveSessionID(claudeDir, projectPath, prefix string) (string, error) {
 	return "", formatSessionAmbiguityError(prefix, matches)
 }
 
-// ResolveAgentID resolves an agent ID prefix to a full agent ID within a session.
-// Returns an error if the prefix is ambiguous or matches no agents.
-// claudeDir can be empty string to use default (~/.claude).
-func ResolveAgentID(claudeDir, projectPath, sessionID, prefix string) (string, error) {
+// ResolveAgentID finds an agent by prefix in a session.
+// If exactly 1 match is found, returns the full agent ID.
+// If 0 matches, returns error.
+// If 2+ matches, returns detailed ambiguity error.
+func ResolveAgentID(projectDir, sessionID, prefix string) (string, error) {
 	if prefix == "" {
 		return "", fmt.Errorf("agent ID prefix cannot be empty")
 	}
 
-	if sessionID == "" {
-		return "", fmt.Errorf("session ID is required to resolve agent ID")
-	}
-
-	matches, err := findMatchingAgentIDs(claudeDir, projectPath, sessionID, prefix)
+	matches, err := findMatchingAgentIDs(projectDir, sessionID, prefix)
 	if err != nil {
-		return "", fmt.Errorf("failed to list agents: %w", err)
+		return "", err
 	}
 
 	if len(matches) == 0 {
-		return "", fmt.Errorf("no agent found with ID prefix %q in session %s", prefix, sessionID)
+		return "", fmt.Errorf("no agent found with prefix '%s' in session %s", prefix, sessionID)
 	}
 
 	if len(matches) == 1 {
@@ -79,116 +79,183 @@ func ResolveAgentID(claudeDir, projectPath, sessionID, prefix string) (string, e
 	}
 
 	// Multiple matches - return ambiguity error
-	return "", formatAgentAmbiguityError(prefix, sessionID, matches)
+	return "", formatAgentAmbiguityError(prefix, matches)
 }
 
-// findMatchingSessionIDs finds all sessions matching the given prefix.
-func findMatchingSessionIDs(claudeDir, projectPath, prefix string) ([]SessionMatch, error) {
-	// Get the encoded project directory
-	projectDir, err := paths.ProjectDir(claudeDir, projectPath)
+// findMatchingSessionIDs finds all sessions in projectDir that start with prefix.
+func findMatchingSessionIDs(projectDir, prefix string) ([]SessionMatch, error) {
+	sessionFiles, err := paths.ListSessionFiles(projectDir)
 	if err != nil {
-		return nil, err
-	}
-
-	// List all sessions in the project
-	sessions, err := session.ListSessions(projectDir)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list session files: %w", err)
 	}
 
 	var matches []SessionMatch
-	for _, s := range sessions {
-		if strings.HasPrefix(s.ID, prefix) {
+	for sessionID, filePath := range sessionFiles {
+		// Case-sensitive prefix matching (like git)
+		if strings.HasPrefix(sessionID, prefix) {
 			match := SessionMatch{
-				ID:          s.ID,
-				ProjectPath: projectPath,
-				Created:     s.Created.Format("2006-01-02T15:04:05Z"),
-				FirstPrompt: s.FirstPrompt,
+				ID:   sessionID,
+				Path: filePath,
 			}
+
+			// Extract first prompt and timestamp
+			var foundFirst bool
+			err := session.ScanSession(filePath, func(entry models.ConversationEntry) error {
+				if !foundFirst {
+					// Get timestamp from first entry
+					if ts, err := entry.GetTimestamp(); err == nil {
+						match.Timestamp = ts
+					}
+					foundFirst = true
+				}
+
+				// Find first user message for prompt
+				if match.FirstPrompt == "" && entry.IsUser() {
+					prompt := entry.GetTextContent()
+					if len(prompt) > 60 {
+						match.FirstPrompt = prompt[:60] + "..."
+					} else {
+						match.FirstPrompt = prompt
+					}
+					// Stop scanning after we have both timestamp and prompt
+					if !match.Timestamp.IsZero() {
+						return session.StopScan
+					}
+				}
+
+				return nil
+			})
+
+			if err != nil {
+				// Skip sessions that can't be read
+				continue
+			}
+
 			matches = append(matches, match)
 		}
 	}
 
-	// Sort by creation time (most recent first)
-	sort.Slice(matches, func(i, j int) bool {
-		return matches[i].Created > matches[j].Created
-	})
-
 	return matches, nil
 }
 
-// findMatchingAgentIDs finds all agents matching the given prefix within a session.
-func findMatchingAgentIDs(claudeDir, projectPath, sessionID, prefix string) ([]AgentMatch, error) {
-	// Get the encoded project directory
-	projectDir, err := paths.ProjectDir(claudeDir, projectPath)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the session directory (project dir + session ID)
+// findMatchingAgentIDs finds all agents in a session that start with prefix.
+func findMatchingAgentIDs(projectDir, sessionID, prefix string) ([]AgentMatch, error) {
 	sessionDir := filepath.Join(projectDir, sessionID)
 
-	// Discover all agents in the session
 	agents, err := agent.DiscoverAgents(sessionDir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to discover agents: %w", err)
 	}
 
+	// Get agent spawn descriptions from session file
+	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
+	spawnDescs := extractAgentSpawnDescriptions(sessionFile)
+
 	var matches []AgentMatch
-	for _, a := range agents {
-		if strings.HasPrefix(a.ID, prefix) {
+	for _, ag := range agents {
+		// Case-sensitive prefix matching (like git)
+		if strings.HasPrefix(ag.ID, prefix) {
 			match := AgentMatch{
-				ID:         a.ID,
-				SessionID:  a.SessionID,
-				AgentType:  a.AgentType,
-				EntryCount: a.EntryCount,
+				ID:   ag.ID,
+				Path: ag.FilePath,
 			}
+
+			// Try to get description from spawn operation first
+			if desc, ok := spawnDescs[ag.ID]; ok {
+				if len(desc) > 60 {
+					match.Description = desc[:60] + "..."
+				} else {
+					match.Description = desc
+				}
+			}
+
+			// Get timestamp and fallback description from first entry
+			_ = jsonl.ScanInto(ag.FilePath, func(entry models.ConversationEntry) error {
+				// Get timestamp
+				if match.Timestamp.IsZero() {
+					if ts, err := entry.GetTimestamp(); err == nil {
+						match.Timestamp = ts
+					}
+				}
+
+				// Fallback: use first user message if no spawn description
+				if match.Description == "" && entry.IsUser() {
+					prompt := entry.GetTextContent()
+					if len(prompt) > 60 {
+						match.Description = prompt[:60] + "..."
+					} else {
+						match.Description = prompt
+					}
+					return agent.StopIteration
+				}
+
+				// Stop after first entry if we have everything
+				if !match.Timestamp.IsZero() && match.Description != "" {
+					return agent.StopIteration
+				}
+
+				return nil
+			})
+
 			matches = append(matches, match)
 		}
 	}
 
-	// Sort by ID for consistent output
-	sort.Slice(matches, func(i, j int) bool {
-		return matches[i].ID < matches[j].ID
-	})
-
 	return matches, nil
 }
 
-// formatSessionAmbiguityError creates a user-friendly error message for ambiguous session prefixes.
+// extractAgentSpawnDescriptions extracts descriptions from queue-operation entries.
+func extractAgentSpawnDescriptions(sessionFile string) map[string]string {
+	descriptions := make(map[string]string)
+
+	_ = session.ScanSession(sessionFile, func(entry models.ConversationEntry) error {
+		if entry.Type == models.EntryTypeQueueOperation && entry.AgentID != "" {
+			// Extract description from message content
+			text := entry.GetTextContent()
+			if text != "" {
+				descriptions[entry.AgentID] = text
+			}
+		}
+		return nil
+	})
+
+	return descriptions
+}
+
+// formatSessionAmbiguityError formats a detailed error message for ambiguous session prefixes.
 func formatSessionAmbiguityError(prefix string, matches []SessionMatch) error {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("ambiguous session ID prefix %q matches %d sessions:\n\n", prefix, len(matches)))
 
-	for _, m := range matches {
-		sb.WriteString(fmt.Sprintf("  %s\n", m.ID))
-		sb.WriteString(fmt.Sprintf("    Project: %s\n", m.ProjectPath))
-		sb.WriteString(fmt.Sprintf("    Date: %s\n", m.Created))
-		if m.FirstPrompt != "" {
-			sb.WriteString(fmt.Sprintf("    Prompt: %s\n", m.FirstPrompt))
+	sb.WriteString(fmt.Sprintf("Error: ambiguous session ID prefix \"%s\" matches %d sessions:\n", prefix, len(matches)))
+
+	for _, match := range matches {
+		sb.WriteString(fmt.Sprintf("\n  %s\n", match.ID))
+		sb.WriteString(fmt.Sprintf("    Date: %s\n", match.Timestamp.Format(time.RFC3339)))
+		if match.FirstPrompt != "" {
+			sb.WriteString(fmt.Sprintf("    Prompt: %s\n", match.FirstPrompt))
 		}
-		sb.WriteString("\n")
 	}
 
-	sb.WriteString("Please provide more characters to uniquely identify the session.")
+	sb.WriteString("\nPlease provide more characters to uniquely identify the session.")
+
 	return fmt.Errorf("%s", sb.String())
 }
 
-// formatAgentAmbiguityError creates a user-friendly error message for ambiguous agent prefixes.
-func formatAgentAmbiguityError(prefix, sessionID string, matches []AgentMatch) error {
+// formatAgentAmbiguityError formats a detailed error message for ambiguous agent prefixes.
+func formatAgentAmbiguityError(prefix string, matches []AgentMatch) error {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("ambiguous agent ID prefix %q matches %d agents in session %s:\n\n",
-		prefix, len(matches), sessionID))
 
-	for _, m := range matches {
-		sb.WriteString(fmt.Sprintf("  %s\n", m.ID))
-		if m.AgentType != "" {
-			sb.WriteString(fmt.Sprintf("    Type: %s\n", m.AgentType))
+	sb.WriteString(fmt.Sprintf("Error: ambiguous agent ID prefix \"%s\" matches %d agents:\n", prefix, len(matches)))
+
+	for _, match := range matches {
+		sb.WriteString(fmt.Sprintf("\n  %s\n", match.ID))
+		sb.WriteString(fmt.Sprintf("    Date: %s\n", match.Timestamp.Format(time.RFC3339)))
+		if match.Description != "" {
+			sb.WriteString(fmt.Sprintf("    Description: %s\n", match.Description))
 		}
-		sb.WriteString(fmt.Sprintf("    Entries: %d\n", m.EntryCount))
-		sb.WriteString("\n")
 	}
 
-	sb.WriteString("Please provide more characters to uniquely identify the agent.")
+	sb.WriteString("\nPlease provide more characters to uniquely identify the agent.")
+
 	return fmt.Errorf("%s", sb.String())
 }
