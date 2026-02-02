@@ -163,7 +163,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 	}
 
 	// Export JSONL files
-	opts := export.ExportOptions{
+	opts = export.ExportOptions{
 		OutputDir: outputDir,
 		ClaudeDir: claudeDir,
 	}
