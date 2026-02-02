@@ -326,7 +326,7 @@ func TestExportCmd_MissingSession(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for missing session")
 	}
-	if !strings.Contains(err.Error(), "no session found") {
+	if !strings.Contains(err.Error(), "no sessions found") {
 		t.Errorf("Error should mention session not found, got: %v", err)
 	}
 }
@@ -605,10 +605,10 @@ func TestExportCmd_WithAgents(t *testing.T) {
 		t.Fatalf("Failed to create project dir: %v", err)
 	}
 
-	// Create a session file
-	sessionID := "test-session-with-agents"
+	// Create a session file with proper UUID format
+	sessionID := "test1234-5678-90ab-cdef-abcdef123456"
 	sessionFile := filepath.Join(encodedProjectDir, sessionID+".jsonl")
-	sessionContent := `{"uuid":"1","sessionId":"test-session-with-agents","type":"user","timestamp":"2026-02-01T18:00:00.000Z","message":"Test"}
+	sessionContent := `{"uuid":"1","sessionId":"test1234-5678-90ab-cdef-abcdef123456","type":"user","timestamp":"2026-02-01T18:00:00.000Z","message":"Test"}
 `
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0600); err != nil {
 		t.Fatalf("Failed to create session file: %v", err)
@@ -622,7 +622,7 @@ func TestExportCmd_WithAgents(t *testing.T) {
 	}
 
 	// Create agent file
-	agentContent := `{"uuid":"agent-1","sessionId":"test-session-with-agents","type":"user","timestamp":"2026-02-01T18:01:00.000Z","message":"Agent message"}
+	agentContent := `{"uuid":"agent-1","sessionId":"test1234-5678-90ab-cdef-abcdef123456","type":"user","timestamp":"2026-02-01T18:01:00.000Z","message":"Agent message"}
 `
 	agentFile := filepath.Join(subagentsDir, "agent-abc123.jsonl")
 	if err := os.WriteFile(agentFile, []byte(agentContent), 0600); err != nil {
