@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/randlee/claude-history/pkg/export"
 	"github.com/randlee/claude-history/pkg/paths"
 	"github.com/randlee/claude-history/pkg/session"
 )
@@ -118,35 +119,47 @@ func runExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
+	// Prepare export options
+	opts := export.ExportOptions{
+		OutputDir: outputDir,
+		ClaudeDir: claudeDir,
+	}
+
+	// Call export
+	result, err := export.ExportSession(projectPath, exportSessionID, opts)
+	if err != nil {
+		return fmt.Errorf("export failed: %w", err)
+	}
+
 	// Report export parameters
-	fmt.Fprintf(os.Stderr, "Exporting session %s\n", exportSessionID)
+	fmt.Fprintf(os.Stderr, "Exporting session %s\n", exportSessionID[:8])
 	fmt.Fprintf(os.Stderr, "  Project: %s\n", projectPath)
 	fmt.Fprintf(os.Stderr, "  Format: %s\n", exportFormat)
-	fmt.Fprintf(os.Stderr, "  Output: %s\n", outputDir)
+	fmt.Fprintf(os.Stderr, "  Output: %s\n", result.OutputDir)
 	if sessionInfo.FirstPrompt != "" {
 		fmt.Fprintf(os.Stderr, "  First prompt: %s\n", truncateString(sessionInfo.FirstPrompt, 60))
 	}
+	fmt.Fprintf(os.Stderr, "  Total agents: %d\n", result.TotalAgents)
+	fmt.Fprintln(os.Stderr)
 
-	// TODO: Call export.ExportSession when export package is merged
-	// For now, stub out the export functionality
-	//
-	// Planned export flow:
-	// 1. Copy source JSONL files to source/ subdirectory
-	// 2. For HTML format:
-	//    a. Parse and render main session to index.html
-	//    b. Parse and render each subagent to agents/{agentId}.html
-	//    c. Write static assets (style.css, script.js)
-	// 3. Generate manifest.json with:
-	//    - Session metadata
-	//    - Agent tree structure
-	//    - File listing
-	// 4. Print summary
+	// For HTML format: generate HTML (Phase 8b will implement this)
+	if exportFormat == "html" {
+		fmt.Fprintln(os.Stderr, "Warning: HTML export not yet implemented, JSONL files copied only")
+	}
 
-	fmt.Fprintf(os.Stderr, "\n[Stub] Export functionality not yet implemented.\n")
-	fmt.Fprintf(os.Stderr, "[Stub] Would export %d messages to %s\n", sessionInfo.MessageCount, outputDir)
+	// Print success message
+	fmt.Fprintf(os.Stderr, "✓ Export created at: %s\n", result.OutputDir)
 
-	// Print the output location (stdout for scripting)
-	fmt.Println(outputDir)
+	// Print warnings if any
+	if len(result.Errors) > 0 {
+		fmt.Fprintln(os.Stderr, "\nWarnings encountered:")
+		for _, e := range result.Errors {
+			fmt.Fprintf(os.Stderr, "  - %s\n", e)
+		}
+	}
+
+	// Output directory path for scripting (last line)
+	fmt.Println(result.OutputDir)
 
 	return nil
 }
