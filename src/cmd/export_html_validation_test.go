@@ -178,10 +178,10 @@ func TestHTML_SpecialCharacters(t *testing.T) {
 	// Create test project with special characters
 	tmpDir, projectDir, projectPath := setupTestProject(t, "special-chars-test")
 
-	sessionID := "special-chars-session"
-	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"special-chars-session","uuid":"entry-1","message":"Test with < > & \" ' chars"}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"special-chars-session","uuid":"entry-2","message":"Response with unicode: \u00e9\u00e8\u00e0 \u4e2d\u6587"}
-`
+	sessionID := "special0-1234-5678-9abc-def012345678"
+	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":"Test with < > & \" ' chars"}
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":"Response with unicode: \u00e9\u00e8\u00e0 \u4e2d\u6587"}
+`, sessionID, sessionID)
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {
 		t.Fatalf("failed to create session: %v", err)
@@ -245,16 +245,16 @@ func TestHTML_LongToolInputs(t *testing.T) {
 	// Create test with very long tool input
 	tmpDir, projectDir, projectPath := setupTestProject(t, "long-tool-test")
 
-	sessionID := "long-tool-session"
+	sessionID := "longtool-1234-5678-9abc-def012345678"
 
 	// Create a very long command string
 	longCommand := strings.Repeat("echo 'test'; ", 500) // ~5000 chars
 
 	// Create properly formatted message fields (JSON structure directly, not as string)
-	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"long-tool-session","uuid":"entry-1","message":"Run a long command"}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"long-tool-session","uuid":"entry-2","message":[{"type":"text","text":"Running command"},{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"%s"}}]}
-{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"long-tool-session","uuid":"entry-3","message":[{"type":"tool_result","tool_use_id":"tool-1","content":"Success"}]}
-`, longCommand)
+	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":"Run a long command"}
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":[{"type":"text","text":"Running command"},{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"%s"}}]}
+{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"%s","uuid":"entry-3","message":[{"type":"tool_result","tool_use_id":"tool-1","content":"Success"}]}
+`, sessionID, sessionID, longCommand, sessionID)
 
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {
@@ -306,14 +306,14 @@ func TestHTML_ExpandableSections(t *testing.T) {
 	// Create test with tool calls
 	tmpDir, projectDir, projectPath := setupTestProject(t, "expandable-test")
 
-	sessionID := "expandable-session"
+	sessionID := "expand00-1234-5678-9abc-def012345678"
 
 	// Create properly formatted message fields (JSON structure directly, not as string)
-	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"expandable-session","uuid":"entry-1","message":"Read a file"}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"expandable-session","uuid":"entry-2","message":[{"type":"text","text":"Reading file"},{"type":"tool_use","id":"tool-1","name":"Read","input":{"file_path":"/test/file.txt"}}]}
-{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"expandable-session","uuid":"entry-3","message":[{"type":"tool_result","tool_use_id":"tool-1","content":"File contents here"}]}
-{"type":"queue-operation","timestamp":"2026-02-01T10:01:00Z","sessionId":"expandable-session","uuid":"queue-1","agentId":"test-agent"}
-`
+	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":"Read a file"}
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":[{"type":"text","text":"Reading file"},{"type":"tool_use","id":"tool-1","name":"Read","input":{"file_path":"/test/file.txt"}}]}
+{"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"%s","uuid":"entry-3","message":[{"type":"tool_result","tool_use_id":"tool-1","content":"File contents here"}]}
+{"type":"queue-operation","timestamp":"2026-02-01T10:01:00Z","sessionId":"%s","uuid":"queue-1","agentId":"test-agent"}
+`, sessionID, sessionID, sessionID, sessionID)
 
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {
@@ -402,14 +402,14 @@ func TestHTML_MultipleEntryTypes(t *testing.T) {
 	// Create test with various entry types
 	tmpDir, projectDir, projectPath := setupTestProject(t, "entry-types-test")
 
-	sessionID := "entry-types-session"
-	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"entry-types-session","uuid":"entry-1","message":"User message"}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"entry-types-session","uuid":"entry-2","message":"Assistant message"}
-{"type":"system","timestamp":"2026-02-01T10:00:10Z","sessionId":"entry-types-session","uuid":"entry-3","message":"System message"}
-{"type":"summary","timestamp":"2026-02-01T10:00:15Z","sessionId":"entry-types-session","uuid":"entry-4","summary":"Session summary"}
-{"type":"file-history-snapshot","timestamp":"2026-02-01T10:00:20Z","sessionId":"entry-types-session","uuid":"entry-5"}
-{"type":"progress","timestamp":"2026-02-01T10:00:25Z","sessionId":"entry-types-session","uuid":"entry-6","message":"Progress update"}
-`
+	sessionID := "entrytpe-1234-5678-9abc-def012345678"
+	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":"User message"}
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":"Assistant message"}
+{"type":"system","timestamp":"2026-02-01T10:00:10Z","sessionId":"%s","uuid":"entry-3","message":"System message"}
+{"type":"summary","timestamp":"2026-02-01T10:00:15Z","sessionId":"%s","uuid":"entry-4","summary":"Session summary"}
+{"type":"file-history-snapshot","timestamp":"2026-02-01T10:00:20Z","sessionId":"%s","uuid":"entry-5"}
+{"type":"progress","timestamp":"2026-02-01T10:00:25Z","sessionId":"%s","uuid":"entry-6","message":"Progress update"}
+`, sessionID, sessionID, sessionID, sessionID, sessionID, sessionID)
 
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {
@@ -478,11 +478,11 @@ func TestHTML_EmptyContentHandling(t *testing.T) {
 	// Test entries with missing or empty content
 	tmpDir, projectDir, projectPath := setupTestProject(t, "empty-content-test")
 
-	sessionID := "empty-content-session"
-	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"empty-content-session","uuid":"entry-1","message":""}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"empty-content-session","uuid":"entry-2","message":""}
-{"type":"system","timestamp":"2026-02-01T10:00:10Z","sessionId":"empty-content-session","uuid":"entry-3"}
-`
+	sessionID := "emptyc00-1234-5678-9abc-def012345678"
+	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":""}
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":""}
+{"type":"system","timestamp":"2026-02-01T10:00:10Z","sessionId":"%s","uuid":"entry-3"}
+`, sessionID, sessionID, sessionID)
 
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {

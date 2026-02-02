@@ -372,7 +372,7 @@ func TestExport_MissingAgentFiles(t *testing.T) {
 	// Create test project
 	tmpDir, projectDir, projectPath := setupTestProject(t, "missing-agents-test")
 
-	sessionID := "missing-agents-session"
+	sessionID := "missagnt-1234-5678-9abc-def012345678"
 
 	// Create session file with queue-operation for agent, but don't create the agent file
 	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":"Test"}

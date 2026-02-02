@@ -321,7 +321,7 @@ func verifyManifestValid(t *testing.T, manifestPath string) map[string]interface
 func createSessionWithXSS(t *testing.T, projectDir string) string {
 	t.Helper()
 
-	sessionID := "xss-test-session"
+	sessionID := "xsstest0-1234-5678-9abc-def012345678"
 
 	// Create session with malicious content
 	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"xss-1","message":"<script>alert('XSS')</script>"}
@@ -341,7 +341,7 @@ func createSessionWithXSS(t *testing.T, projectDir string) string {
 func createEmptySession(t *testing.T, projectDir string) string {
 	t.Helper()
 
-	sessionID := "empty-session"
+	sessionID := "emptyses-1234-5678-9abc-def012345678"
 
 	// Create session with only non-message entries
 	sessionContent := fmt.Sprintf(`{"type":"file-history-snapshot","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"snap-1"}
@@ -359,7 +359,7 @@ func createEmptySession(t *testing.T, projectDir string) string {
 func createLargeSession(t *testing.T, projectDir string, entryCount int) string {
 	t.Helper()
 
-	sessionID := "large-session"
+	sessionID := "largeses-1234-5678-9abc-def012345678"
 
 	var sb strings.Builder
 	for i := 0; i < entryCount; i++ {

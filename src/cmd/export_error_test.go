@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -40,8 +41,9 @@ func TestExport_InvalidSessionID(t *testing.T) {
 		t.Error("Export should fail with non-existent session ID")
 	}
 
-	if !strings.Contains(err.Error(), "not found") {
-		t.Errorf("Error should mention 'not found', got: %v", err)
+	// PR #14 changed error message to use resolver which says "no sessions found with prefix"
+	if !strings.Contains(err.Error(), "no sessions found") && !strings.Contains(err.Error(), "not found") {
+		t.Errorf("Error should mention session not found, got: %v", err)
 	}
 }
 
@@ -199,13 +201,13 @@ func TestExport_CorruptedJSONL(t *testing.T) {
 	// Test with corrupted JSONL file
 	tmpDir, projectDir, projectPath := setupTestProject(t, "corrupted-test")
 
-	sessionID := "corrupted-session"
+	sessionID := "corrupt0-1234-5678-9abc-def012345678"
 
 	// Create session with invalid JSON
-	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"corrupted-session","uuid":"entry-1","message":"Valid entry"}
+	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":"Valid entry"}
 {this is not valid JSON at all}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"corrupted-session","uuid":"entry-2","message":"Another entry"}
-`
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":"Another entry"}
+`, sessionID, sessionID)
 
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {
@@ -253,7 +255,7 @@ func TestExport_EmptySessionFile(t *testing.T) {
 	// Test with completely empty session file
 	tmpDir, projectDir, projectPath := setupTestProject(t, "empty-file-test")
 
-	sessionID := "empty-file-session"
+	sessionID := "emptyf00-1234-5678-9abc-def012345678"
 
 	// Create empty session file
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
@@ -416,7 +418,7 @@ func TestExport_SessionFileIsDirectory(t *testing.T) {
 	// Test error handling when session "file" is actually a directory
 	tmpDir, projectDir, projectPath := setupTestProject(t, "dir-as-file-test")
 
-	sessionID := "directory-session"
+	sessionID := "dirses00-1234-5678-9abc-def012345678"
 
 	// Create a directory instead of a file
 	sessionDir := filepath.Join(projectDir, sessionID+".jsonl")

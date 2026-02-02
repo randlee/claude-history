@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -228,10 +229,10 @@ func TestExport_LineEndings_CRLF(t *testing.T) {
 	// Test JSONL files with Windows line endings (\r\n)
 	tmpDir, projectDir, projectPath := setupTestProject(t, "crlf-test")
 
-	sessionID := "crlf-session"
+	sessionID := "crlf0000-1234-5678-9abc-def012345678"
 
 	// Create session with CRLF line endings
-	sessionContent := "{{\"type\":\"user\",\"timestamp\":\"2026-02-01T10:00:00Z\",\"sessionId\":\"crlf-session\",\"uuid\":\"entry-1\",\"message\":\"Test\"}}\r\n{{\"type\":\"assistant\",\"timestamp\":\"2026-02-01T10:00:05Z\",\"sessionId\":\"crlf-session\",\"uuid\":\"entry-2\",\"message\":\"Response\"}}\r\n"
+	sessionContent := fmt.Sprintf("{{\"type\":\"user\",\"timestamp\":\"2026-02-01T10:00:00Z\",\"sessionId\":\"%s\",\"uuid\":\"entry-1\",\"message\":\"Test\"}}\r\n{{\"type\":\"assistant\",\"timestamp\":\"2026-02-01T10:00:05Z\",\"sessionId\":\"%s\",\"uuid\":\"entry-2\",\"message\":\"Response\"}}\r\n", sessionID, sessionID)
 
 	// Replace {{ }} with real braces (workaround for formatting)
 	sessionContent = strings.ReplaceAll(sessionContent, "{{", "{")
@@ -282,12 +283,12 @@ func TestExport_LineEndings_LF(t *testing.T) {
 	// Test JSONL files with Unix line endings (\n)
 	tmpDir, projectDir, projectPath := setupTestProject(t, "lf-test")
 
-	sessionID := "lf-session"
+	sessionID := "lfsess00-1234-5678-9abc-def012345678"
 
 	// Create session with LF line endings
-	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"lf-session","uuid":"entry-1","message":"Test"}
-{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"lf-session","uuid":"entry-2","message":"Response"}
-`
+	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":"Test"}
+{"type":"assistant","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"entry-2","message":"Response"}
+`, sessionID, sessionID)
 
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {

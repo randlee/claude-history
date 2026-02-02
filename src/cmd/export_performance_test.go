@@ -107,12 +107,12 @@ func TestExport_DeepNesting(t *testing.T) {
 	// Create test project with deeply nested agents (10 levels)
 	tmpDir, projectDir, projectPath := setupTestProject(t, "deep-nest-test")
 
-	sessionID := "deep-nest-session"
+	sessionID := "deepnest-1234-5678-9abc-def012345678"
 
 	// Create deeply nested structure: session -> agent1 -> agent2 -> ... -> agent10
-	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"deep-nest-session","uuid":"entry-1","message":"Root"}
-{"type":"queue-operation","timestamp":"2026-02-01T10:00:05Z","sessionId":"deep-nest-session","uuid":"queue-1","agentId":"agent-1"}
-`
+	sessionContent := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"%s","uuid":"entry-1","message":"Root"}
+{"type":"queue-operation","timestamp":"2026-02-01T10:00:05Z","sessionId":"%s","uuid":"queue-1","agentId":"agent-1"}
+`, sessionID, sessionID)
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	if err := writeFile(sessionFile, []byte(sessionContent)); err != nil {
 		t.Fatalf("failed to create session: %v", err)
