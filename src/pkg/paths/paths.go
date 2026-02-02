@@ -146,30 +146,55 @@ func ListSessionFiles(projectDir string) (map[string]string, error) {
 
 // ListAgentFiles returns all agent JSONL files in a session's subagents directory.
 // Returns a map of agent ID to full file path.
+// This function recursively discovers nested agents in subdirectories.
 func ListAgentFiles(sessionDir string) (map[string]string, error) {
 	subagentsDir := filepath.Join(sessionDir, "subagents")
 
-	entries, err := os.ReadDir(subagentsDir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return make(map[string]string), nil
-		}
-		return nil, err
+	// Check if subagents directory exists
+	if _, err := os.Stat(subagentsDir); os.IsNotExist(err) {
+		return make(map[string]string), nil
 	}
 
 	result := make(map[string]string)
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if strings.HasPrefix(name, "agent-") && strings.HasSuffix(name, ".jsonl") {
-			agentID := strings.TrimPrefix(strings.TrimSuffix(name, ".jsonl"), "agent-")
-			result[agentID] = filepath.Join(subagentsDir, name)
-		}
+	err := listAgentFilesRecursive(subagentsDir, result)
+	if err != nil {
+		return nil, err
 	}
 
 	return result, nil
+}
+
+// listAgentFilesRecursive recursively scans for agent JSONL files.
+func listAgentFilesRecursive(dir string, result map[string]string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		fullPath := filepath.Join(dir, name)
+
+		if entry.IsDir() {
+			// Check if this directory has a nested subagents directory
+			nestedSubagentsDir := filepath.Join(fullPath, "subagents")
+			if _, err := os.Stat(nestedSubagentsDir); err == nil {
+				// Recursively scan the nested subagents directory
+				if err := listAgentFilesRecursive(nestedSubagentsDir, result); err != nil {
+					return err
+				}
+			}
+			continue
+		}
+
+		// Process agent JSONL files
+		if strings.HasPrefix(name, "agent-") && strings.HasSuffix(name, ".jsonl") {
+			agentID := strings.TrimPrefix(strings.TrimSuffix(name, ".jsonl"), "agent-")
+			result[agentID] = fullPath
+		}
+	}
+
+	return nil
 }
 
 // looksLikeUUID checks if a string looks like a UUID (has dashes in typical positions).
