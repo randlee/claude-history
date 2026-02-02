@@ -45,7 +45,7 @@ func ResolveSessionID(projectDir, prefix string) (string, error) {
 	}
 
 	if len(matches) == 0 {
-		return "", fmt.Errorf("no session found with prefix '%s'", prefix)
+		return "", fmt.Errorf("no sessions found with prefix '%s'", prefix)
 	}
 
 	if len(matches) == 1 {
@@ -71,7 +71,7 @@ func ResolveAgentID(projectDir, sessionID, prefix string) (string, error) {
 	}
 
 	if len(matches) == 0 {
-		return "", fmt.Errorf("no agent found with prefix '%s' in session %s", prefix, sessionID)
+		return "", fmt.Errorf("no agents found with prefix '%s' in session %s", prefix, sessionID)
 	}
 
 	if len(matches) == 1 {

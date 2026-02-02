@@ -201,8 +201,8 @@ func TestResolveSessionID_NoMatch(t *testing.T) {
 	}
 
 	errMsg := err.Error()
-	if !strings.Contains(errMsg, "no session found with prefix") {
-		t.Errorf("Error should mention 'no session found', got: %s", errMsg)
+	if !strings.Contains(errMsg, "no sessions found with prefix") {
+		t.Errorf("Error should mention 'no sessions found', got: %s", errMsg)
 	}
 	if !strings.Contains(errMsg, prefix) {
 		t.Errorf("Error should include the prefix, got: %s", errMsg)
@@ -226,8 +226,8 @@ func TestResolveSessionID_CaseSensitive(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected no match for uppercase prefix")
 	}
-	if !strings.Contains(err.Error(), "no session found") {
-		t.Errorf("Expected 'no session found' error, got: %v", err)
+	if !strings.Contains(err.Error(), "no sessions found") {
+		t.Errorf("Expected 'no sessions found' error, got: %v", err)
 	}
 }
 
@@ -320,8 +320,8 @@ func TestResolveAgentID_NoMatch(t *testing.T) {
 	}
 
 	errMsg := err.Error()
-	if !strings.Contains(errMsg, "no agent found with prefix") {
-		t.Errorf("Error should mention 'no agent found', got: %s", errMsg)
+	if !strings.Contains(errMsg, "no agents found with prefix") {
+		t.Errorf("Error should mention 'no agents found', got: %s", errMsg)
 	}
 	if !strings.Contains(errMsg, prefix) {
 		t.Errorf("Error should include the prefix, got: %s", errMsg)
@@ -339,9 +339,9 @@ func TestResolveAgentID_NoSubagentsDir(t *testing.T) {
 		t.Fatal("Expected error, got nil")
 	}
 
-	// Should get "no agent found" error (not a directory read error)
-	if !strings.Contains(err.Error(), "no agent found") {
-		t.Errorf("Expected 'no agent found' error, got: %v", err)
+	// Should get "no agents found" error (not a directory read error)
+	if !strings.Contains(err.Error(), "no agents found") {
+		t.Errorf("Expected 'no agents found' error, got: %v", err)
 	}
 }
 
