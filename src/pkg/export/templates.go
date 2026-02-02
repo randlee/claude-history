@@ -37,6 +37,15 @@ func GetClipboardJS() string {
 	return string(data)
 }
 
+// GetControlsJS returns the contents of the embedded controls JavaScript file.
+func GetControlsJS() string {
+	data, err := templatesFS.ReadFile("templates/controls.js")
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
 // WriteStaticAssets writes all static assets to the output directory.
 // Creates a 'static' subdirectory containing style.css and script.js.
 func WriteStaticAssets(outputDir string) error {
@@ -70,6 +79,15 @@ func WriteStaticAssets(outputDir string) error {
 	if clipboardContent != "" {
 		clipboardPath := filepath.Join(staticDir, "clipboard.js")
 		if err := os.WriteFile(clipboardPath, []byte(clipboardContent), 0644); err != nil {
+			return err
+		}
+	}
+
+	// Write controls JavaScript file
+	controlsContent := GetControlsJS()
+	if controlsContent != "" {
+		controlsPath := filepath.Join(staticDir, "controls.js")
+		if err := os.WriteFile(controlsPath, []byte(controlsContent), 0644); err != nil {
 			return err
 		}
 	}

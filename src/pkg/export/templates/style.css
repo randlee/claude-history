@@ -457,28 +457,58 @@ p {
 }
 
 /* ============================================
- * CONTROLS
+ * CONTROLS - Sticky Header & Control Panel
  * ============================================ */
 
-.controls {
+.page-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-primary);
+    padding: var(--space-4) 0;
+    border-bottom: 1px solid var(--border-primary);
+    margin: calc(-1 * var(--space-4));
     margin-bottom: var(--space-4);
-    padding: var(--space-2);
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
     background: var(--bg-elevated);
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
 }
 
+.controls-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.controls-separator {
+    width: 1px;
+    height: 24px;
+    background: var(--border-secondary);
+    margin: 0 var(--space-2);
+}
+
 .controls button {
-    margin-right: var(--space-2);
     padding: var(--space-2) var(--space-3);
     border: 1px solid var(--border-secondary);
     border-radius: var(--radius-md);
     background: var(--bg-elevated);
     color: var(--text-primary);
     font-size: var(--text-sm);
+    font-weight: var(--font-medium);
     cursor: pointer;
-    transition: background var(--transition-fast), border-color var(--transition-fast);
+    transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast);
+    white-space: nowrap;
 }
 
 .controls button:hover {
@@ -489,6 +519,75 @@ p {
 .controls button:focus {
     outline: 2px solid var(--border-focus);
     outline-offset: 2px;
+}
+
+.controls button:active {
+    transform: scale(0.98);
+}
+
+/* Keyboard shortcut hints */
+.controls button[data-shortcut]::after {
+    content: attr(data-shortcut);
+    display: inline-block;
+    margin-left: var(--space-2);
+    padding: 2px 6px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    font-weight: var(--font-normal);
+}
+
+/* Search box styles */
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 1;
+    min-width: 200px;
+    max-width: 400px;
+}
+
+#search-box {
+    flex: 1;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-md);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-family: var(--font-sans);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+#search-box:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px hsla(var(--blue-500), 0.2);
+}
+
+#search-box::placeholder {
+    color: var(--text-muted);
+}
+
+/* Search results indicator */
+.search-results {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    min-width: 70px;
+}
+
+.search-results.has-results {
+    color: var(--color-success);
+    font-weight: var(--font-medium);
+}
+
+/* Search navigation buttons */
+.search-nav-btn {
+    padding: var(--space-1) var(--space-2);
+    min-width: 32px;
+    font-size: var(--text-sm);
 }
 
 /* ============================================
@@ -1139,6 +1238,12 @@ pre code {
         padding: var(--space-2);
     }
 
+    .page-header {
+        margin: calc(-1 * var(--space-2));
+        margin-bottom: var(--space-2);
+        padding: var(--space-2);
+    }
+
     .conversation {
         max-width: 100%;
     }
@@ -1169,9 +1274,36 @@ pre code {
         font-size: var(--text-xl);
     }
 
+    /* Controls layout on mobile */
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+    }
+
+    .controls-group {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .controls-separator {
+        display: none;
+    }
+
+    .search-container {
+        max-width: none;
+        width: 100%;
+    }
+
     .controls button {
-        padding: var(--space-1) var(--space-2);
+        padding: var(--space-2);
         font-size: var(--text-xs);
+        flex: 1;
+    }
+
+    /* Hide keyboard shortcut hints on mobile */
+    .controls button[data-shortcut]::after {
+        display: none;
     }
 
     pre {
@@ -1637,6 +1769,43 @@ pre code {
     /* Dark mode: Headers */
     .markdown-content .md-h6 {
         color: #999;
+    }
+}
+
+/* ============================================
+ * SEARCH HIGHLIGHTING & FILTERING
+ * ============================================ */
+
+/* Search highlight (inline text matches) */
+mark.search-highlight {
+    background: hsl(var(--amber-200));
+    color: var(--text-primary);
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+/* Search match (entry level) */
+.entry.search-match {
+    border-left-width: 6px;
+    box-shadow: var(--shadow-md);
+}
+
+/* Currently active search match */
+.entry.search-active {
+    outline: 3px solid var(--border-focus);
+    outline-offset: 2px;
+}
+
+/* Hidden by search filter */
+.entry.hidden-by-search {
+    display: none;
+}
+
+/* Dark mode search highlight */
+@media (prefers-color-scheme: dark) {
+    mark.search-highlight {
+        background: hsla(var(--amber-500), 0.6);
+        color: var(--text-primary);
     }
 }
 
