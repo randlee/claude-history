@@ -89,7 +89,12 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	// Get text content
 	textContent := entry.GetTextContent()
 	if textContent != "" {
-		sb.WriteString(fmt.Sprintf(`<div class="text">%s</div>`, escapeHTML(textContent)))
+		// Apply markdown rendering for assistant messages
+		if entry.Type == models.EntryTypeAssistant {
+			sb.WriteString(fmt.Sprintf(`<div class="text markdown-content">%s</div>`, RenderMarkdown(textContent)))
+		} else {
+			sb.WriteString(fmt.Sprintf(`<div class="text">%s</div>`, escapeHTML(textContent)))
+		}
 	}
 
 	// Render tool calls for assistant messages
