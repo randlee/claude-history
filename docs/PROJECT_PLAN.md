@@ -1,10 +1,10 @@
 # Claude History CLI Tool - Project Plan
 
-**Document Version**: 2.7
+**Document Version**: 2.8
 **Created**: 2026-02-01
-**Updated**: 2026-02-02 (Phase 9 completion)
+**Updated**: 2026-02-01 (Phase 10 planning)
 **Language**: Go
-**Status**: In Development (Phase 9 complete, future enhancements planned)
+**Status**: In Development (Phase 9 complete, Phase 10 planned)
 
 ---
 
@@ -20,6 +20,7 @@
 5. Discover agents by criteria (files explored, tools used, time range)
 6. Export shareable HTML conversation history with expandable tool calls and subagents
 7. Use git-style prefix matching for session/agent IDs (no need for full UUIDs)
+8. Agent resurrection by reference - copy agent IDs and file paths for resurrection in Claude terminal
 
 **Target Platform**: Windows, macOS, Linux (cross-platform support)
 
@@ -176,7 +177,7 @@ src/claude-history/
 (None)
 
 ### Planned
-(Future enhancements - see Next Steps section)
+- 🔲 Phase 10: HTML Export Enhancement (chat bubbles, copy-to-clipboard, agent resurrection, syntax highlighting, deep-dive navigation)
 
 ---
 
@@ -1598,6 +1599,593 @@ Session: 679761ba
 - [x] Unit tests for nested tree building (13 new tests, 80.8% coverage)
 
 > ✅ **Fixed in Phase 9**: The original Phase 5c implementation incorrectly assumed queue-operation entries contain agent spawn info. Phase 9 corrected this - agent spawns are detected via `user` entries with `toolUseResult` where `status == "async_launched"`.
+
+---
+
+### Phase 10: HTML Export Enhancement 🔲 PLANNED
+
+**Priority**: HIGH
+**Status**: Planned
+**Goal**: Transform HTML export into a beautiful, functional interface with agent resurrection capabilities
+
+#### Motivation
+
+The current HTML export is functional but lacks visual polish and critical features for agent resurrection workflows. Analysis of claude-code-viewer's HTML export revealed superior UX patterns that should be adopted.
+
+**Key User Needs**:
+1. **Visual Clarity**: Chat-style layout (user left, assistant right) for better readability
+2. **Agent Resurrection**: Easy copy-paste of agent IDs and file paths for resurrection in Claude terminal
+3. **Navigation**: Deep-dive into subagent conversations with breadcrumb trails
+4. **Code Quality**: Syntax highlighting, proper formatting, copy buttons
+5. **Professional Polish**: Color-coded sections, smooth animations, responsive design
+
+#### Requirements
+
+**Visual Design**:
+- Chat bubble layout: user messages left-aligned, assistant messages right-aligned
+- CSS variable system with HSL colors for dynamic theming
+- Color-coded expandable overlays:
+  - Tools: Blue/teal with wrench icon 🔧
+  - Subagents: Purple/violet with agent icon 🤖
+  - Thinking blocks: Gray/muted with lightbulb icon 💡
+  - System messages: Yellow/amber with info icon ℹ️
+- Modern typography with clear hierarchy
+- Smooth CSS transitions for expand/collapse
+- Dark mode with proper color adaptation
+
+**Copy-to-Clipboard Functionality** (Critical):
+- **Agent IDs**: Copy button next to every agent reference with context:
+  ```
+  Clicked: Copies "a12eb64-8119-4209-9fbe-ea07e164d142"
+  Tooltip: "Copy agent ID for resurrection"
+  ```
+- **File Paths**: Copy button for every Read/Write/Edit tool:
+  ```
+  Read: /path/to/file.go [📋 Copy]
+  Tooltip: "Copy file path"
+  ```
+- **Session IDs**: Copy button in header metadata
+- **Tool IDs**: Copy button for tool use IDs (for debugging)
+- **JSONL Paths**: Copy button for agent JSONL file paths (resurrection source)
+
+**Agent Resurrection Context**:
+When copying an agent ID, include metadata in tooltip:
+```
+Agent: a12eb64
+Session: fbd51e2b-8119-4209-9fbe-ea07e164d142
+Path: /Users/name/project
+JSONL: ~/.claude/projects/-Users-name-project/fbd51e2b.../agent-a12eb64.jsonl
+Entries: 168
+Created: 2026-01-28 19:20:58
+```
+
+**Subagent Deep Dive**:
+- Click subagent → expands inline with full conversation
+- Breadcrumb navigation: `Main > Agent a12eb64 > Agent a68b8c0`
+- Visual nesting with indentation
+- "Jump to parent" button to return
+- Lazy-load nested agents on demand
+
+**Code & Formatting**:
+- Syntax highlighting with Prism.js or highlight.js
+- Language badges on code blocks
+- Copy button for all code blocks
+- Preserve all newlines in output
+- Format JSON with indentation
+- Monospace for tool inputs/outputs
+
+**Interactive Features**:
+- "Expand All / Collapse All" button with state tracking
+- Search/filter functionality
+- Keyboard shortcuts (Ctrl+K to toggle all)
+- Smooth scroll to active element
+- localStorage persistence for collapse states
+
+**Markdown Support**:
+- Render markdown in assistant messages
+- Styled headers, tables, blockquotes, task lists
+- Code blocks with language detection
+- Inline code with background
+- Links with hover states
+
+#### Development Sprints (Parallel Execution via sc-git-worktree)
+
+**Sprint 10a: CSS Foundation & Color System** (Background Dev Agent #1) 🔲
+```
+Worktree: wt/phase10-css-foundation
+Branch: feature/phase10-css-foundation
+Parallel: Start immediately
+```
+- [ ] Create CSS variable system with HSL colors
+  - [ ] Define color palette: neutral, blue, green, orange, red, purple
+  - [ ] Light mode theme
+  - [ ] Dark mode theme (prefers-color-scheme)
+  - [ ] Semantic color tokens (success, error, warning, info)
+- [ ] Update `pkg/export/templates/style.css`
+  - [ ] Replace fixed colors with CSS variables
+  - [ ] Add chat bubble layout styles (user left, assistant right)
+  - [ ] Update typography system
+  - [ ] Add animation/transition utilities
+- [ ] Create `pkg/export/templates/style_test.go` (validation)
+  - [ ] Test CSS variable definitions
+  - [ ] Test color contrast ratios (WCAG AA)
+  - [ ] Test dark mode color adaptation
+  - [ ] Coverage target: >90%
+
+**Sprint 10b: Chat Bubble Layout** (Background Dev Agent #2) 🔲
+```
+Worktree: wt/phase10-chat-layout
+Branch: feature/phase10-chat-layout
+Depends: Sprint 10a (needs CSS variables)
+```
+- [ ] Update `pkg/export/html.go`
+  - [ ] Modify `renderEntry()` to use chat bubble structure:
+    ```html
+    <div class="message-row user">
+      <div class="message-bubble">
+        <div class="message-header">User · 2:30 PM</div>
+        <div class="message-content">...</div>
+      </div>
+    </div>
+    <div class="message-row assistant">
+      <div class="message-bubble">
+        <div class="message-header">Assistant · 2:31 PM</div>
+        <div class="message-content">...</div>
+      </div>
+    </div>
+    ```
+  - [ ] Add avatar/icon placeholders
+  - [ ] Update timestamp formatting (relative times)
+- [ ] Update CSS for chat bubbles
+  - [ ] Left alignment for user messages
+  - [ ] Right alignment for assistant messages
+  - [ ] Max-width constraints for readability
+  - [ ] Rounded corners and shadows
+- [ ] Create `pkg/export/html_chat_test.go`
+  - [ ] Test chat bubble HTML generation
+  - [ ] Test layout for different message types
+  - [ ] Coverage target: >85%
+
+**Sprint 10c: Copy-to-Clipboard Infrastructure** (Background Dev Agent #3) 🔲
+```
+Worktree: wt/phase10-clipboard
+Branch: feature/phase10-clipboard
+Parallel: With 10a/10b
+```
+- [ ] Create `pkg/export/templates/clipboard.js`
+  - [ ] `copyToClipboard(text, tooltip)` function
+  - [ ] Visual feedback on copy (checkmark animation)
+  - [ ] Fallback for browsers without clipboard API
+  - [ ] Toast notifications for copy events
+- [ ] Update `pkg/export/html.go`
+  - [ ] Add `renderCopyButton(text, tooltip, label)` helper
+  - [ ] Generate copy buttons for:
+    - [ ] Agent IDs with full context
+    - [ ] File paths from Read/Write/Edit tools
+    - [ ] Session IDs
+    - [ ] Tool IDs
+    - [ ] JSONL file paths
+  - [ ] Include metadata in data attributes:
+    ```html
+    <button class="copy-btn"
+            data-copy-text="a12eb64-8119-4209-9fbe-ea07e164d142"
+            data-copy-type="agent-id"
+            data-tooltip="Copy agent ID for resurrection"
+            data-meta='{"session":"fbd51e2b","entries":168}'>
+      📋 Copy
+    </button>
+    ```
+- [ ] Add CSS for copy buttons
+  - [ ] Icon-based buttons
+  - [ ] Hover states with tooltip
+  - [ ] Success animation (checkmark)
+  - [ ] Position relative to content
+- [ ] Create `pkg/export/clipboard_test.go`
+  - [ ] Test copy button generation
+  - [ ] Test metadata extraction
+  - [ ] Coverage target: >90%
+
+**Sprint 10d: Color-Coded Expandable Overlays** (Background Dev Agent #4) 🔲
+```
+Worktree: wt/phase10-overlays
+Branch: feature/phase10-overlays
+Depends: Sprint 10a (needs CSS variables)
+```
+- [ ] Update `pkg/export/html.go`
+  - [ ] Enhance `renderToolCall()` with new structure:
+    ```html
+    <div class="tool-overlay tool-bash collapsible">
+      <div class="tool-header collapsible-trigger">
+        <span class="tool-icon">🔧</span>
+        <span class="tool-name">Bash</span>
+        <span class="tool-hint">(command execution)</span>
+        <button class="copy-btn" data-copy-text="toolu_123">📋</button>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="tool-body collapsible-content">
+        <div class="tool-section">
+          <h4>Tool ID</h4>
+          <code>toolu_123 <button class="copy-btn">📋</button></code>
+        </div>
+        <div class="tool-section">
+          <h4>Input</h4>
+          <pre class="tool-input">
+            <button class="copy-btn">📋 Copy</button>
+            <code>ls -la</code>
+          </pre>
+        </div>
+        <div class="tool-section">
+          <h4>Output</h4>
+          <pre class="tool-output">
+            <button class="copy-btn">📋 Copy</button>
+            <code>total 42...</code>
+          </pre>
+        </div>
+      </div>
+    </div>
+    ```
+  - [ ] Add tool-specific icons (🔧 Bash, 📄 Read, ✏️ Edit, 🔍 Grep, etc.)
+  - [ ] Add color classes for each tool type
+  - [ ] Add character count hints
+- [ ] Enhance `renderSubagentPlaceholder()`:
+  - [ ] Add agent icon 🤖
+  - [ ] Show entry count and metadata
+  - [ ] Add copy button for agent ID
+  - [ ] Add "Deep Dive" button
+- [ ] Add thinking block rendering:
+  - [ ] Lightbulb icon 💡
+  - [ ] Character count
+  - [ ] Collapsible with smooth transition
+- [ ] Update CSS for overlays
+  - [ ] Color-coded backgrounds (blue=tools, purple=agents, gray=thinking)
+  - [ ] Border styling
+  - [ ] Smooth transitions (max-height + opacity)
+  - [ ] Hover states
+  - [ ] Chevron rotation animation
+- [ ] Create `pkg/export/overlays_test.go`
+  - [ ] Test tool overlay generation
+  - [ ] Test subagent overlay generation
+  - [ ] Test thinking block generation
+  - [ ] Coverage target: >85%
+
+**Sprint 10e: Syntax Highlighting & Markdown** (Background Dev Agent #5) 🔲
+```
+Worktree: wt/phase10-syntax
+Branch: feature/phase10-syntax
+Parallel: With 10c/10d
+```
+- [ ] Integrate Prism.js for syntax highlighting
+  - [ ] Embed Prism.js core in `templates/prism.js`
+  - [ ] Include language definitions: bash, go, python, javascript, json, yaml
+  - [ ] Include theme: One Dark (dark mode), One Light (light mode)
+  - [ ] Auto-detect language from code fence markers
+- [ ] Create `pkg/export/markdown.go`
+  - [ ] `RenderMarkdown(content string) string` function
+  - [ ] Parse markdown and convert to HTML with CSS classes
+  - [ ] Support: headers, lists, tables, blockquotes, code blocks, task lists
+  - [ ] Preserve code block language tags
+- [ ] Update `pkg/export/html.go`
+  - [ ] Apply markdown rendering to assistant text content
+  - [ ] Apply syntax highlighting to code blocks
+  - [ ] Add language badges to code blocks
+  - [ ] Add copy buttons to code blocks
+- [ ] Update CSS for code styling
+  - [ ] Language badge styling
+  - [ ] Code block container with header
+  - [ ] Copy button positioning
+  - [ ] Syntax highlighting theme integration
+- [ ] Create `pkg/export/markdown_test.go`
+  - [ ] Test markdown parsing
+  - [ ] Test code block extraction
+  - [ ] Test language detection
+  - [ ] Coverage target: >90%
+
+**Sprint 10f: Deep Dive Navigation** (Background Dev Agent #6) 🔲
+```
+Worktree: wt/phase10-navigation
+Branch: feature/phase10-navigation
+Depends: Sprint 10d (needs overlay structure)
+```
+- [ ] Create `pkg/export/templates/navigation.js`
+  - [ ] `expandSubagent(agentId)` - loads and displays agent conversation
+  - [ ] `collapseSubagent(agentId)` - collapses agent
+  - [ ] `updateBreadcrumbs(path)` - updates breadcrumb trail
+  - [ ] `scrollToAgent(agentId)` - smooth scroll to agent
+  - [ ] Lazy-load nested agents on demand
+- [ ] Update `pkg/export/html.go`
+  - [ ] Add breadcrumb navigation structure:
+    ```html
+    <div class="breadcrumbs">
+      <a href="#main">Main Session</a>
+      <span class="separator">›</span>
+      <a href="#agent-a12eb64">Agent a12eb64</a>
+    </div>
+    ```
+  - [ ] Add deep-dive button to subagent overlays
+  - [ ] Add "Jump to Parent" button in nested agents
+  - [ ] Generate nested HTML structure with proper IDs
+- [ ] Update CSS for navigation
+  - [ ] Breadcrumb styling
+  - [ ] Nested agent indentation (progressive)
+  - [ ] Scroll indicators
+  - [ ] Active state highlighting
+- [ ] Create `pkg/export/navigation_test.go`
+  - [ ] Test breadcrumb generation
+  - [ ] Test nested structure
+  - [ ] Coverage target: >85%
+
+**Sprint 10g: Interactive Controls** (Background Dev Agent #7) 🔲
+```
+Worktree: wt/phase10-controls
+Branch: feature/phase10-controls
+Parallel: With 10e/10f
+```
+- [ ] Create `pkg/export/templates/controls.js`
+  - [ ] "Expand All / Collapse All" button
+  - [ ] Search/filter functionality
+  - [ ] Keyboard shortcuts:
+    - [ ] `Ctrl+K` - Toggle all collapsibles
+    - [ ] `Ctrl+F` - Focus search
+    - [ ] `Ctrl+C` - Copy current agent ID
+    - [ ] `Esc` - Close modals/overlays
+  - [ ] localStorage persistence for collapse states
+  - [ ] Smooth scroll to element
+- [ ] Update `pkg/export/html.go`
+  - [ ] Add control panel to header:
+    ```html
+    <div class="controls">
+      <button id="expand-all-btn">Expand All</button>
+      <input type="search" id="search-box" placeholder="Search...">
+      <button id="copy-session-btn">📋 Copy Session ID</button>
+    </div>
+    ```
+  - [ ] Add search result highlighting
+  - [ ] Add jump-to links in search results
+- [ ] Update CSS for controls
+  - [ ] Control panel layout
+  - [ ] Search box styling
+  - [ ] Keyboard shortcut hints
+  - [ ] Sticky header (fixed position)
+- [ ] Create `pkg/export/controls_test.go`
+  - [ ] Test control panel generation
+  - [ ] Coverage target: >85%
+
+**Sprint 10h: Header, Footer & Metadata** (Background Dev Agent #8) 🔲
+```
+Worktree: wt/phase10-chrome
+Branch: feature/phase10-chrome
+Depends: Sprint 10g (needs controls)
+```
+- [ ] Update `pkg/export/html.go`
+  - [ ] Enhance header with metadata:
+    ```html
+    <header class="page-header">
+      <h1>Claude Code Session</h1>
+      <div class="session-metadata">
+        <span class="meta-item">
+          Session: <code>fbd51e2b <button class="copy-btn">📋</button></code>
+        </span>
+        <span class="meta-item">Project: /Users/name/project</span>
+        <span class="meta-item">Exported: 2026-02-01 22:39:20</span>
+        <span class="meta-item">Messages: 914</span>
+        <span class="meta-item">Agents: 11</span>
+        <span class="meta-item">Tools: 247 calls</span>
+      </div>
+      <div class="controls"><!-- from Sprint 10g --></div>
+    </header>
+    ```
+  - [ ] Add footer:
+    ```html
+    <footer class="page-footer">
+      <div class="footer-info">
+        <p>Exported from <strong>claude-history</strong> CLI</p>
+        <p>Export format version: 2.0</p>
+        <p>Source: <code>~/.claude/projects/... <button class="copy-btn">📋</button></code></p>
+      </div>
+      <div class="footer-help">
+        <details>
+          <summary>Keyboard Shortcuts</summary>
+          <ul>
+            <li><kbd>Ctrl+K</kbd> - Expand/Collapse All</li>
+            <li><kbd>Ctrl+F</kbd> - Search</li>
+            <li><kbd>Ctrl+C</kbd> - Copy Agent ID</li>
+          </ul>
+        </details>
+      </div>
+    </footer>
+    ```
+- [ ] Update CSS for header/footer
+  - [ ] Sticky header with shadow on scroll
+  - [ ] Footer styling
+  - [ ] Metadata layout (responsive grid)
+  - [ ] Keyboard shortcut styling
+- [ ] Create `pkg/export/chrome_test.go`
+  - [ ] Test header generation
+  - [ ] Test footer generation
+  - [ ] Test metadata extraction
+  - [ ] Coverage target: >85%
+
+**Sprint 10i: Integration & Polish** (Background Dev Agent #9) 🔲
+```
+Worktree: wt/phase10-integration
+Branch: feature/phase10-integration
+Depends: All sprints 10a-10h
+Sequential: After all other sprints complete
+```
+- [ ] Integrate all components in `cmd/export.go`
+  - [ ] Wire up new HTML generation flow
+  - [ ] Include all JavaScript modules
+  - [ ] Include all CSS modules
+  - [ ] Test full export workflow
+- [ ] Create comprehensive integration tests
+  - [ ] Test full HTML export with all features
+  - [ ] Test agent resurrection workflow (copy agent ID → paste → resurrect)
+  - [ ] Test deep dive navigation
+  - [ ] Test copy-to-clipboard for all elements
+  - [ ] Test search functionality
+  - [ ] Test keyboard shortcuts
+- [ ] Performance optimization
+  - [ ] Lazy-load large subagent conversations
+  - [ ] Virtual scrolling for 1000+ entries
+  - [ ] Debounce search input
+  - [ ] Cache rendered HTML fragments
+- [ ] Cross-browser testing
+  - [ ] Chrome/Edge (Chromium)
+  - [ ] Firefox
+  - [ ] Safari
+- [ ] Accessibility audit
+  - [ ] ARIA labels for interactive elements
+  - [ ] Keyboard navigation
+  - [ ] Screen reader compatibility
+  - [ ] Color contrast validation
+- [ ] Print stylesheet
+  - [ ] Expand all collapsibles
+  - [ ] Hide interactive controls
+  - [ ] Page break handling
+  - [ ] Readable color scheme for paper
+
+#### QA Verification (Background QA Agent - MANDATORY) 🔲
+
+After all dev sprints complete:
+- [ ] Run full test suite: `go test ./... -v`
+- [ ] Verify 100% test pass rate (zero failures)
+- [ ] Check coverage: `go test ./pkg/export/... -cover` (target >85%)
+- [ ] Run linter: `golangci-lint run ./...` (zero errors)
+- [ ] Manual verification with real Claude Code data:
+  - [ ] Export session with nested agents
+  - [ ] Test chat bubble layout (user left, assistant right)
+  - [ ] Test copy buttons for agent IDs, file paths, session IDs
+  - [ ] Test agent resurrection workflow:
+    1. Copy agent ID from HTML
+    2. Paste in Claude terminal
+    3. Verify agent can be located and resurrected
+  - [ ] Test deep dive into nested agents
+  - [ ] Test expand/collapse animations
+  - [ ] Test syntax highlighting in code blocks
+  - [ ] Test markdown rendering
+  - [ ] Test search functionality
+  - [ ] Test keyboard shortcuts
+  - [ ] Test dark mode
+  - [ ] Test responsive design (mobile, tablet, desktop)
+- [ ] Browser compatibility testing:
+  - [ ] Chrome/Edge (latest)
+  - [ ] Firefox (latest)
+  - [ ] Safari (latest)
+- [ ] Performance testing:
+  - [ ] Export large session (1000+ entries)
+  - [ ] Measure page load time
+  - [ ] Test smooth scrolling
+  - [ ] Test memory usage
+- [ ] Accessibility validation:
+  - [ ] Run axe DevTools audit
+  - [ ] Test keyboard-only navigation
+  - [ ] Test with screen reader (VoiceOver/NVDA)
+  - [ ] Verify WCAG 2.1 AA compliance
+- [ ] CI passes on all platforms (macOS, Ubuntu, Windows)
+- [ ] **100% pass**: Commit and create PR to develop
+
+#### Success Criteria
+
+**Visual**:
+- [ ] Chat bubble layout clearly distinguishes user from assistant
+- [ ] Color-coded overlays provide clear visual hierarchy
+- [ ] Smooth animations for all expand/collapse interactions
+- [ ] Professional, modern design comparable to commercial chat apps
+- [ ] Dark mode with proper color adaptation
+
+**Functionality**:
+- [ ] Copy buttons work for all agent IDs, file paths, session IDs
+- [ ] Agent resurrection workflow: copy agent ID → paste in terminal → resurrect
+- [ ] Deep dive into nested agents with breadcrumb navigation
+- [ ] Search finds text in messages, tool calls, and agent conversations
+- [ ] Keyboard shortcuts enhance productivity
+- [ ] All code blocks have syntax highlighting
+
+**Code Quality**:
+- [ ] All code properly formatted with newlines preserved
+- [ ] JSON formatted with indentation
+- [ ] Tool outputs clearly separated from inputs
+- [ ] Markdown rendered with proper styling
+
+**Performance**:
+- [ ] Page load time < 2 seconds for 1000-entry session
+- [ ] Smooth 60fps animations
+- [ ] No memory leaks during navigation
+- [ ] Lazy-load prevents initial load bloat
+
+**Accessibility**:
+- [ ] WCAG 2.1 AA compliant
+- [ ] Keyboard navigation for all interactive elements
+- [ ] Screen reader compatible
+- [ ] Color contrast meets accessibility standards
+
+#### Files to Create/Modify
+
+| Sprint | File | Action | Dev Agent |
+|--------|------|--------|-----------|
+| 10a | `pkg/export/templates/style.css` | Major overhaul | #1 |
+| 10a | `pkg/export/templates/style_test.go` | Create | #1 |
+| 10b | `pkg/export/html.go` | Modify (chat bubbles) | #2 |
+| 10b | `pkg/export/html_chat_test.go` | Create | #2 |
+| 10c | `pkg/export/templates/clipboard.js` | Create | #3 |
+| 10c | `pkg/export/html.go` | Modify (copy buttons) | #3 |
+| 10c | `pkg/export/clipboard_test.go` | Create | #3 |
+| 10d | `pkg/export/html.go` | Modify (overlays) | #4 |
+| 10d | `pkg/export/templates/style.css` | Modify (overlay styles) | #4 |
+| 10d | `pkg/export/overlays_test.go` | Create | #4 |
+| 10e | `pkg/export/templates/prism.js` | Create | #5 |
+| 10e | `pkg/export/markdown.go` | Create | #5 |
+| 10e | `pkg/export/markdown_test.go` | Create | #5 |
+| 10e | `pkg/export/html.go` | Modify (syntax highlighting) | #5 |
+| 10f | `pkg/export/templates/navigation.js` | Create | #6 |
+| 10f | `pkg/export/html.go` | Modify (breadcrumbs) | #6 |
+| 10f | `pkg/export/navigation_test.go` | Create | #6 |
+| 10g | `pkg/export/templates/controls.js` | Create | #7 |
+| 10g | `pkg/export/html.go` | Modify (controls) | #7 |
+| 10g | `pkg/export/controls_test.go` | Create | #7 |
+| 10h | `pkg/export/html.go` | Modify (header/footer) | #8 |
+| 10h | `pkg/export/chrome_test.go` | Create | #8 |
+| 10i | `cmd/export.go` | Modify (integration) | #9 |
+| 10i | `cmd/export_integration_test.go` | Modify | #9 |
+
+#### Implementation Timeline
+
+**Phase Duration**: 3-5 days with parallel agents
+
+**Sprint Execution**:
+- **Wave 1** (Day 1): Sprints 10a, 10c, 10e (parallel - no dependencies)
+- **Wave 2** (Day 2): Sprints 10b, 10d, 10g (depends on 10a)
+- **Wave 3** (Day 3): Sprints 10f, 10h (depends on Wave 2)
+- **Wave 4** (Day 4): Sprint 10i (integration - depends on all)
+- **Day 5**: QA verification and fixes
+
+#### Agent Resurrection Workflow Example
+
+**Use Case**: User wants to ask detailed questions about a subagent that explored beads repo
+
+1. **Export session to HTML**:
+   ```bash
+   ./claude-history export /path --session fbd51e2b --format html
+   ```
+
+2. **Open HTML in browser**, find agent `adccc2e` that explored beads files
+
+3. **Click copy button** next to agent ID → copies:
+   ```
+   a12eb64-8119-4209-9fbe-ea07e164d142
+   ```
+
+4. **Paste in Claude terminal**:
+   ```
+   Tell me about agent a12eb64-8119-4209-9fbe-ea07e164d142
+   ```
+
+5. **Claude locates and resurrects agent**, can answer questions about its work
+
+**Alternative**: Copy JSONL path directly:
+```
+~/.claude/projects/-Users-name-project/fbd51e2b.../subagents/agent-a12eb64.jsonl
+```
 
 ---
 
