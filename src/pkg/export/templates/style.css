@@ -1165,6 +1165,282 @@ pre code {
 }
 
 /* ============================================
+ * MARKDOWN RENDERING STYLES
+ * ============================================ */
+
+/* Markdown content styles */
+.markdown-content {
+    line-height: 1.6;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.markdown-content .md-h1 { font-size: 1.75em; }
+.markdown-content .md-h2 { font-size: 1.5em; }
+.markdown-content .md-h3 { font-size: 1.25em; }
+.markdown-content .md-h4 { font-size: 1.1em; }
+.markdown-content .md-h5 { font-size: 1em; }
+.markdown-content .md-h6 { font-size: 0.9em; color: #666; }
+
+.markdown-content .md-h1:first-child,
+.markdown-content .md-h2:first-child,
+.markdown-content .md-h3:first-child {
+    margin-top: 0;
+}
+
+/* Code blocks with language badge and copy button */
+.code-block {
+    position: relative;
+    margin: 1rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #1e1e1e;
+    border: 1px solid #333;
+}
+
+.code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: #2d2d2d;
+    border-bottom: 1px solid #333;
+}
+
+.language-badge {
+    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #9cdcfe;
+    text-transform: lowercase;
+}
+
+.copy-code-btn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #ccc;
+    background: #3c3c3c;
+    border: 1px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.copy-code-btn:hover {
+    background: #4a4a4a;
+    color: #fff;
+    border-color: #666;
+}
+
+.copy-code-btn:active {
+    background: #555;
+}
+
+.copy-code-btn.copied {
+    background: #2e7d32;
+    border-color: #4caf50;
+    color: #fff;
+}
+
+.code-content {
+    margin: 0;
+    padding: 1rem;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    overflow-x: auto;
+    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    tab-size: 4;
+}
+
+.code-content code {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    color: inherit;
+    font-size: inherit;
+}
+
+/* Language-specific colors for badges */
+.code-block.language-go .language-badge { color: #00add8; }
+.code-block.language-python .language-badge,
+.code-block.language-py .language-badge { color: #3776ab; }
+.code-block.language-javascript .language-badge,
+.code-block.language-js .language-badge { color: #f7df1e; }
+.code-block.language-typescript .language-badge,
+.code-block.language-ts .language-badge { color: #3178c6; }
+.code-block.language-rust .language-badge,
+.code-block.language-rs .language-badge { color: #dea584; }
+.code-block.language-bash .language-badge,
+.code-block.language-shell .language-badge,
+.code-block.language-sh .language-badge { color: #89e051; }
+.code-block.language-html .language-badge { color: #e34c26; }
+.code-block.language-css .language-badge { color: #264de4; }
+.code-block.language-json .language-badge { color: #cbcb41; }
+.code-block.language-yaml .language-badge,
+.code-block.language-yml .language-badge { color: #cb171e; }
+.code-block.language-sql .language-badge { color: #e38c00; }
+.code-block.language-ruby .language-badge,
+.code-block.language-rb .language-badge { color: #cc342d; }
+.code-block.language-java .language-badge { color: #b07219; }
+.code-block.language-c .language-badge { color: #555555; }
+.code-block.language-cpp .language-badge { color: #f34b7d; }
+
+/* Inline code */
+.inline-code {
+    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.9em;
+    background: rgba(27, 31, 35, 0.05);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    color: #c7254e;
+}
+
+/* Markdown lists */
+.markdown-content .md-ul,
+.markdown-content .md-ol {
+    margin: 0.5rem 0;
+    padding-left: 2em;
+}
+
+.markdown-content .md-ul li,
+.markdown-content .md-ol li {
+    margin: 0.25rem 0;
+}
+
+/* Task lists */
+.markdown-content .md-task-list {
+    list-style: none;
+    padding-left: 1.5em;
+}
+
+.markdown-content .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.markdown-content .task-item input[type="checkbox"] {
+    margin-top: 0.25rem;
+    cursor: default;
+}
+
+/* Markdown tables */
+.markdown-content .md-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+}
+
+.markdown-content .md-table th,
+.markdown-content .md-table td {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.markdown-content .md-table th {
+    background: #f5f5f5;
+    font-weight: 600;
+}
+
+.markdown-content .md-table tr:nth-child(even) {
+    background: #fafafa;
+}
+
+/* Markdown blockquotes */
+.markdown-content .md-blockquote {
+    margin: 1rem 0;
+    padding: 0.5rem 1rem;
+    border-left: 4px solid #ddd;
+    background: #f9f9f9;
+    color: #666;
+}
+
+/* Markdown horizontal rules */
+.markdown-content .md-hr {
+    margin: 1.5rem 0;
+    border: none;
+    border-top: 2px solid #eee;
+}
+
+/* Markdown links */
+.markdown-content .md-link {
+    color: #0366d6;
+    text-decoration: none;
+}
+
+.markdown-content .md-link:hover {
+    text-decoration: underline;
+}
+
+/* Markdown images */
+.markdown-content .md-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 0.5rem 0;
+}
+
+/* Dark mode: Markdown styles */
+@media (prefers-color-scheme: dark) {
+    /* Dark mode: Inline code */
+    .inline-code {
+        background: rgba(255, 255, 255, 0.1);
+        color: #f8b4b4;
+    }
+
+    /* Dark mode: Markdown tables */
+    .markdown-content .md-table th,
+    .markdown-content .md-table td {
+        border-color: #444;
+    }
+
+    .markdown-content .md-table th {
+        background: #2a2a2a;
+    }
+
+    .markdown-content .md-table tr:nth-child(even) {
+        background: #252525;
+    }
+
+    /* Dark mode: Blockquotes */
+    .markdown-content .md-blockquote {
+        border-left-color: #555;
+        background: #252525;
+        color: #aaa;
+    }
+
+    /* Dark mode: Horizontal rules */
+    .markdown-content .md-hr {
+        border-top-color: #444;
+    }
+
+    /* Dark mode: Links */
+    .markdown-content .md-link {
+        color: #58a6ff;
+    }
+
+    /* Dark mode: Headers */
+    .markdown-content .md-h6 {
+        color: #999;
+    }
+}
+
+/* ============================================
  * UTILITY CLASSES
  * ============================================ */
 
