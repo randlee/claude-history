@@ -1,8 +1,11 @@
 module github.com/randlee/claude-history
 
-go 1.21
+go 1.24.0
 
-require github.com/spf13/cobra v1.8.0
+require (
+	github.com/spf13/cobra v1.8.0
+	golang.org/x/net v0.49.0
+)
 
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
