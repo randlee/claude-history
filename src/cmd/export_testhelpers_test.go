@@ -27,12 +27,13 @@ func createTestSessionWithAgents(t *testing.T, projectDir string, agentCount int
 {"type":"user","timestamp":"2026-02-01T10:00:10Z","sessionId":"%s","uuid":"entry-3","message":[{"type":"tool_result","tool_use_id":"tool-1","content":""}]}
 `, sessionID, sessionID, sessionID)
 
-	// Add queue-operation entries for spawning agents
+	// Add agent spawn entries using toolUseResult format
 	for i := 0; i < agentCount; i++ {
 		agentID := fmt.Sprintf("agent-%d", i+1)
-		queueEntry := fmt.Sprintf(`{"type":"queue-operation","timestamp":"2026-02-01T10:%02d:00Z","sessionId":"%s","uuid":"queue-%d","agentId":"%s"}
-`, i+1, sessionID, i+1, agentID)
-		sessionContent += queueEntry
+		// Agent spawns are user entries with toolUseResult containing status="async_launched"
+		spawnEntry := fmt.Sprintf(`{"type":"user","timestamp":"2026-02-01T10:%02d:00Z","sessionId":"%s","uuid":"spawn-%d","sourceToolAssistantUUID":"entry-2","toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"%s","description":"Spawned agent %d"}}
+`, i+1, sessionID, i+1, agentID, i+1)
+		sessionContent += spawnEntry
 	}
 
 	// Create main session file
@@ -71,11 +72,11 @@ func createNestedAgentStructure(t *testing.T, projectDir, sessionID string) {
 	sessionDir := filepath.Join(projectDir, sessionID)
 	subagentsDir := filepath.Join(sessionDir, "subagents")
 
-	// Create parent agent
+	// Create parent agent with toolUseResult-based spawns
 	parentContent := `{"type":"user","timestamp":"2026-02-01T11:00:00Z","uuid":"parent-entry-1","message":"Parent agent task"}
 {"type":"assistant","timestamp":"2026-02-01T11:00:05Z","uuid":"parent-entry-2","message":"Parent agent response"}
-{"type":"queue-operation","timestamp":"2026-02-01T11:01:00Z","uuid":"parent-queue-1","agentId":"child-1"}
-{"type":"queue-operation","timestamp":"2026-02-01T11:02:00Z","uuid":"parent-queue-2","agentId":"child-2"}
+{"type":"user","timestamp":"2026-02-01T11:01:00Z","uuid":"parent-spawn-1","sourceToolAssistantUUID":"parent","toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"child-1","description":"Spawned child-1"}}
+{"type":"user","timestamp":"2026-02-01T11:02:00Z","uuid":"parent-spawn-2","sourceToolAssistantUUID":"parent","toolUseResult":{"isAsync":true,"status":"async_launched","agentId":"child-2","description":"Spawned child-2"}}
 `
 	parentFile := filepath.Join(subagentsDir, "agent-parent.jsonl")
 	if err := os.WriteFile(parentFile, []byte(parentContent), 0644); err != nil {

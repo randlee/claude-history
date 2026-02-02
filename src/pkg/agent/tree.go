@@ -24,8 +24,8 @@ type TreeNode struct {
 // SpawnInfo contains information about agent spawn relationships.
 type SpawnInfo struct {
 	AgentID    string // The ID of the spawned agent
-	SpawnUUID  string // UUID of the queue-operation entry that spawned it
-	ParentUUID string // UUID of the parent (main session entry or another agent)
+	SpawnUUID  string // UUID of the user entry that contains the spawn result
+	ParentUUID string // UUID of the assistant message that triggered the spawn (sourceToolAssistantUUID)
 }
 
 // BuildTree constructs an agent hierarchy tree for a session.
@@ -36,7 +36,7 @@ func BuildTree(projectDir string, sessionID string) (*TreeNode, error) {
 }
 
 // BuildNestedTree constructs a properly nested agent hierarchy tree for a session.
-// It parses parentUuid from queue-operation entries to build the correct parent-child relationships.
+// It uses toolUseResult from user entries to detect agent spawns and build parent-child relationships.
 func BuildNestedTree(projectDir string, sessionID string) (*TreeNode, error) {
 	sessionPath := filepath.Join(projectDir, sessionID+".jsonl")
 	sessionDir := filepath.Join(projectDir, sessionID)
@@ -68,7 +68,7 @@ func BuildNestedTree(projectDir string, sessionID string) (*TreeNode, error) {
 		return root, nil
 	}
 
-	// Build spawn info map from main session queue-operations
+	// Build spawn info map from toolUseResult entries in main session and agent files
 	spawnInfoMap := buildSpawnInfoMap(sessionPath, sessionDir, agents)
 
 	// Create nodes for all agents
@@ -112,39 +112,35 @@ func BuildNestedTree(projectDir string, sessionID string) (*TreeNode, error) {
 }
 
 // buildSpawnInfoMap extracts spawn information from session and agent files.
+// It looks for user entries with toolUseResult where status is "async_launched".
 func buildSpawnInfoMap(sessionPath string, sessionDir string, agents []models.Agent) map[string]*SpawnInfo {
 	result := make(map[string]*SpawnInfo)
 
-	// First, scan main session for queue-operations
+	// Scan main session for agent spawns (user entries with toolUseResult)
 	_ = jsonl.ScanInto(sessionPath, func(entry models.ConversationEntry) error {
-		if entry.Type == models.EntryTypeQueueOperation && entry.AgentID != "" {
-			parentUUID := ""
-			if entry.ParentUUID != nil {
-				parentUUID = *entry.ParentUUID
-			}
-			result[entry.AgentID] = &SpawnInfo{
-				AgentID:    entry.AgentID,
+		if entry.IsAgentSpawn() {
+			agentID := entry.GetSpawnedAgentID()
+			result[agentID] = &SpawnInfo{
+				AgentID:    agentID,
 				SpawnUUID:  entry.UUID,
-				ParentUUID: parentUUID,
+				ParentUUID: entry.SourceToolAssistantUUID,
 			}
 		}
 		return nil
 	})
 
-	// Then scan each agent file for nested queue-operations
+	// Scan each agent file for nested agent spawns
 	for _, agent := range agents {
 		_ = jsonl.ScanInto(agent.FilePath, func(entry models.ConversationEntry) error {
-			if entry.Type == models.EntryTypeQueueOperation && entry.AgentID != "" {
-				parentUUID := ""
-				if entry.ParentUUID != nil {
-					parentUUID = *entry.ParentUUID
-				}
+			if entry.IsAgentSpawn() {
+				agentID := entry.GetSpawnedAgentID()
+				parentUUID := entry.SourceToolAssistantUUID
 				// For nested agents, if parentUUID is empty, the parent is this agent
 				if parentUUID == "" {
 					parentUUID = agent.ID
 				}
-				result[entry.AgentID] = &SpawnInfo{
-					AgentID:    entry.AgentID,
+				result[agentID] = &SpawnInfo{
+					AgentID:    agentID,
 					SpawnUUID:  entry.UUID,
 					ParentUUID: parentUUID,
 				}
@@ -156,8 +152,9 @@ func buildSpawnInfoMap(sessionPath string, sessionDir string, agents []models.Ag
 	return result
 }
 
-// findParentNode resolves a parentUUID to find the parent node.
-// It handles circular references by tracking visited nodes.
+// findParentNode resolves a sourceToolAssistantUUID to find the parent node.
+// It looks up nodes by agent ID or by their UUID field (assistant message UUID).
+// Handles circular references by tracking visited nodes.
 // Returns nil if parent not found or cycle detected.
 func findParentNode(nodeMap map[string]*TreeNode, parentUUID string, currentID string, visited map[string]bool) *TreeNode {
 	// Self-referencing check
