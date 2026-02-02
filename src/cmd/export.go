@@ -167,14 +167,14 @@ func runExport(cmd *cobra.Command, args []string) error {
 		OutputDir: outputDir,
 		ClaudeDir: claudeDir,
 	}
-	result, err := export.ExportSession(projectPath, exportSessionID, opts)
+	result2, err := export.ExportSession(projectPath, exportSessionID, opts)
 	if err != nil {
 		return fmt.Errorf("failed to export session: %w", err)
 	}
 
 	// Report any non-fatal errors
-	if len(result.Errors) > 0 {
-		for _, errMsg := range result.Errors {
+	if len(result2.Errors) > 0 {
+		for _, errMsg := range result2.Errors {
 			fmt.Fprintf(os.Stderr, "Warning: %s\n", errMsg)
 		}
 	}
