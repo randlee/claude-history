@@ -323,12 +323,12 @@ const htmlHeader = `<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <title>Claude Conversation Export</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
 `
 
-const htmlFooter = `    <script src="script.js"></script>
+const htmlFooter = `    <script src="static/script.js"></script>
 </body>
 </html>
 `
