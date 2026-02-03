@@ -544,6 +544,9 @@ func renderHTMLHeader(stats *SessionStats) string {
             <span class="search-results" aria-live="polite"></span>
         </div>
     </div>
+    <nav class="breadcrumbs" id="breadcrumbs" aria-label="Navigation breadcrumbs">
+        <a href="#main" class="breadcrumb-item active" data-agent-id="main" aria-current="page">Main Session</a>
+    </nav>
 </header>
 `)
 
@@ -583,6 +586,7 @@ func renderHTMLFooter(stats *SessionStats) string {
     <script src="static/script.js"></script>
     <script src="static/clipboard.js"></script>
     <script src="static/controls.js"></script>
+    <script src="static/navigation.js"></script>
 </body>
 </html>
 `)
@@ -617,6 +621,9 @@ var htmlHeader = `<!DOCTYPE html>
             <span class="search-results" aria-live="polite"></span>
         </div>
     </div>
+    <nav class="breadcrumbs" id="breadcrumbs" aria-label="Navigation breadcrumbs">
+        <a href="#main" class="breadcrumb-item active" data-agent-id="main" aria-current="page">Main Session</a>
+    </nav>
 </header>
 `
 
@@ -630,6 +637,7 @@ var htmlFooter = `<footer class="page-footer">
     <script src="static/script.js"></script>
     <script src="static/clipboard.js"></script>
     <script src="static/controls.js"></script>
+    <script src="static/navigation.js"></script>
 </body>
 </html>
 `
