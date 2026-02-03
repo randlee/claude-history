@@ -3,7 +3,7 @@
  */
 
 /**
- * Toggle visibility of a tool call body.
+ * Toggle visibility of a tool call body (legacy).
  * @param {HTMLElement} header - The tool header element
  */
 function toggleTool(header) {
@@ -17,6 +17,74 @@ function toggleTool(header) {
             toggle.textContent = body.classList.contains('hidden') ? '[+]' : '[-]';
         }
     }
+}
+
+/**
+ * Toggle visibility of a tool overlay (new collapsible style).
+ * @param {HTMLElement} header - The tool header element
+ */
+function toggleToolOverlay(header) {
+    var overlay = header.closest('.tool-overlay');
+    if (overlay) {
+        overlay.classList.toggle('expanded');
+
+        // Toggle the collapsed class on the body
+        var body = overlay.querySelector('.tool-body');
+        if (body) {
+            body.classList.toggle('collapsed');
+        }
+    }
+}
+
+/**
+ * Toggle visibility of a thinking block.
+ * @param {HTMLElement} header - The thinking header element
+ */
+function toggleThinking(header) {
+    var overlay = header.closest('.thinking-overlay');
+    if (overlay) {
+        overlay.classList.toggle('expanded');
+
+        // Toggle the collapsed class on the body
+        var body = overlay.querySelector('.thinking-body');
+        if (body) {
+            body.classList.toggle('collapsed');
+        }
+    }
+}
+
+/**
+ * Deep dive into a subagent conversation.
+ * @param {string} agentId - The agent ID to deep dive into
+ * @param {Event} event - The click event
+ */
+function deepDiveAgent(agentId, event) {
+    // Stop propagation to prevent triggering the loadAgent function
+    if (event) {
+        event.stopPropagation();
+    }
+
+    var overlay = document.querySelector('[data-agent-id="' + agentId + '"]');
+    if (!overlay) return;
+
+    // First load the agent content if not already loaded
+    var content = overlay.querySelector('.subagent-content');
+    if (!content || content.innerHTML.trim() === '') {
+        // Load agent first, then expand
+        var header = overlay.querySelector('.subagent-header');
+        if (header) {
+            loadAgent(header);
+        }
+    }
+
+    // Toggle expanded state
+    overlay.classList.add('expanded');
+    if (content) {
+        content.classList.remove('collapsed');
+    }
+
+    // Scroll to the agent
+    overlay.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**
@@ -57,12 +125,88 @@ function loadAgent(header) {
 }
 
 /**
+ * Copy code block content to clipboard.
+ * @param {HTMLElement} button - The copy button element
+ */
+function copyCode(button) {
+    var codeBlock = button.closest('.code-block');
+    var codeContent = codeBlock.querySelector('.code-content code');
+
+    if (!codeContent) {
+        codeContent = codeBlock.querySelector('.code-content');
+    }
+
+    if (codeContent) {
+        var text = codeContent.textContent;
+
+        // Use modern clipboard API if available
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .then(function() {
+                    showCopySuccess(button);
+                })
+                .catch(function(err) {
+                    fallbackCopy(text, button);
+                });
+        } else {
+            fallbackCopy(text, button);
+        }
+    }
+}
+
+/**
+ * Fallback copy using textarea element.
+ * @param {string} text - The text to copy
+ * @param {HTMLElement} button - The copy button element
+ */
+function fallbackCopy(text, button) {
+    var textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    textarea.style.top = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    try {
+        document.execCommand('copy');
+        showCopySuccess(button);
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        button.textContent = 'Failed';
+        setTimeout(function() {
+            button.textContent = 'Copy';
+        }, 2000);
+    }
+
+    document.body.removeChild(textarea);
+}
+
+/**
+ * Show copy success feedback on button.
+ * @param {HTMLElement} button - The copy button element
+ */
+function showCopySuccess(button) {
+    var originalText = button.textContent;
+    button.textContent = 'Copied!';
+    button.classList.add('copied');
+
+    setTimeout(function() {
+        button.textContent = originalText;
+        button.classList.remove('copied');
+    }, 2000);
+}
+
+/**
  * Expand all tool call bodies.
  */
 function expandAll() {
+    // Legacy tool bodies
     var bodies = document.querySelectorAll('.tool-body');
     bodies.forEach(function(el) {
         el.classList.remove('hidden');
+        el.classList.remove('collapsed');
     });
 
     // Update all toggle indicators
@@ -70,21 +214,43 @@ function expandAll() {
     toggles.forEach(function(el) {
         el.textContent = '[-]';
     });
+
+    // New tool overlays
+    var overlays = document.querySelectorAll('.tool-overlay, .thinking-overlay');
+    overlays.forEach(function(el) {
+        el.classList.add('expanded');
+        var body = el.querySelector('.tool-body, .thinking-body');
+        if (body) {
+            body.classList.remove('collapsed');
+        }
+    });
 }
 
 /**
  * Collapse all tool call bodies.
  */
 function collapseAll() {
+    // Legacy tool bodies
     var bodies = document.querySelectorAll('.tool-body');
     bodies.forEach(function(el) {
         el.classList.add('hidden');
+        el.classList.add('collapsed');
     });
 
     // Update all toggle indicators
     var toggles = document.querySelectorAll('.tool-toggle');
     toggles.forEach(function(el) {
         el.textContent = '[+]';
+    });
+
+    // New tool overlays
+    var overlays = document.querySelectorAll('.tool-overlay, .thinking-overlay');
+    overlays.forEach(function(el) {
+        el.classList.remove('expanded');
+        var body = el.querySelector('.tool-body, .thinking-body');
+        if (body) {
+            body.classList.add('collapsed');
+        }
     });
 }
 

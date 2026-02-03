@@ -28,6 +28,33 @@ func GetScriptJS() string {
 	return string(data)
 }
 
+// GetClipboardJS returns the contents of the embedded clipboard JavaScript file.
+func GetClipboardJS() string {
+	data, err := templatesFS.ReadFile("templates/clipboard.js")
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
+// GetControlsJS returns the contents of the embedded controls JavaScript file.
+func GetControlsJS() string {
+	data, err := templatesFS.ReadFile("templates/controls.js")
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
+// GetNavigationJS returns the contents of the embedded navigation JavaScript file.
+func GetNavigationJS() string {
+	data, err := templatesFS.ReadFile("templates/navigation.js")
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
 // WriteStaticAssets writes all static assets to the output directory.
 // Creates a 'static' subdirectory containing style.css and script.js.
 func WriteStaticAssets(outputDir string) error {
@@ -52,6 +79,33 @@ func WriteStaticAssets(outputDir string) error {
 	if jsContent != "" {
 		jsPath := filepath.Join(staticDir, "script.js")
 		if err := os.WriteFile(jsPath, []byte(jsContent), 0644); err != nil {
+			return err
+		}
+	}
+
+	// Write clipboard JavaScript file
+	clipboardContent := GetClipboardJS()
+	if clipboardContent != "" {
+		clipboardPath := filepath.Join(staticDir, "clipboard.js")
+		if err := os.WriteFile(clipboardPath, []byte(clipboardContent), 0644); err != nil {
+			return err
+		}
+	}
+
+	// Write controls JavaScript file
+	controlsContent := GetControlsJS()
+	if controlsContent != "" {
+		controlsPath := filepath.Join(staticDir, "controls.js")
+		if err := os.WriteFile(controlsPath, []byte(controlsContent), 0644); err != nil {
+			return err
+		}
+	}
+
+	// Write navigation JavaScript file
+	navigationContent := GetNavigationJS()
+	if navigationContent != "" {
+		navigationPath := filepath.Join(staticDir, "navigation.js")
+		if err := os.WriteFile(navigationPath, []byte(navigationContent), 0644); err != nil {
 			return err
 		}
 	}

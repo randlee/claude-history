@@ -72,8 +72,8 @@ func TestRenderConversation_UserMessage(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	if !strings.Contains(html, `class="entry user"`) {
-		t.Error("HTML missing user entry class")
+	if !strings.Contains(html, `class="message-row user"`) {
+		t.Error("HTML missing message-row user class")
 	}
 	if !strings.Contains(html, `data-uuid="uuid-001"`) {
 		t.Error("HTML missing entry UUID attribute")
@@ -99,8 +99,8 @@ func TestRenderConversation_AssistantMessage(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	if !strings.Contains(html, `class="entry assistant"`) {
-		t.Error("HTML missing assistant entry class")
+	if !strings.Contains(html, `class="message-row assistant"`) {
+		t.Error("HTML missing message-row assistant class")
 	}
 	if !strings.Contains(html, "Go is a programming language.") {
 		t.Error("HTML missing assistant message content")
@@ -123,8 +123,8 @@ func TestRenderConversation_SystemMessage(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	if !strings.Contains(html, `class="entry system"`) {
-		t.Error("HTML missing system entry class")
+	if !strings.Contains(html, `class="message-row system"`) {
+		t.Error("HTML missing message-row system class")
 	}
 }
 
@@ -455,8 +455,8 @@ func TestRenderConversation_NullContent(t *testing.T) {
 	}
 
 	// Should handle nil message gracefully
-	if !strings.Contains(html, `class="entry user"`) {
-		t.Error("HTML should render entry even with null content")
+	if !strings.Contains(html, `class="message-row user"`) {
+		t.Error("HTML should render message-row even with null content")
 	}
 }
 
@@ -569,8 +569,8 @@ func TestRenderEntry_AllEntryTypes(t *testing.T) {
 
 			html := renderEntry(entry, nil)
 
-			if !strings.Contains(html, `class="entry `+tt.expectedClass+`"`) {
-				t.Errorf("Entry type %s should have class %s", tt.entryType, tt.expectedClass)
+			if !strings.Contains(html, `class="message-row `+tt.expectedClass+`"`) {
+				t.Errorf("Entry type %s should have message-row class %s", tt.entryType, tt.expectedClass)
 			}
 		})
 	}
@@ -891,12 +891,13 @@ func TestRenderConversation_TimestampInHeader(t *testing.T) {
 	if !strings.Contains(html, `class="timestamp"`) {
 		t.Error("HTML missing timestamp class")
 	}
-	if !strings.Contains(html, "14:30:45") {
-		t.Error("HTML missing formatted timestamp")
+	// Updated to check for readable timestamp format (2:30 PM)
+	if !strings.Contains(html, "2:30 PM") {
+		t.Error("HTML missing formatted timestamp (expected 2:30 PM)")
 	}
 }
 
-func TestRenderConversation_TypeInHeader(t *testing.T) {
+func TestRenderConversation_RoleInHeader(t *testing.T) {
 	entries := []models.ConversationEntry{
 		{
 			UUID:      "uuid-001",
@@ -912,11 +913,12 @@ func TestRenderConversation_TypeInHeader(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	if !strings.Contains(html, `class="type"`) {
-		t.Error("HTML missing type class")
+	// Chat bubble layout uses "role" instead of "type"
+	if !strings.Contains(html, `class="role"`) {
+		t.Error("HTML missing role class")
 	}
-	if !strings.Contains(html, ">user<") {
-		t.Error("HTML missing entry type in header")
+	if !strings.Contains(html, ">User<") {
+		t.Error("HTML missing role label in header")
 	}
 }
 
@@ -962,9 +964,9 @@ func TestRenderConversation_MalformedJSON(t *testing.T) {
 		t.Fatalf("RenderConversation() should not error on malformed JSON: %v", err)
 	}
 
-	// Should still produce valid structure
-	if !strings.Contains(html, `class="entry assistant"`) {
-		t.Error("HTML should still render entry with malformed content")
+	// Should still produce valid structure with chat bubble layout
+	if !strings.Contains(html, `class="message-row assistant"`) {
+		t.Error("HTML should still render message-row with malformed content")
 	}
 }
 
