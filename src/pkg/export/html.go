@@ -12,13 +12,38 @@ import (
 	"github.com/randlee/claude-history/pkg/models"
 )
 
+// SessionStats contains statistics about a session for display in the header.
+type SessionStats struct {
+	SessionID     string // Full session ID
+	ProjectPath   string // Project directory path
+	ExportTime    string // Formatted export timestamp
+	MessageCount  int    // Count of user + assistant messages
+	AgentCount    int    // Count of subagents
+	ToolCallCount int    // Count of tool calls
+}
+
+// ExportFormatVersion is the current version of the export format.
+const ExportFormatVersion = "2.0"
+
 // RenderConversation generates a complete HTML page for a conversation.
 // entries contains the conversation history, agents contains the agent hierarchy.
 func RenderConversation(entries []models.ConversationEntry, agents []*agent.TreeNode) (string, error) {
+	return RenderConversationWithStats(entries, agents, nil)
+}
+
+// RenderConversationWithStats generates a complete HTML page for a conversation with session statistics.
+// entries contains the conversation history, agents contains the agent hierarchy,
+// stats contains optional session statistics for the header (if nil, stats are computed from entries/agents).
+func RenderConversationWithStats(entries []models.ConversationEntry, agents []*agent.TreeNode, stats *SessionStats) (string, error) {
 	var sb strings.Builder
 
-	// Write HTML header
-	sb.WriteString(htmlHeader)
+	// Calculate stats if not provided
+	if stats == nil {
+		stats = ComputeSessionStats(entries, agents)
+	}
+
+	// Write HTML header with metadata
+	sb.WriteString(renderHTMLHeader(stats))
 
 	// Write conversation entries
 	sb.WriteString(`<div class="conversation">` + "\n")
@@ -42,10 +67,49 @@ func RenderConversation(entries []models.ConversationEntry, agents []*agent.Tree
 
 	sb.WriteString("</div>\n")
 
-	// Write HTML footer
-	sb.WriteString(htmlFooter)
+	// Write HTML footer with info and keyboard shortcuts
+	sb.WriteString(renderHTMLFooter(stats))
 
 	return sb.String(), nil
+}
+
+// ComputeSessionStats calculates statistics from entries and agents.
+func ComputeSessionStats(entries []models.ConversationEntry, agents []*agent.TreeNode) *SessionStats {
+	stats := &SessionStats{
+		ExportTime: time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	// Count messages (user + assistant)
+	for _, entry := range entries {
+		if entry.Type == models.EntryTypeUser || entry.Type == models.EntryTypeAssistant {
+			stats.MessageCount++
+		}
+		// Count tool calls from assistant messages
+		if entry.Type == models.EntryTypeAssistant {
+			tools := entry.ExtractToolCalls()
+			stats.ToolCallCount += len(tools)
+		}
+		// Extract session ID from first entry if available
+		if stats.SessionID == "" && entry.SessionID != "" {
+			stats.SessionID = entry.SessionID
+		}
+	}
+
+	// Count agents
+	if len(agents) > 0 {
+		agentMap := buildAgentMap(agents)
+		stats.AgentCount = len(agentMap)
+	}
+
+	return stats
+}
+
+// TruncateSessionID returns a truncated session ID for display (first 8 chars).
+func TruncateSessionID(sessionID string) string {
+	if len(sessionID) > 8 {
+		return sessionID[:8]
+	}
+	return sessionID
 }
 
 // RenderAgentFragment generates an HTML fragment for a subagent's conversation.
@@ -410,8 +474,11 @@ func buildToolResultsMap(entries []models.ConversationEntry) map[string]models.T
 	return result
 }
 
-// HTML template constants
-const htmlHeader = `<!DOCTYPE html>
+// renderHTMLHeader generates the HTML header with session metadata.
+func renderHTMLHeader(stats *SessionStats) string {
+	var sb strings.Builder
+
+	sb.WriteString(`<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -419,7 +486,51 @@ const htmlHeader = `<!DOCTYPE html>
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-<div class="page-header">
+<header class="page-header">
+    <h1>Claude Code Session</h1>
+    <div class="session-metadata">
+`)
+
+	// Session ID with copy button
+	if stats != nil && stats.SessionID != "" {
+		truncatedID := TruncateSessionID(stats.SessionID)
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Session: <code>%s</code>%s</span>
+`,
+			escapeHTML(truncatedID),
+			renderCopyButton(stats.SessionID, "session-id", "Copy full session ID")))
+	}
+
+	// Project path
+	if stats != nil && stats.ProjectPath != "" {
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Project: <code>%s</code></span>
+`, escapeHTML(stats.ProjectPath)))
+	}
+
+	// Export timestamp
+	if stats != nil && stats.ExportTime != "" {
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Exported: %s</span>
+`, escapeHTML(stats.ExportTime)))
+	}
+
+	// Message count
+	if stats != nil {
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Messages: %d</span>
+`, stats.MessageCount))
+	}
+
+	// Agent count
+	if stats != nil {
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Agents: %d</span>
+`, stats.AgentCount))
+	}
+
+	// Tool call count
+	if stats != nil {
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Tools: %d calls</span>
+`, stats.ToolCallCount))
+	}
+
+	sb.WriteString(`    </div>
     <div class="controls" role="toolbar" aria-label="Conversation controls">
         <div class="controls-group">
             <button id="expand-all-btn" type="button" data-shortcut="Ctrl+K" title="Expand all tool calls (Ctrl+K)">Expand All</button>
@@ -436,10 +547,94 @@ const htmlHeader = `<!DOCTYPE html>
     <nav class="breadcrumbs" id="breadcrumbs" aria-label="Navigation breadcrumbs">
         <a href="#main" class="breadcrumb-item active" data-agent-id="main" aria-current="page">Main Session</a>
     </nav>
-</div>
+</header>
+`)
+
+	return sb.String()
+}
+
+// renderHTMLFooter generates the HTML footer with export info and keyboard shortcuts.
+func renderHTMLFooter(stats *SessionStats) string {
+	var sb strings.Builder
+
+	sb.WriteString(`<footer class="page-footer">
+    <div class="footer-info">
+        <p>Exported from <strong>claude-history</strong> CLI</p>
+`)
+	sb.WriteString(fmt.Sprintf(`        <p>Export format version: %s</p>
+`, ExportFormatVersion))
+
+	// Source path with copy button if available
+	if stats != nil && stats.ProjectPath != "" {
+		sourcePath := fmt.Sprintf("~/.claude/projects/%s", escapeHTML(stats.ProjectPath))
+		sb.WriteString(fmt.Sprintf(`        <p>Source: <code>%s</code>%s</p>
+`, sourcePath, renderCopyButton(stats.ProjectPath, "source-path", "Copy source path")))
+	}
+
+	sb.WriteString(`    </div>
+    <div class="footer-help">
+        <details>
+            <summary>Keyboard Shortcuts</summary>
+            <ul>
+                <li><kbd>Ctrl</kbd>+<kbd>K</kbd> - Expand/Collapse All</li>
+                <li><kbd>Ctrl</kbd>+<kbd>F</kbd> - Search</li>
+                <li><kbd>Esc</kbd> - Clear Search</li>
+            </ul>
+        </details>
+    </div>
+</footer>
+    <script src="static/script.js"></script>
+    <script src="static/clipboard.js"></script>
+    <script src="static/controls.js"></script>
+    <script src="static/navigation.js"></script>
+</body>
+</html>
+`)
+
+	return sb.String()
+}
+
+// htmlHeader is kept for backward compatibility with older tests.
+// Deprecated: Use renderHTMLHeader() instead.
+var htmlHeader = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Claude Conversation Export</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<header class="page-header">
+    <h1>Claude Code Session</h1>
+    <div class="session-metadata">
+    </div>
+    <div class="controls" role="toolbar" aria-label="Conversation controls">
+        <div class="controls-group">
+            <button id="expand-all-btn" type="button" data-shortcut="Ctrl+K" title="Expand all tool calls (Ctrl+K)">Expand All</button>
+            <button id="collapse-all-btn" type="button" title="Collapse all tool calls">Collapse All</button>
+        </div>
+        <div class="controls-separator" aria-hidden="true"></div>
+        <div class="search-container">
+            <input type="search" id="search-box" placeholder="Search messages..." aria-label="Search messages" data-shortcut="Ctrl+F" title="Search messages (Ctrl+F)">
+            <button id="search-prev-btn" type="button" class="search-nav-btn" title="Previous match (Shift+Enter)" aria-label="Previous match">&lt;</button>
+            <button id="search-next-btn" type="button" class="search-nav-btn" title="Next match (Enter)" aria-label="Next match">&gt;</button>
+            <span class="search-results" aria-live="polite"></span>
+        </div>
+    </div>
+    <nav class="breadcrumbs" id="breadcrumbs" aria-label="Navigation breadcrumbs">
+        <a href="#main" class="breadcrumb-item active" data-agent-id="main" aria-current="page">Main Session</a>
+    </nav>
+</header>
 `
 
-const htmlFooter = `    <script src="static/script.js"></script>
+// htmlFooter is kept for backward compatibility with older tests.
+// Deprecated: Use renderHTMLFooter() instead.
+var htmlFooter = `<footer class="page-footer">
+    <div class="footer-info">
+        <p>Exported from <strong>claude-history</strong> CLI</p>
+    </div>
+</footer>
+    <script src="static/script.js"></script>
     <script src="static/clipboard.js"></script>
     <script src="static/controls.js"></script>
     <script src="static/navigation.js"></script>
