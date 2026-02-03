@@ -307,3 +307,277 @@ func TestWriteStaticAssets_ContentMatches(t *testing.T) {
 		t.Error("Written JS does not match GetScriptJS() output")
 	}
 }
+
+// Navigation JavaScript Tests (Sprint 10f)
+
+func TestGetNavigationJS_ReturnsContent(t *testing.T) {
+	js := GetNavigationJS()
+
+	if js == "" {
+		t.Error("GetNavigationJS returned empty string")
+	}
+}
+
+func TestGetNavigationJS_HasIIFE(t *testing.T) {
+	js := GetNavigationJS()
+
+	if !strings.Contains(js, "(function()") {
+		t.Error("Navigation JS should use IIFE pattern")
+	}
+	if !strings.Contains(js, "'use strict'") {
+		t.Error("Navigation JS should use strict mode")
+	}
+}
+
+func TestGetNavigationJS_HasBreadcrumbFunctions(t *testing.T) {
+	js := GetNavigationJS()
+
+	expectedFunctions := []string{
+		"updateBreadcrumbs",
+		"navigateToBreadcrumb",
+		"addAgentToBreadcrumbs",
+		"removeAgentFromBreadcrumbs",
+	}
+
+	for _, fn := range expectedFunctions {
+		if !strings.Contains(js, fn) {
+			t.Errorf("Navigation JS missing breadcrumb function: %s", fn)
+		}
+	}
+}
+
+func TestGetNavigationJS_HasSubagentFunctions(t *testing.T) {
+	js := GetNavigationJS()
+
+	expectedFunctions := []string{
+		"expandSubagent",
+		"collapseSubagent",
+		"toggleSubagent",
+	}
+
+	for _, fn := range expectedFunctions {
+		if !strings.Contains(js, fn) {
+			t.Errorf("Navigation JS missing subagent function: %s", fn)
+		}
+	}
+}
+
+func TestGetNavigationJS_HasScrollFunctions(t *testing.T) {
+	js := GetNavigationJS()
+
+	expectedFunctions := []string{
+		"scrollToAgent",
+		"jumpToParent",
+	}
+
+	for _, fn := range expectedFunctions {
+		if !strings.Contains(js, fn) {
+			t.Errorf("Navigation JS missing scroll function: %s", fn)
+		}
+	}
+}
+
+func TestGetNavigationJS_HasHistoryNavigation(t *testing.T) {
+	js := GetNavigationJS()
+
+	expectedFunctions := []string{
+		"navigateBack",
+		"navigateForward",
+		"addToHistory",
+	}
+
+	for _, fn := range expectedFunctions {
+		if !strings.Contains(js, fn) {
+			t.Errorf("Navigation JS missing history function: %s", fn)
+		}
+	}
+}
+
+func TestGetNavigationJS_HasPublicAPI(t *testing.T) {
+	js := GetNavigationJS()
+
+	if !strings.Contains(js, "window.NavigationAPI") {
+		t.Error("Navigation JS should expose NavigationAPI on window")
+	}
+
+	// Check API exposes key functions
+	expectedAPIMethods := []string{
+		"expandSubagent",
+		"collapseSubagent",
+		"scrollToAgent",
+		"jumpToParent",
+		"navigateBack",
+		"navigateForward",
+		"updateBreadcrumbs",
+	}
+
+	for _, method := range expectedAPIMethods {
+		if !strings.Contains(js, "NavigationAPI") || !strings.Contains(js, method) {
+			t.Errorf("NavigationAPI should expose method: %s", method)
+		}
+	}
+}
+
+func TestGetNavigationJS_HasLegacyDeepDiveSupport(t *testing.T) {
+	js := GetNavigationJS()
+
+	if !strings.Contains(js, "window.deepDiveAgent") {
+		t.Error("Navigation JS should expose deepDiveAgent globally for legacy support")
+	}
+}
+
+func TestGetNavigationJS_HasKeyboardNavigation(t *testing.T) {
+	js := GetNavigationJS()
+
+	if !strings.Contains(js, "initKeyboardNavigation") {
+		t.Error("Navigation JS should have keyboard navigation initialization")
+	}
+
+	// Check for keyboard shortcuts
+	expectedKeys := []string{
+		"ArrowLeft",
+		"ArrowRight",
+		"ArrowUp",
+		"Escape",
+	}
+
+	for _, key := range expectedKeys {
+		if !strings.Contains(js, key) {
+			t.Errorf("Navigation JS should handle %s key", key)
+		}
+	}
+}
+
+func TestGetNavigationJS_HasStateManagement(t *testing.T) {
+	js := GetNavigationJS()
+
+	if !strings.Contains(js, "loadNavigationState") {
+		t.Error("Navigation JS should have loadNavigationState function")
+	}
+	if !strings.Contains(js, "saveNavigationState") {
+		t.Error("Navigation JS should have saveNavigationState function")
+	}
+	if !strings.Contains(js, "localStorage") {
+		t.Error("Navigation JS should use localStorage for state persistence")
+	}
+}
+
+func TestGetNavigationJS_HasDOMContentLoaded(t *testing.T) {
+	js := GetNavigationJS()
+
+	if !strings.Contains(js, "DOMContentLoaded") {
+		t.Error("Navigation JS should handle DOMContentLoaded")
+	}
+	if !strings.Contains(js, "initNavigation") {
+		t.Error("Navigation JS should have initNavigation function")
+	}
+}
+
+func TestWriteStaticAssets_IncludesNavigationJS(t *testing.T) {
+	tempDir := t.TempDir()
+
+	err := WriteStaticAssets(tempDir)
+	if err != nil {
+		t.Fatalf("WriteStaticAssets failed: %v", err)
+	}
+
+	// Check navigation.js file was written
+	navPath := filepath.Join(tempDir, "static", "navigation.js")
+	if _, err := os.Stat(navPath); os.IsNotExist(err) {
+		t.Error("navigation.js not created")
+	}
+
+	navContent, err := os.ReadFile(navPath)
+	if err != nil {
+		t.Fatalf("Failed to read navigation.js: %v", err)
+	}
+	if len(navContent) == 0 {
+		t.Error("navigation.js is empty")
+	}
+}
+
+func TestListTemplateFiles_IncludesNavigationJS(t *testing.T) {
+	files, err := ListTemplateFiles()
+	if err != nil {
+		t.Fatalf("ListTemplateFiles failed: %v", err)
+	}
+
+	hasNavigation := false
+	for _, f := range files {
+		if f == "navigation.js" {
+			hasNavigation = true
+			break
+		}
+	}
+
+	if !hasNavigation {
+		t.Error("navigation.js not found in template files")
+	}
+}
+
+func TestReadTemplateFile_NavigationJS(t *testing.T) {
+	content, err := ReadTemplateFile("navigation.js")
+	if err != nil {
+		t.Errorf("Failed to read navigation.js: %v", err)
+	}
+	if len(content) == 0 {
+		t.Error("navigation.js content should not be empty")
+	}
+}
+
+func TestCSSContent_HasNavigationStyles(t *testing.T) {
+	css := GetStyleCSS()
+
+	expectedSelectors := []string{
+		".breadcrumbs",
+		".breadcrumb-item",
+		".breadcrumb-separator",
+		".jump-to-parent-btn",
+		".navigation-highlight",
+		".nested-agent",
+		".agent-header-controls",
+	}
+
+	for _, selector := range expectedSelectors {
+		if !strings.Contains(css, selector) {
+			t.Errorf("CSS missing navigation selector: %s", selector)
+		}
+	}
+}
+
+func TestCSSContent_HasDarkModeNavigationStyles(t *testing.T) {
+	css := GetStyleCSS()
+
+	// Navigation styles should have dark mode support
+	if !strings.Contains(css, "navHighlightDark") {
+		t.Error("CSS should have dark mode navigation highlight animation")
+	}
+}
+
+func TestHTMLHeader_ContainsBreadcrumbs(t *testing.T) {
+	if !strings.Contains(htmlHeader, `id="breadcrumbs"`) {
+		t.Error("HTML header should contain breadcrumbs element")
+	}
+	if !strings.Contains(htmlHeader, `class="breadcrumbs"`) {
+		t.Error("HTML header should contain breadcrumbs class")
+	}
+	if !strings.Contains(htmlHeader, "Main Session") {
+		t.Error("HTML header should contain default Main Session breadcrumb")
+	}
+}
+
+func TestHTMLFooter_IncludesNavigationScript(t *testing.T) {
+	if !strings.Contains(htmlFooter, `src="static/navigation.js"`) {
+		t.Error("HTML footer should include navigation.js script")
+	}
+}
+
+func TestHTMLFooter_ScriptOrderNavigation(t *testing.T) {
+	// Navigation script should come after controls.js
+	controlsIndex := strings.Index(htmlFooter, "controls.js")
+	navigationIndex := strings.Index(htmlFooter, "navigation.js")
+
+	if navigationIndex < controlsIndex {
+		t.Error("navigation.js should be loaded after controls.js")
+	}
+}

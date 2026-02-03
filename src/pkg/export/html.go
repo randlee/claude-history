@@ -433,12 +433,16 @@ const htmlHeader = `<!DOCTYPE html>
             <span class="search-results" aria-live="polite"></span>
         </div>
     </div>
+    <nav class="breadcrumbs" id="breadcrumbs" aria-label="Navigation breadcrumbs">
+        <a href="#main" class="breadcrumb-item active" data-agent-id="main" aria-current="page">Main Session</a>
+    </nav>
 </div>
 `
 
 const htmlFooter = `    <script src="static/script.js"></script>
     <script src="static/clipboard.js"></script>
     <script src="static/controls.js"></script>
+    <script src="static/navigation.js"></script>
 </body>
 </html>
 `
