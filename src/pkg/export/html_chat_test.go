@@ -313,7 +313,7 @@ func TestChatBubble_AgentIDInHeader(t *testing.T) {
 	}
 }
 
-// TestChatBubble_EmptyContent verifies empty content is handled gracefully.
+// TestChatBubble_EmptyContent verifies empty content is skipped.
 func TestChatBubble_EmptyContent(t *testing.T) {
 	entries := []models.ConversationEntry{
 		{
@@ -330,16 +330,16 @@ func TestChatBubble_EmptyContent(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Should still have the chat bubble structure
-	if !strings.Contains(html, `class="message-row user"`) {
-		t.Error("Empty content should still render message-row")
+	// Empty content should be skipped (no message-row rendered)
+	if strings.Contains(html, `class="message-row user"`) {
+		t.Error("Empty content should not render message-row")
 	}
-	if !strings.Contains(html, `class="message-bubble"`) {
-		t.Error("Empty content should still render message-bubble")
+	if strings.Contains(html, `class="message-bubble"`) {
+		t.Error("Empty content should not render message-bubble")
 	}
 }
 
-// TestChatBubble_NullContent verifies null content is handled gracefully.
+// TestChatBubble_NullContent verifies null content is skipped.
 func TestChatBubble_NullContent(t *testing.T) {
 	entries := []models.ConversationEntry{
 		{
@@ -356,9 +356,9 @@ func TestChatBubble_NullContent(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Should still have the chat bubble structure
-	if !strings.Contains(html, `class="message-row user"`) {
-		t.Error("Null content should still render message-row")
+	// Null content should be skipped (no message-row rendered)
+	if strings.Contains(html, `class="message-row user"`) {
+		t.Error("Null content should not render message-row")
 	}
 }
 

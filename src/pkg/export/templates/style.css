@@ -155,19 +155,19 @@
     --color-info-bg: hsl(var(--blue-50));
     --color-info-border: hsl(var(--blue-200));
 
-    /* User message colors */
-    --user-bg: hsl(var(--blue-50));
-    --user-bg-hover: hsl(var(--blue-100));
-    --user-border: hsl(var(--blue-300));
-    --user-accent: hsl(var(--blue-600));
+    /* User message colors - softer blue with better contrast */
+    --user-bg: hsl(210, 100%, 95%);
+    --user-bg-hover: hsl(210, 100%, 92%);
+    --user-border: hsl(210, 80%, 85%);
+    --user-accent: hsl(217, 71%, 53%);
     --user-text: hsl(var(--blue-900));
 
-    /* Assistant message colors */
-    --assistant-bg: hsl(var(--green-50));
-    --assistant-bg-hover: hsl(var(--green-100));
-    --assistant-border: hsl(var(--green-300));
+    /* Assistant message colors - light neutral gray */
+    --assistant-bg: hsl(0, 0%, 96%);
+    --assistant-bg-hover: hsl(0, 0%, 93%);
+    --assistant-border: hsl(0, 0%, 85%);
     --assistant-accent: hsl(var(--green-600));
-    --assistant-text: hsl(var(--green-900));
+    --assistant-text: hsl(var(--neutral-900));
 
     /* System message colors */
     --system-bg: hsl(var(--neutral-100));
@@ -190,26 +190,26 @@
     --summary-accent: hsl(var(--purple-600));
     --summary-text: hsl(var(--purple-900));
 
-    /* Overlay colors (tool, agent, thinking, system) */
-    --tool-overlay-bg: hsl(var(--teal-50));
-    --tool-overlay-border: hsl(var(--teal-300));
-    --tool-overlay-accent: hsl(var(--teal-600));
-    --tool-overlay-header: hsl(var(--teal-100));
+    /* Overlay colors (tool, agent, thinking, system) - improved contrast */
+    --tool-overlay-bg: hsl(172, 45%, 96%);
+    --tool-overlay-border: hsl(172, 45%, 75%);
+    --tool-overlay-accent: hsl(173, 80%, 35%);
+    --tool-overlay-header: hsl(172, 50%, 90%);
 
-    --agent-overlay-bg: hsl(var(--purple-50));
-    --agent-overlay-border: hsl(var(--purple-400));
-    --agent-overlay-accent: hsl(var(--purple-600));
-    --agent-overlay-header: hsl(var(--purple-100));
+    --agent-overlay-bg: hsl(270, 80%, 97%);
+    --agent-overlay-border: hsl(270, 60%, 70%);
+    --agent-overlay-accent: hsl(272, 72%, 47%);
+    --agent-overlay-header: hsl(270, 70%, 92%);
 
     --thinking-overlay-bg: hsl(var(--neutral-100));
     --thinking-overlay-border: hsl(var(--neutral-300));
     --thinking-overlay-accent: hsl(var(--neutral-500));
     --thinking-overlay-header: hsl(var(--neutral-200));
 
-    --system-overlay-bg: hsl(var(--amber-50));
-    --system-overlay-border: hsl(var(--amber-300));
-    --system-overlay-accent: hsl(var(--amber-600));
-    --system-overlay-header: hsl(var(--amber-100));
+    --system-overlay-bg: hsl(48, 100%, 95%);
+    --system-overlay-border: hsl(46, 90%, 70%);
+    --system-overlay-accent: hsl(32, 95%, 44%);
+    --system-overlay-header: hsl(48, 95%, 88%);
 
     /* Shadow values */
     --shadow-sm: 0 1px 2px 0 hsla(var(--neutral-900), 0.05);
@@ -427,7 +427,7 @@ p {
  * ============================================ */
 
 .conversation {
-    max-width: 900px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 
@@ -721,16 +721,17 @@ p {
     content: "\2211"; /* Sigma symbol */
 }
 
-/* User messages - align left */
+/* User messages - align right */
 .message-row.user {
-    justify-content: flex-start;
+    justify-content: flex-end;
+    flex-direction: row-reverse;
 }
 
 .message-row.user .message-bubble {
     max-width: 80%;
     background: var(--user-bg);
     border: 1px solid var(--user-border);
-    border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-sm);
+    border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
 }
 
 .message-row.user .message-bubble:hover {
@@ -741,17 +742,16 @@ p {
     color: var(--user-accent);
 }
 
-/* Assistant messages - align right */
+/* Assistant messages - align left */
 .message-row.assistant {
-    justify-content: flex-end;
-    flex-direction: row-reverse;
+    justify-content: flex-start;
 }
 
 .message-row.assistant .message-bubble {
     max-width: 80%;
     background: var(--assistant-bg);
     border: 1px solid var(--assistant-border);
-    border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
+    border-radius: var(--radius-xl) var(--radius-xl) var(--radius-xl) var(--radius-sm);
 }
 
 .message-row.assistant .message-bubble:hover {
@@ -1182,6 +1182,32 @@ p {
 }
 
 .chevron.down.rotated {
+
+/* Chevron rotation based on collapsed/expanded state */
+.collapsible-trigger .chevron {
+    margin-left: auto;
+    padding-left: var(--space-2);
+}
+
+/* When content is collapsed, chevron points right */
+.collapsible.collapsed .chevron.down {
+    transform: rotate(-90deg);
+}
+
+/* When content is expanded, chevron points down */
+.collapsible:not(.collapsed) .chevron.down {
+    transform: rotate(0deg);
+}
+
+/* Collapsible content starts hidden */
+.collapsible-content.collapsed {
+    display: none;
+}
+
+/* Collapsible content visible when expanded */
+.collapsible-content:not(.collapsed) {
+    display: block;
+}
     transform: rotate(180deg);
 }
 

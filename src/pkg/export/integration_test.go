@@ -734,12 +734,12 @@ func TestIntegration_AllEntryTypes(t *testing.T) {
 		t.Fatalf("RenderConversation failed: %v", err)
 	}
 
-	// All entry types should have corresponding CSS classes
+	// Entry types with content should have corresponding CSS classes
 	entryClasses := []string{
 		"message-row user",
 		"message-row assistant",
 		"message-row system",
-		"message-row queue-operation",
+		// queue-operation with no message content is skipped (only subagent placeholder rendered)
 		"message-row summary",
 	}
 
@@ -747,6 +747,14 @@ func TestIntegration_AllEntryTypes(t *testing.T) {
 		if !strings.Contains(html, class) {
 			t.Errorf("Missing entry type class: %s", class)
 		}
+	}
+
+	// Queue operation without message content should still render subagent placeholder
+	if !strings.Contains(html, `class="subagent"`) {
+		t.Error("Queue operation should render subagent placeholder")
+	}
+	if !strings.Contains(html, `data-agent-id="test-agent"`) {
+		t.Error("Subagent placeholder should have agent ID")
 	}
 }
 

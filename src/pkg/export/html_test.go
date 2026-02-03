@@ -454,9 +454,9 @@ func TestRenderConversation_NullContent(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Should handle nil message gracefully
-	if !strings.Contains(html, `class="message-row user"`) {
-		t.Error("HTML should render message-row even with null content")
+	// Null content should be skipped (no message-row rendered)
+	if strings.Contains(html, `class="message-row user"`) {
+		t.Error("HTML should not render message-row for null content")
 	}
 }
 
@@ -964,9 +964,9 @@ func TestRenderConversation_MalformedJSON(t *testing.T) {
 		t.Fatalf("RenderConversation() should not error on malformed JSON: %v", err)
 	}
 
-	// Should still produce valid structure with chat bubble layout
-	if !strings.Contains(html, `class="message-row assistant"`) {
-		t.Error("HTML should still render message-row with malformed content")
+	// Malformed content with no parseable text should be skipped
+	if strings.Contains(html, `class="message-row assistant"`) {
+		t.Error("HTML should not render message-row for malformed content with no text")
 	}
 }
 

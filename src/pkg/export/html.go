@@ -55,6 +55,16 @@ func RenderConversationWithStats(entries []models.ConversationEntry, agents []*a
 	toolResults := buildToolResultsMap(entries)
 
 	for _, entry := range entries {
+		// Skip entries with no meaningful content
+		if !hasContent(entry) {
+			// Still render subagent placeholder if this entry spawned one
+			if entry.Type == models.EntryTypeQueueOperation && entry.AgentID != "" {
+				subagentHTML := renderSubagentPlaceholder(entry.AgentID, agentMap)
+				sb.WriteString(subagentHTML)
+			}
+			continue
+		}
+
 		entryHTML := renderEntry(entry, toolResults)
 		sb.WriteString(entryHTML)
 
@@ -121,11 +131,38 @@ func RenderAgentFragment(agentID string, entries []models.ConversationEntry) (st
 	toolResults := buildToolResultsMap(entries)
 
 	for _, entry := range entries {
+		// Skip entries with no meaningful content
+		if !hasContent(entry) {
+			continue
+		}
+
 		entryHTML := renderEntry(entry, toolResults)
 		sb.WriteString(entryHTML)
 	}
 
 	return sb.String(), nil
+}
+
+// hasContent checks if an entry has meaningful content worth rendering.
+// Returns false for empty messages, true if the entry has text, tool calls, or other content.
+func hasContent(entry models.ConversationEntry) bool {
+	// Check for text content
+	if entry.GetTextContent() != "" {
+		return true
+	}
+
+	// Check for tool calls in assistant messages
+	if entry.Type == models.EntryTypeAssistant {
+		tools := entry.ExtractToolCalls()
+		if len(tools) > 0 {
+			return true
+		}
+	}
+
+	// Queue operations without content can be skipped (we still render subagent placeholder)
+	// Summary entries without content should be skipped
+	// Other entry types with no text should be skipped
+	return false
 }
 
 // renderEntry renders a single conversation entry as HTML using the chat bubble layout.
