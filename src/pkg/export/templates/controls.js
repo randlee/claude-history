@@ -471,6 +471,43 @@
     }
 
     // ===========================================
+    // SCROLL SHADOW FOR HEADER
+    // ===========================================
+
+    /**
+     * Initialize scroll listener for header shadow effect.
+     */
+    function initScrollShadow() {
+        var header = document.querySelector('.page-header');
+        if (!header) return;
+
+        var lastScrollY = 0;
+        var ticking = false;
+
+        function updateHeaderShadow() {
+            if (window.scrollY > 10) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+            ticking = false;
+        }
+
+        window.addEventListener('scroll', function() {
+            lastScrollY = window.scrollY;
+            if (!ticking) {
+                window.requestAnimationFrame(function() {
+                    updateHeaderShadow();
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+
+        // Initial check
+        updateHeaderShadow();
+    }
+
+    // ===========================================
     // INITIALIZATION
     // ===========================================
 
@@ -558,6 +595,9 @@
 
         // Make tool headers collapsible
         initCollapsibleToolHeaders();
+
+        // Initialize scroll shadow effect
+        initScrollShadow();
 
         // Restore saved state
         var savedState = loadState();
