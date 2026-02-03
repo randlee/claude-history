@@ -1171,6 +1171,9 @@ p {
 .chevron {
     display: inline-block;
     transition: transform var(--transition-fast);
+    color: var(--text-secondary);
+    font-size: var(--text-base);
+    opacity: 0.7;
 }
 
 .chevron.rotated {
