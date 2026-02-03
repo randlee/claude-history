@@ -642,14 +642,14 @@ func TestChatBubble_ToolCallsInsideBubble(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Tool call should be present
-	if !strings.Contains(html, `class="tool-call"`) {
-		t.Error("Tool call should be rendered")
+	// Tool call should be present (with collapsible collapsed classes)
+	if !strings.Contains(html, `class="tool-call collapsible collapsed"`) {
+		t.Error("Tool call should be rendered with collapsible collapsed classes")
 	}
 
 	// Verify tool call is inside message-content
 	contentIdx := strings.Index(html, `class="message-content"`)
-	toolIdx := strings.Index(html, `class="tool-call"`)
+	toolIdx := strings.Index(html, `class="tool-call collapsible collapsed"`)
 
 	if toolIdx < contentIdx {
 		t.Error("Tool call should be inside message-content")

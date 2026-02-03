@@ -162,15 +162,15 @@ func TestRenderConversation_ToolCall(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Check tool call structure
-	if !strings.Contains(html, `class="tool-call"`) {
-		t.Error("HTML missing tool-call class")
+	// Check tool call structure (now includes collapsible collapsed classes)
+	if !strings.Contains(html, `class="tool-call collapsible collapsed"`) {
+		t.Error("HTML missing tool-call class with collapsible collapsed")
 	}
 	if !strings.Contains(html, `data-tool-id="toolu_01ABC"`) {
 		t.Error("HTML missing tool-id attribute")
 	}
-	if !strings.Contains(html, `class="tool-header"`) {
-		t.Error("HTML missing tool-header class")
+	if !strings.Contains(html, `class="tool-header collapsible-trigger"`) {
+		t.Error("HTML missing tool-header collapsible-trigger class")
 	}
 	if !strings.Contains(html, `onclick="toggleTool(this)"`) {
 		t.Error("HTML missing toggle onclick handler")
@@ -178,8 +178,8 @@ func TestRenderConversation_ToolCall(t *testing.T) {
 	if !strings.Contains(html, "[Bash] git status") {
 		t.Error("HTML missing tool summary")
 	}
-	if !strings.Contains(html, `class="tool-body hidden"`) {
-		t.Error("HTML missing hidden tool-body class")
+	if !strings.Contains(html, `class="tool-body hidden collapsible-content collapsed"`) {
+		t.Error("HTML missing hidden tool-body class with collapsible content")
 	}
 	if !strings.Contains(html, `class="tool-input"`) {
 		t.Error("HTML missing tool-input class")
@@ -255,8 +255,8 @@ func TestRenderConversation_SubagentPlaceholder(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	if !strings.Contains(html, `class="subagent"`) {
-		t.Error("HTML missing subagent class")
+	if !strings.Contains(html, `class="subagent collapsible collapsed"`) {
+		t.Error("HTML missing subagent class with collapsible collapsed")
 	}
 	if !strings.Contains(html, `data-agent-id="a12eb64abc123"`) {
 		t.Error("HTML missing agent-id attribute")
@@ -529,8 +529,8 @@ func TestRenderConversation_MultipleToolCalls(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Count tool-call divs
-	count := strings.Count(html, `class="tool-call"`)
+	// Count tool-call divs (now with collapsible collapsed classes)
+	count := strings.Count(html, `class="tool-call collapsible collapsed"`)
 	if count != 3 {
 		t.Errorf("HTML has %d tool-call divs, want 3", count)
 	}
@@ -859,9 +859,9 @@ func TestRenderToolCall_NoResult(t *testing.T) {
 
 	html := renderToolCall(tool, models.ToolResult{}, false)
 
-	// Should have tool-call structure
-	if !strings.Contains(html, `class="tool-call"`) {
-		t.Error("HTML missing tool-call class")
+	// Should have tool-call structure (with collapsible collapsed classes)
+	if !strings.Contains(html, `class="tool-call collapsible collapsed"`) {
+		t.Error("HTML missing tool-call class with collapsible collapsed")
 	}
 	if !strings.Contains(html, `class="tool-input"`) {
 		t.Error("HTML missing tool-input class")

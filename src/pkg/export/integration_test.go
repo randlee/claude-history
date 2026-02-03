@@ -750,8 +750,8 @@ func TestIntegration_AllEntryTypes(t *testing.T) {
 	}
 
 	// Queue operation without message content should still render subagent placeholder
-	if !strings.Contains(html, `class="subagent"`) {
-		t.Error("Queue operation should render subagent placeholder")
+	if !strings.Contains(html, `class="subagent collapsible collapsed"`) {
+		t.Error("Queue operation should render subagent placeholder with collapsible collapsed classes")
 	}
 	if !strings.Contains(html, `data-agent-id="test-agent"`) {
 		t.Error("Subagent placeholder should have agent ID")
