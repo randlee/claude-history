@@ -1,10 +1,10 @@
 # Claude History CLI Tool - Project Plan
 
-**Document Version**: 2.9
+**Document Version**: 2.10
 **Created**: 2026-02-01
-**Updated**: 2026-02-02 (Phase 10 Wave 2 complete)
+**Updated**: 2026-02-03 (Phase 10 Wave 3 in progress)
 **Language**: Go
-**Status**: In Development (Phase 10 Wave 2 complete, Wave 3 planned)
+**Status**: In Development (Phase 10 Wave 3 in progress, Sprint 10i remaining)
 
 ---
 
@@ -174,9 +174,10 @@ src/claude-history/
 - ✅ Phase 9: Data Model Alignment (fix agent spawn detection, query --agent flag)
 - ✅ Phase 10 Wave 1: CSS Foundation, Copy-to-Clipboard, Markdown/Syntax (merged PR #22)
 - ✅ Phase 10 Wave 2: Chat Bubble Layout (PR #24), Color-Coded Overlays (PR #25), Interactive Controls (PR #26)
+- ✅ Phase 10 Wave 3 (partial): Deep Dive Navigation (PR #27), Header/Footer (PR #28)
 
 ### In Progress
-- 🔄 Phase 10 Wave 3: Deep Dive Navigation, Header/Footer, Integration & Polish
+- 🔄 Phase 10 Wave 3: Sprint 10i Integration & Polish (final sprint)
 
 ### Planned
 - 🔲 Future enhancements (see detailed plan below)
@@ -1677,7 +1678,38 @@ Session: 679761ba
    - localStorage persistence for collapse states
    - Sticky header with control panel
 
-**Worktrees**: feature/phase10-chat-layout, feature/phase10-overlays, feature/phase10-controls (to be cleaned up)
+**Worktrees (to be cleaned up)**: feature/phase10-chat-layout, feature/phase10-overlays, feature/phase10-controls, feature/phase10-navigation, feature/phase10-chrome
+
+#### Wave 3 Progress Summary ✅ COMPLETE
+
+**Completed**: 2026-02-02
+**PRs**: #27 (Navigation, merged), #28 (Header/Footer, merged after conflict resolution)
+**Statistics**:
+- 1000+ tests passing (100% pass rate)
+- 93% test coverage on export package
+- +3,133 lines of new code
+- 0 linter issues
+
+**Features Delivered**:
+1. **Deep Dive Navigation (Sprint 10f)** - PR #27 ✅ MERGED
+   - `navigation.go` with breadcrumb and agent container rendering
+   - `navigation.js` with expand/collapse, history navigation, lazy loading
+   - Keyboard shortcuts: Alt+Left/Right (history), Alt+Up (parent), Esc (main)
+   - Jump to Parent button for nested agents
+   - localStorage persistence for navigation state
+
+2. **Header/Footer Metadata (Sprint 10h)** - PR #28 ✅ MERGED
+   - `SessionStats` struct for session metadata tracking
+   - Header with metadata badges (session ID, project, counts)
+   - Footer with CLI attribution, format version, keyboard shortcuts
+   - Scroll shadow effect on header
+   - Copy buttons for session ID and source path
+   - Integrated breadcrumbs from Sprint 10f (conflict resolution)
+
+**Remaining**:
+- Sprint 10i: Integration & Polish (final sprint)
+
+**Worktrees**: feature/phase10-navigation (to be cleaned up), feature/phase10-chrome (active)
 
 #### Motivation
 
@@ -2076,65 +2108,40 @@ Same worktree: wt/phase10-syntax
   - [ ] Mixed markdown and code
 - [ ] **Result**: PASS ✅ or FAIL ❌
 
-**Sprint 10f: Deep Dive Navigation** (Background Dev Agent #6) 🔲
+**Sprint 10f: Deep Dive Navigation** (Background Dev Agent #6) ✅ COMPLETE
 ```
-Worktree: wt/phase10-navigation
-Branch: feature/phase10-navigation
-Depends: Sprint 10d (needs overlay structure)
+Worktree: feature/phase10-navigation (to be cleaned up)
+Branch: feature/phase10-navigation (merged via PR #27)
+Completed: 2026-02-03
 ```
-- [ ] Create `pkg/export/templates/navigation.js`
-  - [ ] `expandSubagent(agentId)` - loads and displays agent conversation
-  - [ ] `collapseSubagent(agentId)` - collapses agent
-  - [ ] `updateBreadcrumbs(path)` - updates breadcrumb trail
-  - [ ] `scrollToAgent(agentId)` - smooth scroll to agent
-  - [ ] Lazy-load nested agents on demand
-- [ ] Update `pkg/export/html.go`
-  - [ ] Add breadcrumb navigation structure:
-    ```html
-    <div class="breadcrumbs">
-      <a href="#main">Main Session</a>
-      <span class="separator">›</span>
-      <a href="#agent-a12eb64">Agent a12eb64</a>
-    </div>
-    ```
-  - [ ] Add deep-dive button to subagent overlays
-  - [ ] Add "Jump to Parent" button in nested agents
-  - [ ] Generate nested HTML structure with proper IDs
-- [ ] Update CSS for navigation
-  - [ ] Breadcrumb styling
-  - [ ] Nested agent indentation (progressive)
-  - [ ] Scroll indicators
-  - [ ] Active state highlighting
-- [ ] Create `pkg/export/navigation_test.go`
-  - [ ] Test breadcrumb generation
-  - [ ] Test nested structure
-  - [ ] Coverage target: >85%
+- [x] Create `pkg/export/navigation.go`
+  - [x] BreadcrumbItem struct for breadcrumb path items
+  - [x] RenderBreadcrumbs() generates HTML breadcrumb navigation
+  - [x] RenderJumpToParentButton() for nested agents
+  - [x] RenderAgentContainer() wraps agent content with proper IDs
+  - [x] GenerateBreadcrumbPath() creates path from agent IDs
+- [x] Create `pkg/export/templates/navigation.js`
+  - [x] expandSubagent(), collapseSubagent() functions
+  - [x] updateBreadcrumbs() with path tracking
+  - [x] Keyboard shortcuts: Alt+Left/Right (history), Alt+Up (parent), Esc (main)
+  - [x] Lazy-load nested agents on demand
+  - [x] localStorage persistence for navigation state
+  - [x] window.NavigationAPI public API
+- [x] Update CSS for navigation
+  - [x] Breadcrumb styling with separators
+  - [x] Nested agent indentation (progressive depth)
+  - [x] Scroll indicators, navigation highlight animation
+  - [x] Dark mode and responsive support
+- [x] Create `pkg/export/navigation_test.go`
+  - [x] 30 tests for navigation functions
+  - [x] 18 tests for navigation.js in templates_test.go
+  - [x] Coverage: 93% (exceeds 85% target)
 
-**Sprint 10f-QA: Deep Dive Navigation QA** (Background QA Agent #6) 🔲
+**Sprint 10f-QA: Deep Dive Navigation QA** (Background QA Agent #6) ✅ APPROVED
 ```
-MANDATORY: Must run after Sprint 10f dev agent completes
-Same worktree: wt/phase10-navigation
-Depends: Sprint 10d-QA approval
+Completed: 2026-02-03
+Result: PASS - 1000 tests passing, 93% coverage, 0 lint issues
 ```
-**QA Checklist**:
-- [ ] Run full test suite: `go test ./pkg/export/... -v`
-- [ ] Check coverage: `go test ./pkg/export/... -cover` (>85%)
-- [ ] Run linter: `golangci-lint run ./pkg/export/...` (zero errors)
-- [ ] Manual verification:
-  - [ ] Export session with nested agents (3+ levels)
-  - [ ] Test "Deep Dive" button expands agent inline
-  - [ ] Verify breadcrumb trail updates correctly
-  - [ ] Test "Jump to Parent" button works
-  - [ ] Test smooth scroll to agent
-  - [ ] Test lazy-load for nested agents
-  - [ ] Verify nested indentation is progressive
-  - [ ] Test navigation with very deep nesting (5+ levels)
-- [ ] Edge cases:
-  - [ ] Agent with no subagents
-  - [ ] Circular reference handling
-  - [ ] Missing agent file (graceful error)
-  - [ ] Very large agent (1000+ entries)
-- [ ] **Result**: PASS ✅ or FAIL ❌
 
 **Sprint 10g: Interactive Controls** (Background Dev Agent #7) ✅ COMPLETE
 ```
@@ -2166,60 +2173,35 @@ Completed: 2026-02-02
 Result: PASS - 491 tests passing, 91.0% coverage, 0 lint issues
 ```
 
-**Sprint 10h: Header, Footer & Metadata** (Background Dev Agent #8) 🔲
+**Sprint 10h: Header, Footer & Metadata** (Background Dev Agent #8) ✅ COMPLETE
 ```
 Worktree: wt/phase10-chrome
 Branch: feature/phase10-chrome
-Depends: Sprint 10g (needs controls)
+PR: #28 (merged after conflict resolution)
+Completed: 2026-02-02
 ```
-- [ ] Update `pkg/export/html.go`
-  - [ ] Enhance header with metadata:
-    ```html
-    <header class="page-header">
-      <h1>Claude Code Session</h1>
-      <div class="session-metadata">
-        <span class="meta-item">
-          Session: <code>fbd51e2b <button class="copy-btn">📋</button></code>
-        </span>
-        <span class="meta-item">Project: /Users/name/project</span>
-        <span class="meta-item">Exported: 2026-02-01 22:39:20</span>
-        <span class="meta-item">Messages: 914</span>
-        <span class="meta-item">Agents: 11</span>
-        <span class="meta-item">Tools: 247 calls</span>
-      </div>
-      <div class="controls"><!-- from Sprint 10g --></div>
-    </header>
-    ```
-  - [ ] Add footer:
-    ```html
-    <footer class="page-footer">
-      <div class="footer-info">
-        <p>Exported from <strong>claude-history</strong> CLI</p>
-        <p>Export format version: 2.0</p>
-        <p>Source: <code>~/.claude/projects/... <button class="copy-btn">📋</button></code></p>
-      </div>
-      <div class="footer-help">
-        <details>
-          <summary>Keyboard Shortcuts</summary>
-          <ul>
-            <li><kbd>Ctrl+K</kbd> - Expand/Collapse All</li>
-            <li><kbd>Ctrl+F</kbd> - Search</li>
-            <li><kbd>Ctrl+C</kbd> - Copy Agent ID</li>
-          </ul>
-        </details>
-      </div>
-    </footer>
-    ```
-- [ ] Update CSS for header/footer
-  - [ ] Sticky header with shadow on scroll
-  - [ ] Footer styling
-  - [ ] Metadata layout (responsive grid)
-  - [ ] Keyboard shortcut styling
-- [ ] Create `pkg/export/chrome_test.go`
-  - [ ] Test header generation
-  - [ ] Test footer generation
-  - [ ] Test metadata extraction
-  - [ ] Coverage target: >85%
+- [x] Update `pkg/export/html.go`
+  - [x] Added `SessionStats` struct for metadata aggregation
+  - [x] Implemented `ComputeSessionStats()` to count messages, agents, tools
+  - [x] Enhanced header with metadata: session ID, project path, timestamp, message/agent/tool counts
+  - [x] Added footer with export info and keyboard shortcuts
+  - [x] Integrated breadcrumbs from Sprint 10f
+- [x] Update CSS for header/footer
+  - [x] Sticky header with shadow on scroll
+  - [x] Footer styling with dark theme
+  - [x] Metadata layout (responsive flexbox)
+  - [x] Keyboard shortcut styling with `<kbd>` elements
+- [x] Tests in `pkg/export/html_test.go`
+  - [x] Test header generation with stats
+  - [x] Test footer generation
+  - [x] Test SessionStats computation
+  - [x] Test integration with breadcrumbs
+
+**QA Sprint 10h**: Background QA Agent #8
+```
+Completed: 2026-02-02
+Result: PASS - 500 tests passing, 93% coverage, 0 lint issues
+```
 
 **Sprint 10h-QA: Header/Footer QA** (Background QA Agent #8) 🔲
 ```
