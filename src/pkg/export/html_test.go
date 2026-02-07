@@ -640,7 +640,7 @@ func TestRenderEntry_AllEntryTypes(t *testing.T) {
 				Message:   json.RawMessage(`"test"`),
 			}
 
-			html := renderEntry(entry, nil, "", "User", "Assistant")
+			html := renderEntry(entry, nil, "", "", "", "User", "Assistant")
 
 			if !strings.Contains(html, `class="message-row `+tt.expectedClass+`"`) {
 				t.Errorf("Entry type %s should have message-row class %s", tt.entryType, tt.expectedClass)
@@ -1012,11 +1012,11 @@ func TestRenderConversation_AgentIDInHeader(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	if !strings.Contains(html, `class="agent-id"`) {
-		t.Error("HTML missing agent-id class")
+	if !strings.Contains(html, `class="agent-id-badge"`) {
+		t.Error("HTML missing agent-id-badge class")
 	}
-	if !strings.Contains(html, "[a12eb64]") {
-		t.Error("HTML missing agent ID in header")
+	if !strings.Contains(html, ">a12eb64<") {
+		t.Error("HTML missing agent ID in header (without brackets)")
 	}
 }
 

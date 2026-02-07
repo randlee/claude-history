@@ -136,15 +136,16 @@ func TestRenderConversation_CopyButtonForAgentID(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Check for copy button in agent ID
-	if !strings.Contains(html, `data-copy-text="a12eb64abc123"`) {
-		t.Error("HTML missing copy button with agent ID")
-	}
+	// Check for copy button in agent ID (now includes context, not just ID)
 	if !strings.Contains(html, `data-copy-type="agent-id"`) {
 		t.Error("HTML missing agent-id copy type")
 	}
-	if !strings.Contains(html, `title="Copy agent ID"`) {
-		t.Error("HTML missing copy agent ID tooltip")
+	if !strings.Contains(html, `title="Copy agent details"`) {
+		t.Error("HTML missing copy agent details tooltip")
+	}
+	// The copy-text should now include context with the agent ID
+	if !strings.Contains(html, "a12eb64abc123") {
+		t.Error("HTML missing agent ID in copy context")
 	}
 }
 
@@ -491,12 +492,12 @@ func TestRenderConversation_MultipleAgentIDCopyButtons(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Should have copy buttons for both agents
-	if !strings.Contains(html, `data-copy-text="agent-alpha"`) {
-		t.Error("Missing copy button for agent-alpha")
+	// Should have copy buttons for both agents (in copy context, not exact match)
+	if !strings.Contains(html, "agent-alpha") {
+		t.Error("Missing copy button context for agent-alpha")
 	}
-	if !strings.Contains(html, `data-copy-text="agent-beta"`) {
-		t.Error("Missing copy button for agent-beta")
+	if !strings.Contains(html, "agent-beta") {
+		t.Error("Missing copy button context for agent-beta")
 	}
 }
 

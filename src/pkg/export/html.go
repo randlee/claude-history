@@ -46,7 +46,7 @@ func RenderConversation(entries []models.ConversationEntry, agents []*agent.Tree
 // Unlike RenderConversation, this does not include agent tree navigation or lazy-loading features.
 // userLabel and assistantLabel specify the role names to use (e.g., "User"/"Assistant" or "Orchestrator"/"Agent").
 // sessionFolderPath is the absolute path to the session folder (optional, used for file:// links).
-// agentID is the agent ID if this is a subagent query (used to determine page title).
+// agentID is the agent ID if this is a subagent query (used to determine page title and correct agent ID display).
 func RenderQueryResults(entries []models.ConversationEntry, projectPath, sessionID, sessionFolderPath, agentID, userLabel, assistantLabel string) (string, error) {
 	var sb strings.Builder
 
@@ -108,10 +108,14 @@ func RenderQueryResults(entries []models.ConversationEntry, projectPath, session
 	// Session ID if available
 	if sessionID != "" {
 		truncatedID := TruncateSessionID(sessionID)
+
+		// Build session copy context
+		sessionCopyContext := buildSessionCopyContext(sessionID, projectPath, agentID)
+
 		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Session: <code>%s</code>%s</span>
 `,
 			escapeHTML(truncatedID),
-			renderCopyButton(sessionID, "session-id", "Copy full session ID")))
+			renderCopyButton(sessionCopyContext, "session-id", "Copy session details")))
 	}
 
 	// Entry counts
@@ -141,7 +145,7 @@ func RenderQueryResults(entries []models.ConversationEntry, projectPath, session
 			continue
 		}
 
-		entryHTML := renderEntry(entry, toolResults, projectPath, userLabel, assistantLabel)
+		entryHTML := renderEntry(entry, toolResults, projectPath, sessionID, agentID, userLabel, assistantLabel)
 		sb.WriteString(entryHTML)
 	}
 
@@ -211,7 +215,8 @@ func RenderConversationWithStats(entries []models.ConversationEntry, agents []*a
 			continue
 		}
 
-		entryHTML := renderEntry(entry, toolResults, stats.ProjectPath, "User", "Assistant")
+		// For full conversation exports, pass empty strings for sessionID/agentID (not a filtered query)
+		entryHTML := renderEntry(entry, toolResults, stats.ProjectPath, "", "", "User", "Assistant")
 		sb.WriteString(entryHTML)
 
 		// Check if this entry spawned a subagent
@@ -340,9 +345,10 @@ func RenderAgentFragment(agentID string, entries []models.ConversationEntry) (st
 			continue
 		}
 
-		// RenderAgentFragment doesn't have access to ProjectPath, pass empty string
+		// RenderAgentFragment doesn't have access to ProjectPath or session context
 		// Use "User"/"Assistant" labels for agent fragments (they're viewed in context of the full export)
-		entryHTML := renderEntry(entry, toolResults, "", "User", "Assistant")
+		// Pass empty strings for sessionID/agentID since this is used for lazy-loaded fragments
+		entryHTML := renderEntry(entry, toolResults, "", "", "", "User", "Assistant")
 		sb.WriteString(entryHTML)
 	}
 
@@ -391,8 +397,13 @@ func hasContent(entry models.ConversationEntry) bool {
 
 // renderEntry renders a single conversation entry as HTML using the chat bubble layout.
 // projectPath is used for generating CLI commands in task notifications (can be empty string if not available).
+// sessionID and agentID are used to determine the correct agent ID to display in message headers:
+//   - For main session queries (agentID == ""): show entry.AgentID if present
+//   - For subagent queries (agentID != ""):
+//     - ORCHESTRATOR/User messages: show sessionID (parent)
+//     - AGENT/Assistant messages: show agentID (subagent)
 // userLabel and assistantLabel specify the role names to display (e.g., "User"/"Assistant" or "Orchestrator"/"Agent").
-func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult, projectPath, userLabel, assistantLabel string) string {
+func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult, projectPath, sessionID, agentID, userLabel, assistantLabel string) string {
 	var sb strings.Builder
 
 	// Get text content
@@ -425,11 +436,21 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	// Message header with role and timestamp
 	sb.WriteString(`    <div class="message-header">`)
 	sb.WriteString(fmt.Sprintf(`<span class="role">%s</span>`, escapeHTML(roleLabel)))
-	if entry.AgentID != "" {
-		sb.WriteString(fmt.Sprintf(` <span class="agent-id">[%s]%s</span>`,
-			escapeHTML(entry.AgentID),
-			renderCopyButton(entry.AgentID, "agent-id", "Copy agent ID")))
+
+	// Determine which agent ID to display
+	displayAgentID := determineDisplayAgentID(entry, sessionID, agentID)
+	if displayAgentID != "" {
+		// Truncate agent ID for display
+		truncatedID := TruncateSessionID(displayAgentID)
+
+		// Build copy context for this message's agent ID
+		copyContext := buildAgentIDCopyContext(entry, displayAgentID, sessionID, agentID, projectPath, roleLabel)
+
+		sb.WriteString(fmt.Sprintf(`<span class="agent-id-badge">%s%s</span>`,
+			escapeHTML(truncatedID),
+			renderCopyButton(copyContext, "agent-id", "Copy agent details")))
 	}
+
 	sb.WriteString(fmt.Sprintf(` <span class="timestamp">%s</span>`, escapeHTML(timestamp)))
 	sb.WriteString("</div>\n")
 
@@ -459,6 +480,111 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	sb.WriteString("</div>\n")   // Close message-content
 	sb.WriteString("  </div>\n") // Close message-bubble
 	sb.WriteString("</div>\n")   // Close message-row
+
+	return sb.String()
+}
+
+// determineDisplayAgentID determines which agent ID should be displayed for a message.
+// For main session queries (agentID == ""), it returns entry.AgentID.
+// For subagent queries (agentID != ""):
+//   - User/Orchestrator messages: return sessionID (the parent orchestrator)
+//   - Assistant/Agent messages: return agentID (the subagent responding)
+func determineDisplayAgentID(entry models.ConversationEntry, sessionID, agentID string) string {
+	// If this isn't a subagent query, use the entry's agent ID
+	if agentID == "" {
+		return entry.AgentID
+	}
+
+	// For subagent queries, determine based on entry type
+	switch entry.Type {
+	case models.EntryTypeUser:
+		// User/Orchestrator messages come from the parent session
+		return sessionID
+	case models.EntryTypeAssistant:
+		// Assistant/Agent messages come from the subagent
+		return agentID
+	default:
+		// For other types, use entry's agent ID if available
+		return entry.AgentID
+	}
+}
+
+// buildSessionCopyContext builds the full context string for copying session information.
+// This includes the session ID, project path, and a CLI command to query the session.
+func buildSessionCopyContext(sessionID, projectPath, agentID string) string {
+	if sessionID == "" {
+		return sessionID
+	}
+
+	var sb strings.Builder
+
+	// Session identification
+	sb.WriteString(fmt.Sprintf("Session: %s\n", sessionID))
+
+	// Add project path if available
+	if projectPath != "" {
+		sb.WriteString(fmt.Sprintf("Project: %s\n", projectPath))
+	}
+
+	// Build CLI command
+	pathArg := projectPath
+	if pathArg == "" {
+		pathArg = "/path/to/project"
+	}
+
+	if agentID != "" {
+		// If viewing a subagent, include agent ID in command
+		sb.WriteString(fmt.Sprintf("claude-history query %s --session %s --agent %s", pathArg, sessionID, agentID))
+	} else {
+		// Otherwise, just session query
+		sb.WriteString(fmt.Sprintf("claude-history query %s --session %s", pathArg, sessionID))
+	}
+
+	return sb.String()
+}
+
+// buildAgentIDCopyContext builds the full context string for copying agent ID information.
+// This includes the role, agent ID, and a CLI command to query that specific message stream.
+func buildAgentIDCopyContext(entry models.ConversationEntry, displayAgentID, sessionID, agentID, projectPath, roleLabel string) string {
+	if displayAgentID == "" {
+		return ""
+	}
+
+	var sb strings.Builder
+
+	// Message identification
+	sb.WriteString(fmt.Sprintf("%s Message: %s\n", roleLabel, displayAgentID))
+
+	// Add session context
+	if sessionID != "" {
+		sb.WriteString(fmt.Sprintf("Session: %s\n", sessionID))
+	}
+
+	// Add project path if available
+	if projectPath != "" {
+		sb.WriteString(fmt.Sprintf("Project: %s\n", projectPath))
+	}
+
+	// Build CLI command
+	pathArg := projectPath
+	if pathArg == "" {
+		pathArg = "/path/to/project"
+	}
+
+	// Determine which query command to suggest
+	if agentID != "" && entry.Type == models.EntryTypeUser {
+		// For orchestrator messages in a subagent query, suggest querying the main session
+		sb.WriteString(fmt.Sprintf("claude-history query %s --session %s", pathArg, sessionID))
+	} else if agentID != "" && entry.Type == models.EntryTypeAssistant {
+		// For agent messages in a subagent query, suggest querying this subagent
+		sb.WriteString(fmt.Sprintf("claude-history query %s --session %s --agent %s", pathArg, sessionID, agentID))
+	} else if sessionID != "" && displayAgentID != sessionID {
+		// For messages with a different agent ID in a main session query
+		sb.WriteString(fmt.Sprintf("claude-history query %s --session %s --agent %s", pathArg, sessionID, displayAgentID))
+	} else if sessionID != "" {
+		// For main session messages
+		sb.WriteString(fmt.Sprintf("claude-history query %s --session %s", pathArg, sessionID))
+	}
 
 	return sb.String()
 }

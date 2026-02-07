@@ -897,9 +897,30 @@ p {
 
 .message-header .timestamp {
     color: var(--text-muted);
-    margin-left: auto;
 }
 
+/* Agent ID badge in message header - styled like notification badges, right-aligned */
+.message-header .agent-id-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-left: auto;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.message-header .agent-id-badge:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Legacy agent-id class for backward compatibility */
 .message-header .agent-id {
     font-family: var(--font-mono);
     font-size: var(--text-xs);

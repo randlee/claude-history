@@ -302,13 +302,13 @@ func TestChatBubble_AgentIDInHeader(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Agent ID should be in header
-	if !strings.Contains(html, "[agent-xyz789]") {
-		t.Error("HTML missing agent ID in header")
+	// Agent ID should be in header (without brackets)
+	if !strings.Contains(html, ">agent-xy<") {
+		t.Error("HTML missing truncated agent ID in header (without brackets)")
 	}
 
-	// Copy button should be present
-	if !strings.Contains(html, `data-copy-text="agent-xyz789"`) {
+	// Copy button should be present with context (not just the ID)
+	if !strings.Contains(html, `data-copy-type="agent-id"`) {
 		t.Error("HTML missing copy button for agent ID")
 	}
 }
@@ -710,7 +710,7 @@ func TestRenderEntry_DirectCall(t *testing.T) {
 		Message:   json.RawMessage(`"Direct test"`),
 	}
 
-	html := renderEntry(entry, nil, "", "User", "Assistant")
+	html := renderEntry(entry, nil, "", "", "", "User", "Assistant")
 
 	// Should produce valid HTML structure
 	if !strings.Contains(html, `class="message-row user"`) {
