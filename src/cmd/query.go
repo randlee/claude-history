@@ -205,6 +205,21 @@ func runQuery(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Handle HTML format specially - generate and open HTML file
+	if outputFormat == output.FormatHTML {
+		htmlFile, err := generateQueryHTML(projectPath, allEntries, resolvedSessionID, resolvedAgentID)
+		if err != nil {
+			return fmt.Errorf("failed to generate HTML: %w", err)
+		}
+		fmt.Printf("HTML generated: %s\n", htmlFile)
+
+		// Open in browser
+		if err := openBrowser(htmlFile); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: could not open browser: %v\n", err)
+		}
+		return nil
+	}
+
 	return output.WriteEntries(os.Stdout, allEntries, outputFormat, queryLimit)
 }
 
@@ -381,4 +396,56 @@ func parseTime(s string) (time.Time, error) {
 	}
 
 	return time.Time{}, fmt.Errorf("could not parse time: %s", s)
+}
+
+// generateQueryHTML generates an HTML file for query results and returns the file path.
+func generateQueryHTML(projectPath string, entries []models.ConversationEntry, sessionID, agentID string) (string, error) {
+	// Create temp file with descriptive name
+	var fileName string
+	if agentID != "" {
+		// Truncate agent ID safely
+		truncated := agentID
+		if len(truncated) > 8 {
+			truncated = truncated[:8]
+		}
+		fileName = fmt.Sprintf("query-%s.html", truncated)
+	} else if sessionID != "" {
+		// Truncate session ID safely
+		truncated := sessionID
+		if len(truncated) > 8 {
+			truncated = truncated[:8]
+		}
+		fileName = fmt.Sprintf("query-%s.html", truncated)
+	} else {
+		fileName = "query-results.html"
+	}
+	tmpFile := filepath.Join(os.TempDir(), fileName)
+
+	// Render entries as HTML using export package
+	htmlContent, err := export.RenderQueryResults(entries, projectPath, sessionID)
+	if err != nil {
+		return "", err
+	}
+
+	if err := os.WriteFile(tmpFile, []byte(htmlContent), 0644); err != nil {
+		return "", err
+	}
+
+	return tmpFile, nil
+}
+
+// openBrowser opens a URL or file path in the default browser.
+func openBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "linux":
+		cmd = exec.Command("xdg-open", url)
+	case "windows":
+		cmd = exec.Command("cmd", "/c", "start", url)
+	default:
+		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
+	return cmd.Start()
 }
