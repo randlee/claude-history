@@ -109,6 +109,12 @@
             el.classList.remove('hidden');
         });
 
+        // Handle <details> elements
+        var detailsElements = document.querySelectorAll('details');
+        detailsElements.forEach(function(el) {
+            el.open = true;
+        });
+
         // Update toggle indicators
         updateAllToggles(true);
 
@@ -123,6 +129,12 @@
         var bodies = document.querySelectorAll('.tool-body');
         bodies.forEach(function(el) {
             el.classList.add('hidden');
+        });
+
+        // Handle <details> elements
+        var detailsElements = document.querySelectorAll('details');
+        detailsElements.forEach(function(el) {
+            el.open = false;
         });
 
         // Update toggle indicators
@@ -205,12 +217,12 @@
         }
 
         var lowerQuery = query.toLowerCase().trim();
-        var entries = document.querySelectorAll('.entry');
+        var entries = document.querySelectorAll('.message-row');
         currentMatches = [];
         currentSearchIndex = -1;
 
         entries.forEach(function(entry) {
-            var content = entry.querySelector('.content');
+            var content = entry.querySelector('.message-content');
             if (!content) return;
 
             var textContent = content.textContent.toLowerCase();

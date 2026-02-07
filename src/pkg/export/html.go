@@ -17,7 +17,10 @@ import (
 type SessionStats struct {
 	SessionID     string // Full session ID
 	ProjectPath   string // Project directory path
-	ExportTime    string // Formatted export timestamp
+	ExportTime    string // Formatted export timestamp (kept for backward compat, not displayed)
+	SessionStart  string // First entry timestamp (formatted for display)
+	SessionEnd    string // Last entry timestamp (formatted for display)
+	Duration      string // Human-readable duration (e.g., "2h 35m")
 	MessageCount  int    // Count of user + assistant messages
 	AgentCount    int    // Count of subagents
 	ToolCallCount int    // Count of tool calls
@@ -90,6 +93,39 @@ func ComputeSessionStats(entries []models.ConversationEntry, agents []*agent.Tre
 		ExportTime: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
+	// Get session start/end times from first/last entries with timestamps
+	if len(entries) > 0 {
+		// Find first entry with a timestamp
+		var firstTime time.Time
+		for _, entry := range entries {
+			if entry.Timestamp != "" {
+				if t, err := time.Parse(time.RFC3339Nano, entry.Timestamp); err == nil {
+					firstTime = t
+					stats.SessionStart = firstTime.Format("2006-01-02 15:04")
+					break
+				}
+			}
+		}
+
+		// Find last entry with a timestamp (search backwards)
+		var lastTime time.Time
+		for i := len(entries) - 1; i >= 0; i-- {
+			if entries[i].Timestamp != "" {
+				if t, err := time.Parse(time.RFC3339Nano, entries[i].Timestamp); err == nil {
+					lastTime = t
+					stats.SessionEnd = lastTime.Format("2006-01-02 15:04")
+					break
+				}
+			}
+		}
+
+		// Calculate duration if we have both timestamps
+		if !firstTime.IsZero() && !lastTime.IsZero() {
+			duration := lastTime.Sub(firstTime)
+			stats.Duration = formatDuration(duration)
+		}
+	}
+
 	// Count messages (user + assistant)
 	for _, entry := range entries {
 		if entry.Type == models.EntryTypeUser || entry.Type == models.EntryTypeAssistant {
@@ -113,6 +149,22 @@ func ComputeSessionStats(entries []models.ConversationEntry, agents []*agent.Tre
 	}
 
 	return stats
+}
+
+// formatDuration formats a duration into a human-readable string.
+// Examples: "2h 35m", "45m", "30s"
+func formatDuration(d time.Duration) string {
+	hours := int(d.Hours())
+	minutes := int(d.Minutes()) % 60
+
+	if hours > 0 {
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	}
+	if minutes > 0 {
+		return fmt.Sprintf("%dm", minutes)
+	}
+	seconds := int(d.Seconds())
+	return fmt.Sprintf("%ds", seconds)
 }
 
 // TruncateSessionID returns a truncated session ID for display (first 8 chars).
@@ -565,10 +617,16 @@ func renderHTMLHeader(stats *SessionStats) string {
 `, escapeHTML(stats.ProjectPath)))
 	}
 
-	// Export timestamp
-	if stats != nil && stats.ExportTime != "" {
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Exported: %s</span>
-`, escapeHTML(stats.ExportTime)))
+	// Session start time
+	if stats != nil && stats.SessionStart != "" {
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Started: %s</span>
+`, escapeHTML(stats.SessionStart)))
+	}
+
+	// Session duration
+	if stats != nil && stats.Duration != "" {
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Duration: %s</span>
+`, escapeHTML(stats.Duration)))
 	}
 
 	// Message count
