@@ -11,6 +11,9 @@ var (
 	// Global flags
 	claudeDir string
 	format    string
+
+	// Version information
+	versionInfo string
 )
 
 var rootCmd = &cobra.Command{
@@ -25,6 +28,12 @@ It supports:
   - Displaying agent hierarchy trees
   - Listing projects and sessions`,
 	SilenceUsage: true,
+}
+
+// SetVersion sets the version information
+func SetVersion(version, commit, date string) {
+	versionInfo = fmt.Sprintf("%s (commit: %s, built: %s)", version, commit, date)
+	rootCmd.Version = versionInfo
 }
 
 // Execute runs the root command
