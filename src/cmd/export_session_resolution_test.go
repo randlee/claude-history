@@ -115,7 +115,6 @@ func TestExport_SessionResolution(t *testing.T) {
 	})
 }
 
-
 // TestExport_SessionResolution_WithEncodedPath tests export works with encoded project paths.
 func TestExport_SessionResolution_WithEncodedPath(t *testing.T) {
 	// Setup: Create mock .claude/projects directory with real filesystem project path
