@@ -231,7 +231,7 @@ func TestRenderEntry_WithTaskNotification(t *testing.T) {
 		Message:   []byte(`{"role":"user","content":"<task-notification><task-id>abc123</task-id><status>completed</status><summary>Agent completed</summary><result>Done!</result></task-notification>"}`),
 	}
 
-	html := renderEntry(entry, make(map[string]models.ToolResult))
+	html := renderEntry(entry, make(map[string]models.ToolResult), "")
 
 	// Should render as standalone notification-row, not message-row
 	if !strings.Contains(html, `class="notification-row completed"`) {
@@ -301,7 +301,8 @@ func TestRenderFlatTaskNotification(t *testing.T) {
 				`class="notification-type">Subagent</span>`,
 				`class="notification-summary">✓ Deep dive on Test Agent</span>`,
 				`class="agent-id-badge"`,
-				`[abc123]`, // Truncated ID (not truncated in this case since it's 6 chars)
+				`data-full-id="abc123"`, // Agent ID without brackets
+				`>abc123<`, // Truncated ID displayed without brackets
 				`claude-history query`, // Check for CLI command (HTML escaped in title)
 				`--session test-session --agent abc123`,
 				`class="notification-content"`,
@@ -348,7 +349,7 @@ func TestRenderFlatTaskNotification(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			html := renderFlatTaskNotification(tt.taskNotif, tt.entry)
+			html := renderFlatTaskNotification(tt.taskNotif, tt.entry, "")
 
 			for _, expected := range tt.expectContains {
 				if !strings.Contains(html, expected) {

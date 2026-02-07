@@ -710,7 +710,7 @@ func TestRenderEntry_DirectCall(t *testing.T) {
 		Message:   json.RawMessage(`"Direct test"`),
 	}
 
-	html := renderEntry(entry, nil)
+	html := renderEntry(entry, nil, "")
 
 	// Should produce valid HTML structure
 	if !strings.Contains(html, `class="message-row user"`) {

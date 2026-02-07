@@ -73,7 +73,7 @@ func RenderConversationWithStats(entries []models.ConversationEntry, agents []*a
 			continue
 		}
 
-		entryHTML := renderEntry(entry, toolResults)
+		entryHTML := renderEntry(entry, toolResults, stats.ProjectPath)
 		sb.WriteString(entryHTML)
 
 		// Check if this entry spawned a subagent
@@ -202,7 +202,8 @@ func RenderAgentFragment(agentID string, entries []models.ConversationEntry) (st
 			continue
 		}
 
-		entryHTML := renderEntry(entry, toolResults)
+		// RenderAgentFragment doesn't have access to ProjectPath, pass empty string
+		entryHTML := renderEntry(entry, toolResults, "")
 		sb.WriteString(entryHTML)
 	}
 
@@ -233,7 +234,8 @@ func hasContent(entry models.ConversationEntry) bool {
 }
 
 // renderEntry renders a single conversation entry as HTML using the chat bubble layout.
-func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult) string {
+// projectPath is used for generating CLI commands in task notifications (can be empty string if not available).
+func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult, projectPath string) string {
 	var sb strings.Builder
 
 	// Get text content
@@ -243,7 +245,7 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	isTaskNotif := entry.Type == models.EntryTypeUser && strings.Contains(textContent, "<task-notification>")
 	if isTaskNotif {
 		taskNotif := parseTaskNotification(textContent)
-		return renderFlatTaskNotification(taskNotif, entry)
+		return renderFlatTaskNotification(taskNotif, entry, projectPath)
 	}
 
 	entryType := entry.Type
@@ -884,7 +886,8 @@ func renderTaskNotification(content string) string {
 
 // renderFlatTaskNotification renders a task notification with flattened structure (2-level DOM).
 // Returns a standalone notification-row div, not wrapped in message-row/bubble structure.
-func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.ConversationEntry) string {
+// projectPath is used for generating CLI commands (can be empty string if not available).
+func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.ConversationEntry, projectPath string) string {
 	if taskNotif == nil {
 		// Fallback to empty string
 		return ""
@@ -907,8 +910,13 @@ func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.Co
 	// Build CLI command for tooltip (if we have session + agent info)
 	cliCommand := ""
 	if entry.SessionID != "" && taskNotif.TaskID != "" {
-		cliCommand = fmt.Sprintf("claude-history query <project-path> --session %s --agent %s",
-			entry.SessionID, taskNotif.TaskID)
+		// Use projectPath if available, otherwise use placeholder
+		pathArg := projectPath
+		if pathArg == "" {
+			pathArg = "<project-path>"
+		}
+		cliCommand = fmt.Sprintf("claude-history query %s --session %s --agent %s",
+			pathArg, entry.SessionID, taskNotif.TaskID)
 	}
 
 	// Main notification row
@@ -942,12 +950,12 @@ func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.Co
 		// Build full copy text with context
 		copyText := ""
 		if cliCommand != "" {
-			copyText = fmt.Sprintf("Subagent \"%s\" [%s]\n%s",
+			copyText = fmt.Sprintf("Subagent \"%s\" %s\n%s",
 				taskNotif.Summary,
 				taskNotif.TaskID,
 				cliCommand)
 		} else {
-			copyText = fmt.Sprintf("Subagent \"%s\" [%s]\nAgent ID: %s",
+			copyText = fmt.Sprintf("Subagent \"%s\" %s\nAgent ID: %s",
 				taskNotif.Summary,
 				taskNotif.TaskID,
 				taskNotif.TaskID)
@@ -956,7 +964,7 @@ func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.Co
 		truncatedID := truncateID(taskNotif.TaskID, 8)
 		sb.WriteString(fmt.Sprintf(`    <span class="agent-id-badge" data-full-id="%s" title="%s">`,
 			escapeHTML(taskNotif.TaskID), escapeHTML(tooltipText)))
-		sb.WriteString(fmt.Sprintf(`[%s]`, escapeHTML(truncatedID)))
+		sb.WriteString(escapeHTML(truncatedID))
 		sb.WriteString(renderCopyButton(copyText, "agent-notification", "Copy agent details"))
 		sb.WriteString(`</span>`)
 		sb.WriteString("\n")
