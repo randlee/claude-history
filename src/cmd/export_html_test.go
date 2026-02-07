@@ -370,7 +370,7 @@ func TestHTMLOutput_ValidStructure(t *testing.T) {
 		"<div class=\"conversation\">",
 		"<div class=\"message-row user\"",
 		"<div class=\"message-row assistant\"",
-		"<div class=\"tool-call",  // Changed: removed closing quote to match additional CSS classes
+		"<div class=\"tool-call", // Changed: removed closing quote to match additional CSS classes
 		"<script src=\"static/script.js\">",
 		"</body>",
 		"</html>",
