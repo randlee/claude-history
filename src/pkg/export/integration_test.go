@@ -11,9 +11,8 @@ import (
 // TestUserContentWithBashOutput tests the full rendering pipeline for user messages with bash output
 func TestUserContentWithBashOutput(t *testing.T) {
 	// Simulate a real user message with bash output
-	userMessage := `<bash-stdout>beads
-beads-state-machine
-claude-code-viewer</bash-stdout><bash-stderr></bash-stderr>`
+	// Note: newlines must be escaped in JSON strings
+	userMessage := `<bash-stdout>beads\nbeads-state-machine\nclaude-code-viewer</bash-stdout><bash-stderr></bash-stderr>`
 
 	entries := []models.ConversationEntry{
 		{
@@ -85,9 +84,8 @@ func TestUserContentPlainText(t *testing.T) {
 
 // TestUserContentMixedContent tests user messages with text before and after XML tags
 func TestUserContentMixedContent(t *testing.T) {
-	userMessage := `Running command:
-<bash-stdout>output here</bash-stdout>
-Command completed.`
+	// Note: newlines must be escaped in JSON strings
+	userMessage := `Running command:\n<bash-stdout>output here</bash-stdout>\nCommand completed.`
 
 	entries := []models.ConversationEntry{
 		{
