@@ -1019,11 +1019,18 @@ p {
     font-size: 13px;
     color: var(--text-primary); /* Use CSS variable for proper contrast */
     line-height: 1.6;
-    white-space: pre-wrap;
-    font-family: var(--font-mono);
     background: rgba(255, 255, 255, 0.02);
     padding: 12px;
     border-radius: 4px;
+}
+
+/* Allow markdown rendering in notification results (code blocks, lists, etc.) */
+.notification-result .code-block,
+.notification-result .inline-code,
+.notification-result .md-ul,
+.notification-result .md-ol,
+.notification-result .md-table {
+    /* Inherit markdown styles */
 }
 
 .notification-usage {
