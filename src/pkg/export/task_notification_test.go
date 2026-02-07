@@ -225,30 +225,174 @@ func TestRenderTaskNotification(t *testing.T) {
 func TestRenderEntry_WithTaskNotification(t *testing.T) {
 	entry := models.ConversationEntry{
 		UUID:      "test-uuid",
+		SessionID: "test-session",
 		Type:      models.EntryTypeUser,
 		Timestamp: "2026-02-07T12:00:00Z",
 		Message:   []byte(`{"role":"user","content":"<task-notification><task-id>abc123</task-id><status>completed</status><summary>Agent completed</summary><result>Done!</result></task-notification>"}`),
 	}
 
-	html := renderEntry(entry, make(map[string]models.ToolResult))
+	html := renderEntry(entry, make(map[string]models.ToolResult), "")
 
-	// Should render as system entry, not user
-	if !strings.Contains(html, `class="message-row system"`) {
-		t.Error("expected task-notification to render as system entry")
+	// Should render as standalone notification-row, not message-row
+	if !strings.Contains(html, `class="notification-row completed"`) {
+		t.Error("expected task-notification to render as notification-row with completed class")
 	}
 
-	// Should have Agent Notification label
-	if !strings.Contains(html, "Agent Notification") {
-		t.Error("expected 'Agent Notification' role label")
+	// Should NOT have message-row wrapper
+	if strings.Contains(html, `class="message-row`) {
+		t.Error("task-notification should NOT be wrapped in message-row")
 	}
 
-	// Should contain task-notification styling
-	if !strings.Contains(html, `class="task-notification"`) {
-		t.Error("expected task-notification div")
+	// Should have Subagent type label
+	if !strings.Contains(html, `class="notification-type">Subagent</span>`) {
+		t.Error("expected 'Subagent' notification type label")
+	}
+
+	// Should contain flattened notification header
+	if !strings.Contains(html, `class="notification-header"`) {
+		t.Error("expected notification-header div")
+	}
+
+	// Should have collapse toggle
+	if !strings.Contains(html, `class="collapse-toggle"`) {
+		t.Error("expected collapse-toggle button")
 	}
 
 	// Should have completion icon
 	if !strings.Contains(html, "✓") {
 		t.Error("expected completion icon")
+	}
+
+	// Should have agent ID badge with copy button
+	if !strings.Contains(html, `class="agent-id-badge"`) {
+		t.Error("expected agent-id-badge")
+	}
+
+	// Should have CLI command in tooltip
+	if !strings.Contains(html, "claude-history query") {
+		t.Error("expected CLI command in tooltip")
+	}
+}
+
+func TestRenderFlatTaskNotification(t *testing.T) {
+	tests := []struct {
+		name           string
+		taskNotif      *TaskNotificationData
+		entry          models.ConversationEntry
+		expectContains []string
+	}{
+		{
+			name: "completed notification with full data",
+			taskNotif: &TaskNotificationData{
+				TaskID:  "abc123",
+				Status:  "completed",
+				Summary: "Deep dive on Test Agent",
+				Result:  "Agent completed successfully",
+			},
+			entry: models.ConversationEntry{
+				UUID:      "test-uuid",
+				SessionID: "test-session",
+				Timestamp: "2026-02-07T12:00:00Z",
+			},
+			expectContains: []string{
+				`class="notification-row completed"`,
+				`class="notification-header"`,
+				`class="collapse-toggle"`,
+				`class="notification-type">Subagent</span>`,
+				`class="notification-summary">✓ Deep dive on Test Agent</span>`,
+				`class="agent-id-badge"`,
+				`data-full-id="abc123"`, // Agent ID without brackets
+				`>abc123<`,              // Truncated ID displayed without brackets
+				`claude-history query`,  // Check for CLI command (HTML escaped in title)
+				`--session test-session --agent abc123`,
+				`class="notification-content"`,
+				`Agent completed successfully`,
+			},
+		},
+		{
+			name: "failed notification",
+			taskNotif: &TaskNotificationData{
+				TaskID:  "xyz789",
+				Status:  "failed",
+				Summary: "Agent task failed",
+				Result:  "Error occurred",
+			},
+			entry: models.ConversationEntry{
+				UUID:      "test-uuid-2",
+				SessionID: "test-session",
+				Timestamp: "2026-02-07T13:00:00Z",
+			},
+			expectContains: []string{
+				`class="notification-row failed"`,
+				`✗ Agent task failed`,
+			},
+		},
+		{
+			name: "running notification without result",
+			taskNotif: &TaskNotificationData{
+				TaskID:  "run123",
+				Status:  "running",
+				Summary: "Agent task in progress",
+				Result:  "",
+			},
+			entry: models.ConversationEntry{
+				UUID:      "test-uuid-3",
+				SessionID: "test-session",
+				Timestamp: "2026-02-07T14:00:00Z",
+			},
+			expectContains: []string{
+				`class="notification-row running"`,
+				`⏳ Agent task in progress`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			html := renderFlatTaskNotification(tt.taskNotif, tt.entry, "")
+
+			for _, expected := range tt.expectContains {
+				if !strings.Contains(html, expected) {
+					t.Errorf("expected HTML to contain %q, but it doesn't.\nGot: %s", expected, html)
+				}
+			}
+		})
+	}
+}
+
+func TestTruncateID(t *testing.T) {
+	tests := []struct {
+		name     string
+		id       string
+		length   int
+		expected string
+	}{
+		{
+			name:     "id longer than length",
+			id:       "abc123xyz789",
+			length:   8,
+			expected: "abc123xy",
+		},
+		{
+			name:     "id equal to length",
+			id:       "abc12345",
+			length:   8,
+			expected: "abc12345",
+		},
+		{
+			name:     "id shorter than length",
+			id:       "abc",
+			length:   8,
+			expected: "abc",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := truncateID(tt.id, tt.length)
+			if result != tt.expected {
+				t.Errorf("expected %q, got %q", tt.expected, result)
+			}
+		})
 	}
 }

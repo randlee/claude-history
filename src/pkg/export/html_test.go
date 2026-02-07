@@ -640,7 +640,7 @@ func TestRenderEntry_AllEntryTypes(t *testing.T) {
 				Message:   json.RawMessage(`"test"`),
 			}
 
-			html := renderEntry(entry, nil)
+			html := renderEntry(entry, nil, "")
 
 			if !strings.Contains(html, `class="message-row `+tt.expectedClass+`"`) {
 				t.Errorf("Entry type %s should have message-row class %s", tt.entryType, tt.expectedClass)

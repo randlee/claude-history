@@ -69,6 +69,7 @@ Examples:
   # Output formats
   claude-history query /path/to/project --format json
   claude-history query /path/to/project --format summary
+  claude-history query /path/to/project --format html
 
   # Control text truncation
   claude-history query /path/to/project --limit 0        # No truncation (full content)
