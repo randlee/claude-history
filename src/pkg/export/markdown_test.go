@@ -6,14 +6,14 @@ import (
 )
 
 func TestRenderMarkdown_EmptyString(t *testing.T) {
-	result := RenderMarkdown("")
+	result := RenderMarkdown("", "")
 	if result != "" {
 		t.Errorf("RenderMarkdown('') = %q, want empty string", result)
 	}
 }
 
 func TestRenderMarkdown_PlainText(t *testing.T) {
-	result := RenderMarkdown("Hello, world!")
+	result := RenderMarkdown("Hello, world!", "")
 	if !strings.Contains(result, "Hello, world!") {
 		t.Errorf("RenderMarkdown should preserve plain text, got %q", result)
 	}
@@ -59,7 +59,7 @@ func TestRenderMarkdown_Headers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := RenderMarkdown(tt.input)
+			result := RenderMarkdown(tt.input, "")
 			if !strings.Contains(result, tt.expected) {
 				t.Errorf("RenderMarkdown(%q) = %q, want to contain %q", tt.input, result, tt.expected)
 			}
@@ -73,7 +73,7 @@ func TestRenderMarkdown_MultipleHeaders(t *testing.T) {
 ### Subsection
 ## Section 2`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<h1 class="md-h1">Title</h1>`) {
 		t.Error("Missing h1")
@@ -94,7 +94,7 @@ func TestRenderMarkdown_UnorderedList(t *testing.T) {
 - Item 2
 - Item 3`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<ul class="md-ul">`) {
 		t.Error("Missing ul opening tag")
@@ -118,7 +118,7 @@ func TestRenderMarkdown_OrderedList(t *testing.T) {
 2. Second
 3. Third`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<ol class="md-ol">`) {
 		t.Error("Missing ol opening tag")
@@ -143,7 +143,7 @@ func TestRenderMarkdown_NestedList(t *testing.T) {
   - Child 2
 - Parent 2`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	// Should have nested structure
 	if !strings.Contains(result, `<ul class="md-ul">`) {
@@ -173,7 +173,7 @@ func TestRenderMarkdown_MixedListTypes(t *testing.T) {
 	input := `- Unordered item
 1. Ordered item`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<ul class="md-ul">`) {
 		t.Error("Missing ul tag")
@@ -186,7 +186,7 @@ func TestRenderMarkdown_MixedListTypes(t *testing.T) {
 func TestRenderMarkdown_TaskList_Unchecked(t *testing.T) {
 	input := "- [ ] Todo item"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<ul class="md-task-list">`) {
 		t.Error("Missing task list container")
@@ -205,7 +205,7 @@ func TestRenderMarkdown_TaskList_Unchecked(t *testing.T) {
 func TestRenderMarkdown_TaskList_Checked(t *testing.T) {
 	input := "- [x] Done item"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<ul class="md-task-list">`) {
 		t.Error("Missing task list container")
@@ -223,7 +223,7 @@ func TestRenderMarkdown_TaskList_Mixed(t *testing.T) {
 - [x] Done
 - [ ] Todo 2`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	// Count checkboxes
 	uncheckedCount := strings.Count(result, `<input type="checkbox" disabled>`)
@@ -240,7 +240,7 @@ func TestRenderMarkdown_TaskList_Mixed(t *testing.T) {
 func TestRenderMarkdown_CodeBlock_WithLanguage(t *testing.T) {
 	input := "```go\nfunc main() {\n\tfmt.Println(\"Hello\")\n}\n```"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<div class="code-block language-go">`) {
 		t.Error("Missing code-block container with language class")
@@ -262,7 +262,7 @@ func TestRenderMarkdown_CodeBlock_WithLanguage(t *testing.T) {
 func TestRenderMarkdown_CodeBlock_NoLanguage(t *testing.T) {
 	input := "```\nplain code\n```"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<div class="code-block">`) {
 		t.Error("Missing code-block container")
@@ -278,7 +278,7 @@ func TestRenderMarkdown_CodeBlock_NoLanguage(t *testing.T) {
 func TestRenderMarkdown_CodeBlock_MultipleLanguages(t *testing.T) {
 	input := "```bash\necho hello\n```\n\nSome text\n\n```python\nprint('world')\n```"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `language-bash`) {
 		t.Error("Missing bash language class")
@@ -297,7 +297,7 @@ func TestRenderMarkdown_CodeBlock_MultipleLanguages(t *testing.T) {
 func TestRenderMarkdown_InlineCode(t *testing.T) {
 	input := "Use the `fmt.Println` function"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<code class="inline-code">fmt.Println</code>`) {
 		t.Errorf("Missing inline code, got %q", result)
@@ -307,7 +307,7 @@ func TestRenderMarkdown_InlineCode(t *testing.T) {
 func TestRenderMarkdown_InlineCode_Multiple(t *testing.T) {
 	input := "Use `foo` and `bar` functions"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if strings.Count(result, `<code class="inline-code">`) != 2 {
 		t.Error("Expected 2 inline code elements")
@@ -323,7 +323,7 @@ func TestRenderMarkdown_InlineCode_Multiple(t *testing.T) {
 func TestRenderMarkdown_Links(t *testing.T) {
 	input := "Visit [Google](https://google.com) for more info"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<a href="https://google.com" class="md-link">Google</a>`) {
 		t.Errorf("Missing link, got %q", result)
@@ -333,7 +333,7 @@ func TestRenderMarkdown_Links(t *testing.T) {
 func TestRenderMarkdown_Links_Multiple(t *testing.T) {
 	input := "[Link 1](https://example.com) and [Link 2](https://test.com)"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<a href="https://example.com" class="md-link">Link 1</a>`) {
 		t.Error("Missing first link")
@@ -346,7 +346,7 @@ func TestRenderMarkdown_Links_Multiple(t *testing.T) {
 func TestRenderMarkdown_Images(t *testing.T) {
 	input := "![Alt text](https://example.com/image.png)"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<img src="https://example.com/image.png" alt="Alt text" class="md-image">`) {
 		t.Errorf("Missing image, got %q", result)
@@ -356,7 +356,7 @@ func TestRenderMarkdown_Images(t *testing.T) {
 func TestRenderMarkdown_Blockquote(t *testing.T) {
 	input := "> This is a quote"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<blockquote class="md-blockquote">`) {
 		t.Error("Missing blockquote opening tag")
@@ -374,7 +374,7 @@ func TestRenderMarkdown_Blockquote_Multiline(t *testing.T) {
 > Line 2
 > Line 3`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	// Should be a single blockquote
 	if strings.Count(result, `<blockquote class="md-blockquote">`) != 1 {
@@ -396,7 +396,7 @@ func TestRenderMarkdown_Table_Basic(t *testing.T) {
 |----------|----------|
 | Cell 1   | Cell 2   |`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<table class="md-table">`) {
 		t.Error("Missing table tag")
@@ -427,7 +427,7 @@ func TestRenderMarkdown_Table_MultipleRows(t *testing.T) {
 | Alice | 30 |
 | Bob | 25 |`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<th>Name</th>`) {
 		t.Error("Missing Name header")
@@ -467,7 +467,7 @@ func TestRenderMarkdown_HorizontalRule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := RenderMarkdown(tt.input)
+			result := RenderMarkdown(tt.input, "")
 			if !strings.Contains(result, `<hr class="md-hr">`) {
 				t.Errorf("Missing hr for %s, got %q", tt.name, result)
 			}
@@ -478,7 +478,7 @@ func TestRenderMarkdown_HorizontalRule(t *testing.T) {
 func TestRenderMarkdown_Bold(t *testing.T) {
 	input := "This is **bold** text"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<strong>bold</strong>`) {
 		t.Errorf("Missing bold, got %q", result)
@@ -488,7 +488,7 @@ func TestRenderMarkdown_Bold(t *testing.T) {
 func TestRenderMarkdown_Italic(t *testing.T) {
 	input := "This is *italic* text"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<em>italic</em>`) {
 		t.Errorf("Missing italic, got %q", result)
@@ -498,7 +498,7 @@ func TestRenderMarkdown_Italic(t *testing.T) {
 func TestRenderMarkdown_BoldAndItalic(t *testing.T) {
 	input := "This is **bold** and *italic* text"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<strong>bold</strong>`) {
 		t.Error("Missing bold")
@@ -540,7 +540,7 @@ func main() {
 
 The end.`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	// Verify all major elements are present
 	if !strings.Contains(result, `<h1 class="md-h1">My Document</h1>`) {
@@ -572,7 +572,7 @@ The end.`
 func TestRenderMarkdown_HTMLEscaping(t *testing.T) {
 	input := "This has <script>alert('xss')</script> in it"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if strings.Contains(result, "<script>") {
 		t.Error("XSS vulnerability: script tag not escaped")
@@ -585,7 +585,7 @@ func TestRenderMarkdown_HTMLEscaping(t *testing.T) {
 func TestRenderMarkdown_HTMLEscaping_InCodeBlock(t *testing.T) {
 	input := "```html\n<div class=\"container\"></div>\n```"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if strings.Contains(result, `<div class="container">`) && !strings.Contains(result, "&lt;div") {
 		t.Error("HTML in code block should be escaped")
@@ -595,7 +595,7 @@ func TestRenderMarkdown_HTMLEscaping_InCodeBlock(t *testing.T) {
 func TestRenderMarkdown_SpecialCharacters(t *testing.T) {
 	input := "Ampersand: & Less than: < Greater than: >"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, "&amp;") {
 		t.Error("Ampersand should be escaped")
@@ -687,7 +687,7 @@ func TestRenderMarkdown_PreservesCodeBlockContent(t *testing.T) {
 	// Code blocks should preserve their content exactly (except for HTML escaping)
 	input := "```go\n// Comment with **markdown**\nfunc test() {\n    x := 1 + 2\n}\n```"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	// The markdown syntax inside code block should NOT be converted
 	if strings.Contains(result, "<strong>markdown</strong>") {
@@ -702,7 +702,7 @@ func TestRenderMarkdown_PreservesCodeBlockContent(t *testing.T) {
 func TestRenderMarkdown_InlineCodeNotNestedInCodeBlock(t *testing.T) {
 	input := "```bash\necho `date`\n```"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	// Backticks inside code block should not create inline code
 	inlineCodeCount := strings.Count(result, `<code class="inline-code">`)
@@ -714,7 +714,7 @@ func TestRenderMarkdown_InlineCodeNotNestedInCodeBlock(t *testing.T) {
 func TestRenderMarkdown_EmptyCodeBlock(t *testing.T) {
 	input := "```\n```"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<div class="code-block">`) {
 		t.Error("Empty code block should still render container")
@@ -729,7 +729,7 @@ func TestRenderMarkdown_ListAfterParagraph(t *testing.T) {
 
 Some text after.`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, "Some text before.") {
 		t.Error("Missing text before list")
@@ -751,7 +751,7 @@ func TestRenderMarkdown_TableNotAtStart(t *testing.T) {
 
 Conclusion text.`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, "Introduction text.") {
 		t.Error("Missing introduction")
@@ -769,7 +769,7 @@ func TestRenderMarkdown_AsteriskListItems(t *testing.T) {
 * Item 2
 * Item 3`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<ul class="md-ul">`) {
 		t.Error("Missing ul for asterisk list")
@@ -784,7 +784,7 @@ func TestRenderMarkdown_LargeOrderedListNumbers(t *testing.T) {
 11. Item 11
 100. Item 100`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `<ol class="md-ol">`) {
 		t.Error("Missing ol tag")
@@ -800,7 +800,7 @@ func TestRenderMarkdown_LargeOrderedListNumbers(t *testing.T) {
 func TestRenderMarkdown_LinkWithSpecialChars(t *testing.T) {
 	input := "[Link with spaces](https://example.com/path?q=test&foo=bar)"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `href="https://example.com/path?q=test&amp;foo=bar"`) {
 		t.Errorf("Link URL should have escaped ampersand, got %q", result)
@@ -810,7 +810,7 @@ func TestRenderMarkdown_LinkWithSpecialChars(t *testing.T) {
 func TestRenderMarkdown_ImageWithEmptyAlt(t *testing.T) {
 	input := "![](https://example.com/image.png)"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	if !strings.Contains(result, `alt=""`) {
 		t.Error("Image should have empty alt attribute")
@@ -820,7 +820,7 @@ func TestRenderMarkdown_ImageWithEmptyAlt(t *testing.T) {
 func TestRenderMarkdown_NewlinesConvertedToBr(t *testing.T) {
 	input := "Line 1\nLine 2\nLine 3"
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	// Should have <br> tags for line breaks
 	brCount := strings.Count(result, "<br>")
@@ -834,7 +834,7 @@ func TestRenderMarkdown_NoExtraBrAfterBlockElements(t *testing.T) {
 
 Paragraph`
 
-	result := RenderMarkdown(input)
+	result := RenderMarkdown(input, "")
 
 	// Should not have <br> immediately after </h1>
 	if strings.Contains(result, "</h1><br>") || strings.Contains(result, "</h1>\n<br>") {
@@ -846,7 +846,7 @@ Paragraph`
 func BenchmarkRenderMarkdown_Simple(b *testing.B) {
 	input := "Hello **world**"
 	for i := 0; i < b.N; i++ {
-		RenderMarkdown(input)
+		RenderMarkdown(input, "")
 	}
 }
 
@@ -876,7 +876,7 @@ This is a **bold** paragraph with *italic* text.
 [Link](https://example.com)
 `
 	for i := 0; i < b.N; i++ {
-		RenderMarkdown(input)
+		RenderMarkdown(input, "")
 	}
 }
 

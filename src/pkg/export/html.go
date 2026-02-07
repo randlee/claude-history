@@ -352,10 +352,17 @@ func RenderAgentFragment(agentID string, entries []models.ConversationEntry) (st
 // hasContent checks if an entry has meaningful content worth rendering.
 // Returns false for empty messages, true if the entry has text, tool calls, or tool results.
 func hasContent(entry models.ConversationEntry) bool {
-	// Check for text content (trim whitespace to detect empty/whitespace-only messages)
+	// Check for text content with aggressive whitespace trimming
 	textContent := entry.GetTextContent()
-	if strings.TrimSpace(textContent) != "" {
-		return true
+	trimmedText := strings.TrimSpace(textContent)
+
+	// Check if text contains only whitespace characters (newlines, tabs, spaces)
+	// Even if there's "content", if it's all whitespace, skip it
+	if trimmedText != "" {
+		// Additional check: is the trimmed text just repeated newlines or spaces?
+		if strings.Trim(trimmedText, "\n\r\t ") != "" {
+			return true
+		}
 	}
 
 	// Check for tool calls in assistant messages
@@ -366,13 +373,15 @@ func hasContent(entry models.ConversationEntry) bool {
 		}
 	}
 
-	// Check for tool results in user messages
-	if entry.Type == models.EntryTypeUser {
-		results := entry.ExtractToolResults()
-		if len(results) > 0 {
-			return true
-		}
-	}
+	// For user messages, tool results are NOT rendered in the HTML output.
+	// Tool results only appear paired with tool calls in assistant messages.
+	// Therefore, user messages with ONLY tool results (no text) should be filtered out.
+	// This prevents empty message bubbles from appearing in the conversation.
+
+	// Note: We don't check for tool results in user messages here because:
+	// 1. Tool results in user messages are not displayed in the HTML output
+	// 2. If a user message has actual text content, it's already caught above
+	// 3. User messages with only tool results would create empty bubbles
 
 	// Queue operations without content can be skipped (we still render subagent placeholder)
 	// Summary entries without content should be skipped
@@ -429,8 +438,8 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 
 	if textContent != "" {
 		if entry.Type == models.EntryTypeAssistant {
-			// Apply markdown rendering for assistant messages
-			sb.WriteString(fmt.Sprintf(`<div class="text markdown-content">%s</div>`, RenderMarkdown(textContent)))
+			// Apply markdown rendering for assistant messages (with file path detection)
+			sb.WriteString(fmt.Sprintf(`<div class="text markdown-content">%s</div>`, RenderMarkdown(textContent, projectPath)))
 		} else {
 			// Regular user message - format XML tags for better display
 			sb.WriteString(fmt.Sprintf(`<div class="text user-content">%s</div>`, formatUserContent(textContent)))
@@ -1151,7 +1160,7 @@ func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.Co
 		sb.WriteString("\n")
 
 		sb.WriteString(fmt.Sprintf(`    <div class="notification-result">%s</div>`,
-			RenderMarkdown(taskNotif.Result)))
+			RenderMarkdown(taskNotif.Result, projectPath)))
 		sb.WriteString("\n")
 
 		sb.WriteString(`  </div>`)

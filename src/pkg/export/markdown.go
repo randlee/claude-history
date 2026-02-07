@@ -99,8 +99,10 @@ func ExtractCodeBlocks(content string) []CodeBlock {
 // Supports: headers (h1-h6), lists (ordered, unordered, nested), tables, blockquotes,
 // code blocks (fenced and inline), links, images, bold, italic, task lists, and horizontal rules.
 // Code blocks are rendered with language badges and copy buttons for enhanced UX.
+// File paths that exist on disk are automatically converted to clickable file:// links.
 // All plain text is HTML-escaped to prevent XSS attacks.
-func RenderMarkdown(content string) string {
+// projectPath is used to resolve relative file paths (can be empty string to disable relative path detection).
+func RenderMarkdown(content string, projectPath string) string {
 	if content == "" {
 		return ""
 	}
@@ -157,6 +159,11 @@ func RenderMarkdown(content string) string {
 		}
 		return match
 	})
+
+	// Process file paths and store in placeholders (before escaping remaining text)
+	pathPlaceholders := make(map[string]string)
+	pathIdx := 0
+	result = makePathsClickableWithPlaceholders(result, projectPath, &pathPlaceholders, &pathIdx)
 
 	// Process tables (before escaping so we can detect the | delimiters)
 	result = processMarkdownTables(result)
@@ -222,6 +229,9 @@ func RenderMarkdown(content string) string {
 		result = strings.ReplaceAll(result, placeholder, html)
 	}
 	for placeholder, html := range linkPlaceholders {
+		result = strings.ReplaceAll(result, placeholder, html)
+	}
+	for placeholder, html := range pathPlaceholders {
 		result = strings.ReplaceAll(result, placeholder, html)
 	}
 	for placeholder, html := range inlineCodePlaceholders {

@@ -495,6 +495,23 @@ p {
     text-decoration: underline;
 }
 
+/* File links in message text - subtle styling to distinguish from regular links */
+.file-link {
+    color: var(--color-info);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--color-info);
+    transition: all var(--transition-fast);
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+.file-link:hover {
+    color: hsl(var(--blue-700));
+    background-color: hsl(var(--blue-50));
+    border-bottom: 1px solid hsl(var(--blue-700));
+    text-decoration: none;
+}
+
 /* Session Metadata - responsive grid of badges */
 .session-metadata {
     display: flex;
