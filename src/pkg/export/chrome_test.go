@@ -207,7 +207,7 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 	if !strings.Contains(html, "<header class=\"page-header\">") {
 		t.Error("Missing header element with page-header class")
 	}
-	if !strings.Contains(html, "<h1>Claude Code Session</h1>") {
+	if !strings.Contains(html, "<h1>Claude Code Session") {
 		t.Error("Missing h1 title")
 	}
 	if !strings.Contains(html, "class=\"session-metadata\"") {
@@ -221,12 +221,7 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 	if !strings.Contains(html, "fbd51e2b") {
 		t.Error("Missing truncated session ID")
 	}
-	if !strings.Contains(html, "Project:") {
-		t.Error("Missing Project label")
-	}
-	if !strings.Contains(html, "/Users/name/project") {
-		t.Error("Missing project path")
-	}
+	// Note: "Project:" label removed - session folder is now in h1
 	if !strings.Contains(html, "Started: 2026-02-01 14:23") {
 		t.Error("Missing session start time")
 	}
@@ -419,15 +414,13 @@ func TestRenderConversationWithStats_Integration(t *testing.T) {
 	}
 
 	// Check header content
-	if !strings.Contains(html, "<h1>Claude Code Session</h1>") {
+	if !strings.Contains(html, "<h1>Claude Code Session") {
 		t.Error("Missing header title")
 	}
 	if !strings.Contains(html, "test-ses") {
 		t.Error("Missing truncated session ID in header")
 	}
-	if !strings.Contains(html, "/test/project") {
-		t.Error("Missing project path in header")
-	}
+	// Note: Project path moved to h1 as session folder link
 	if !strings.Contains(html, "Started: 2026-01-31 10:00") {
 		t.Error("Missing session start time in header")
 	}

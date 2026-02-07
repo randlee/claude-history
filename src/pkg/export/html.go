@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 type SessionStats struct {
 	SessionID          string // Full session ID
 	ProjectPath        string // Project directory path
+	SessionFolderPath  string // Full path to session folder (for file:// links)
 	ExportTime         string // Formatted export timestamp (kept for backward compat, not displayed)
 	SessionStart       string // First entry timestamp (formatted for display)
 	SessionEnd         string // Last entry timestamp (formatted for display)
@@ -43,13 +45,36 @@ func RenderConversation(entries []models.ConversationEntry, agents []*agent.Tree
 // This is used by the query command to display filtered conversation entries.
 // Unlike RenderConversation, this does not include agent tree navigation or lazy-loading features.
 // userLabel and assistantLabel specify the role names to use (e.g., "User"/"Assistant" or "Orchestrator"/"Agent").
-func RenderQueryResults(entries []models.ConversationEntry, projectPath, sessionID, userLabel, assistantLabel string) (string, error) {
+// sessionFolderPath is the absolute path to the session folder (optional, used for file:// links).
+// agentID is the agent ID if this is a subagent query (used to determine page title).
+func RenderQueryResults(entries []models.ConversationEntry, projectPath, sessionID, sessionFolderPath, agentID, userLabel, assistantLabel string) (string, error) {
 	var sb strings.Builder
 
 	// Compute basic stats from entries
 	stats := ComputeSessionStats(entries, nil)
 	stats.ProjectPath = projectPath
 	stats.SessionID = sessionID
+	stats.SessionFolderPath = sessionFolderPath
+
+	// Determine page title based on whether this is a subagent query
+	pageTitle := "Query Results"
+	if agentID != "" {
+		pageTitle = "Subagent Session"
+	}
+
+	// Build session folder link if we have a path
+	sessionFolderName := extractSessionFolderName(stats.SessionFolderPath)
+	if sessionFolderName == "" && projectPath != "" {
+		sessionFolderName = extractSessionFolderName(projectPath)
+	}
+	sessionFolderLink := ""
+	if stats.SessionFolderPath != "" {
+		fileURL := buildFileURL(stats.SessionFolderPath)
+		sessionFolderLink = fmt.Sprintf(`<a href="%s" class="folder-link" title="Open in Finder/Explorer">%s</a>`,
+			escapeHTML(fileURL), escapeHTML(sessionFolderName))
+	} else if sessionFolderName != "" {
+		sessionFolderLink = escapeHTML(sessionFolderName)
+	}
 
 	// Write HTML doctype and head
 	sb.WriteString(`<!DOCTYPE html>
@@ -57,7 +82,9 @@ func RenderQueryResults(entries []models.ConversationEntry, projectPath, session
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Query Results</title>
+    <title>`)
+	sb.WriteString(escapeHTML(pageTitle))
+	sb.WriteString(`</title>
     <style>`)
 	sb.WriteString(GetStyleCSS())
 	sb.WriteString(`
@@ -66,9 +93,15 @@ func RenderQueryResults(entries []models.ConversationEntry, projectPath, session
 <body>
 `)
 
-	// Write simplified header
+	// Write simplified header with dynamic title
 	sb.WriteString(`<header class="page-header">
-    <h1>Query Results</h1>
+    <h1>`)
+	sb.WriteString(escapeHTML(pageTitle))
+	if sessionFolderLink != "" {
+		sb.WriteString(`: `)
+		sb.WriteString(sessionFolderLink)
+	}
+	sb.WriteString(`</h1>
     <div class="session-metadata">
 `)
 
@@ -79,12 +112,6 @@ func RenderQueryResults(entries []models.ConversationEntry, projectPath, session
 `,
 			escapeHTML(truncatedID),
 			renderCopyButton(sessionID, "session-id", "Copy full session ID")))
-	}
-
-	// Project path if available
-	if projectPath != "" {
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Project: <code>%s</code></span>
-`, escapeHTML(projectPath)))
 	}
 
 	// Entry counts
@@ -713,16 +740,38 @@ func buildToolResultsMap(entries []models.ConversationEntry) map[string]models.T
 func renderHTMLHeader(stats *SessionStats, agentDetails map[string]int) string {
 	var sb strings.Builder
 
+	// Build session folder link if we have a path
+	sessionFolderName := ""
+	sessionFolderLink := ""
+	if stats != nil {
+		sessionFolderName = extractSessionFolderName(stats.SessionFolderPath)
+		if sessionFolderName == "" && stats.ProjectPath != "" {
+			sessionFolderName = extractSessionFolderName(stats.ProjectPath)
+		}
+		if stats.SessionFolderPath != "" {
+			fileURL := buildFileURL(stats.SessionFolderPath)
+			sessionFolderLink = fmt.Sprintf(`<a href="%s" class="folder-link" title="Open in Finder/Explorer">%s</a>`,
+				escapeHTML(fileURL), escapeHTML(sessionFolderName))
+		} else if sessionFolderName != "" {
+			sessionFolderLink = escapeHTML(sessionFolderName)
+		}
+	}
+
 	sb.WriteString(`<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Claude Conversation Export</title>
+    <title>Claude Code Session</title>
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
 <header class="page-header">
-    <h1>Claude Code Session</h1>
+    <h1>Claude Code Session`)
+	if sessionFolderLink != "" {
+		sb.WriteString(`: `)
+		sb.WriteString(sessionFolderLink)
+	}
+	sb.WriteString(`</h1>
     <div class="session-metadata">
 `)
 
@@ -733,12 +782,6 @@ func renderHTMLHeader(stats *SessionStats, agentDetails map[string]int) string {
 `,
 			escapeHTML(truncatedID),
 			renderCopyButton(stats.SessionID, "session-id", "Copy full session ID")))
-	}
-
-	// Project path
-	if stats != nil && stats.ProjectPath != "" {
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Project: <code>%s</code></span>
-`, escapeHTML(stats.ProjectPath)))
 	}
 
 	// Session start time
@@ -1119,6 +1162,32 @@ func truncateID(id string, length int) string {
 		return id
 	}
 	return id[:length]
+}
+
+// extractSessionFolderName extracts the last component of a path (session folder name).
+// For example: "/Users/name/project" -> "project"
+// Windows paths like "C:\Users\name\project" -> "project"
+func extractSessionFolderName(path string) string {
+	if path == "" {
+		return ""
+	}
+	// Use filepath.Base to get the last component (cross-platform)
+	return filepath.Base(path)
+}
+
+// buildFileURL builds a file:// URL from an absolute path.
+// Uses forward slashes for consistency across platforms.
+func buildFileURL(path string) string {
+	if path == "" {
+		return ""
+	}
+	// Convert backslashes to forward slashes for Windows
+	path = strings.ReplaceAll(path, "\\", "/")
+	// Ensure path starts with /
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return "file://" + path
 }
 
 // formatUserContent formats user message content, processing XML-like tags for better display.

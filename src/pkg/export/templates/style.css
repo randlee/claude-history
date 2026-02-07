@@ -465,7 +465,7 @@ p {
     top: 0;
     z-index: 100;
     background: var(--bg-primary);
-    padding: var(--space-4);
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-primary);
     margin: calc(-1 * var(--space-4));
     margin-bottom: var(--space-4);
@@ -478,10 +478,21 @@ p {
 }
 
 .page-header h1 {
-    margin: 0 0 var(--space-3) 0;
+    margin: 0 0 var(--space-2) 0;
     font-size: var(--text-2xl);
     font-weight: var(--font-bold);
     color: var(--text-primary);
+}
+
+.page-header h1 .folder-link {
+    color: var(--color-info);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.page-header h1 .folder-link:hover {
+    color: hsl(var(--blue-700));
+    text-decoration: underline;
 }
 
 /* Session Metadata - responsive grid of badges */
@@ -489,7 +500,7 @@ p {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-3);
 }
 
 .session-metadata .meta-item {

@@ -207,7 +207,13 @@ func runQuery(cmd *cobra.Command, args []string) error {
 
 	// Handle HTML format specially - generate and open HTML file
 	if outputFormat == output.FormatHTML {
-		htmlFile, err := generateQueryHTML(projectPath, allEntries, resolvedSessionID, resolvedAgentID)
+		// Build session folder path if we have a session ID
+		sessionFolderPath := ""
+		if resolvedSessionID != "" {
+			sessionFolderPath = filepath.Join(projectDir, resolvedSessionID)
+		}
+
+		htmlFile, err := generateQueryHTML(projectPath, sessionFolderPath, allEntries, resolvedSessionID, resolvedAgentID)
 		if err != nil {
 			return fmt.Errorf("failed to generate HTML: %w", err)
 		}
@@ -399,7 +405,7 @@ func parseTime(s string) (time.Time, error) {
 }
 
 // generateQueryHTML generates an HTML file for query results and returns the file path.
-func generateQueryHTML(projectPath string, entries []models.ConversationEntry, sessionID, agentID string) (string, error) {
+func generateQueryHTML(projectPath, sessionFolderPath string, entries []models.ConversationEntry, sessionID, agentID string) (string, error) {
 	// Create temp file with descriptive name
 	var fileName string
 	if agentID != "" {
@@ -431,7 +437,7 @@ func generateQueryHTML(projectPath string, entries []models.ConversationEntry, s
 	}
 
 	// Render entries as HTML using export package
-	htmlContent, err := export.RenderQueryResults(entries, projectPath, sessionID, userLabel, assistantLabel)
+	htmlContent, err := export.RenderQueryResults(entries, projectPath, sessionID, sessionFolderPath, agentID, userLabel, assistantLabel)
 	if err != nil {
 		return "", err
 	}

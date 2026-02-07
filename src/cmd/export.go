@@ -244,6 +244,8 @@ func renderHTML(result *export.ExportResult, projectPath, projectDir, sessionID 
 	// 3. Compute session stats with project path
 	stats := export.ComputeSessionStats(entries, agentNodes)
 	stats.ProjectPath = projectPath
+	// Build session folder path: projectDir/sessionID
+	stats.SessionFolderPath = filepath.Join(projectDir, sessionID)
 
 	// 4. Render main conversation HTML with stats
 	htmlContent, err := export.RenderConversationWithStats(entries, agentNodes, stats)

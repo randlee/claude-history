@@ -42,7 +42,7 @@ func TestRenderConversation_BasicStructure(t *testing.T) {
 	if !strings.Contains(html, `<meta charset="UTF-8">`) {
 		t.Error("HTML missing charset meta tag")
 	}
-	if !strings.Contains(html, `<title>Claude Conversation Export</title>`) {
+	if !strings.Contains(html, `<title>Claude Code Session</title>`) {
 		t.Error("HTML missing title")
 	}
 	if !strings.Contains(html, `<link rel="stylesheet" href="static/style.css">`) {
