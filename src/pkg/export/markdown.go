@@ -171,39 +171,40 @@ func RenderMarkdown(content string) string {
 	result = hrRe.ReplaceAllString(result, "\x00HR\x00")
 
 	// Process headers (before escaping so we can detect the # markers)
+	// Note: We don't escape here - escapeRemainingText() will handle it later
 	result = h6Re.ReplaceAllStringFunc(result, func(match string) string {
 		parts := h6Re.FindStringSubmatch(match)
-		return `<h6 class="md-h6">` + escapeHTML(parts[1]) + `</h6>`
+		return `<h6 class="md-h6">` + parts[1] + `</h6>`
 	})
 	result = h5Re.ReplaceAllStringFunc(result, func(match string) string {
 		parts := h5Re.FindStringSubmatch(match)
-		return `<h5 class="md-h5">` + escapeHTML(parts[1]) + `</h5>`
+		return `<h5 class="md-h5">` + parts[1] + `</h5>`
 	})
 	result = h4Re.ReplaceAllStringFunc(result, func(match string) string {
 		parts := h4Re.FindStringSubmatch(match)
-		return `<h4 class="md-h4">` + escapeHTML(parts[1]) + `</h4>`
+		return `<h4 class="md-h4">` + parts[1] + `</h4>`
 	})
 	result = h3Re.ReplaceAllStringFunc(result, func(match string) string {
 		parts := h3Re.FindStringSubmatch(match)
-		return `<h3 class="md-h3">` + escapeHTML(parts[1]) + `</h3>`
+		return `<h3 class="md-h3">` + parts[1] + `</h3>`
 	})
 	result = h2Re.ReplaceAllStringFunc(result, func(match string) string {
 		parts := h2Re.FindStringSubmatch(match)
-		return `<h2 class="md-h2">` + escapeHTML(parts[1]) + `</h2>`
+		return `<h2 class="md-h2">` + parts[1] + `</h2>`
 	})
 	result = h1Re.ReplaceAllStringFunc(result, func(match string) string {
 		parts := h1Re.FindStringSubmatch(match)
-		return `<h1 class="md-h1">` + escapeHTML(parts[1]) + `</h1>`
+		return `<h1 class="md-h1">` + parts[1] + `</h1>`
 	})
 
-	// Process bold and italic (with escaping)
+	// Process bold and italic (without escaping - escapeRemainingText handles it)
 	result = boldRe.ReplaceAllStringFunc(result, func(match string) string {
 		parts := boldRe.FindStringSubmatch(match)
-		return `<strong>` + escapeHTML(parts[1]) + `</strong>`
+		return `<strong>` + parts[1] + `</strong>`
 	})
 	result = italicRe.ReplaceAllStringFunc(result, func(match string) string {
 		parts := italicRe.FindStringSubmatch(match)
-		return `<em>` + escapeHTML(parts[1]) + `</em>`
+		return `<em>` + parts[1] + `</em>`
 	})
 
 	// Now escape any remaining plain text that wasn't processed
@@ -400,14 +401,16 @@ func renderTable(rows []string) string {
 			// Header row
 			sb.WriteString(`<thead><tr>`)
 			for _, cell := range cells {
-				sb.WriteString(`<th>` + escapeHTML(strings.TrimSpace(cell)) + `</th>`)
+				// Don't escape here - escapeRemainingText() will handle it
+				sb.WriteString(`<th>` + strings.TrimSpace(cell) + `</th>`)
 			}
 			sb.WriteString(`</tr></thead><tbody>`)
 		} else {
 			// Body row
 			sb.WriteString(`<tr>`)
 			for _, cell := range cells {
-				sb.WriteString(`<td>` + escapeHTML(strings.TrimSpace(cell)) + `</td>`)
+				// Don't escape here - escapeRemainingText() will handle it
+				sb.WriteString(`<td>` + strings.TrimSpace(cell) + `</td>`)
 			}
 			sb.WriteString(`</tr>`)
 		}
@@ -447,24 +450,25 @@ func processMarkdownLists(content string) string {
 		indent := len(line) - len(strings.TrimLeft(line, " \t"))
 
 		// Check for task list items first (they're a special case of unordered lists)
+		// Don't escape content here - escapeRemainingText() will handle it
 		if taskMatch := taskUncheckedRe.FindStringSubmatch(line); taskMatch != nil {
-			result = handleListItem(result, &listStack, &indentStack, indent, "task", `<li class="task-item"><input type="checkbox" disabled> `+escapeHTML(taskMatch[2])+`</li>`)
+			result = handleListItem(result, &listStack, &indentStack, indent, "task", `<li class="task-item"><input type="checkbox" disabled> `+taskMatch[2]+`</li>`)
 			continue
 		}
 		if taskMatch := taskCheckedRe.FindStringSubmatch(line); taskMatch != nil {
-			result = handleListItem(result, &listStack, &indentStack, indent, "task", `<li class="task-item"><input type="checkbox" checked disabled> `+escapeHTML(taskMatch[2])+`</li>`)
+			result = handleListItem(result, &listStack, &indentStack, indent, "task", `<li class="task-item"><input type="checkbox" checked disabled> `+taskMatch[2]+`</li>`)
 			continue
 		}
 
 		// Check for unordered list items
 		if ulMatch := ulItemRe.FindStringSubmatch(line); ulMatch != nil && !strings.HasPrefix(trimmedLine, "- [ ]") && !strings.HasPrefix(trimmedLine, "- [x]") {
-			result = handleListItem(result, &listStack, &indentStack, indent, "ul", `<li>`+escapeHTML(ulMatch[2])+`</li>`)
+			result = handleListItem(result, &listStack, &indentStack, indent, "ul", `<li>`+ulMatch[2]+`</li>`)
 			continue
 		}
 
 		// Check for ordered list items
 		if olMatch := olItemRe.FindStringSubmatch(line); olMatch != nil {
-			result = handleListItem(result, &listStack, &indentStack, indent, "ol", `<li>`+escapeHTML(olMatch[2])+`</li>`)
+			result = handleListItem(result, &listStack, &indentStack, indent, "ol", `<li>`+olMatch[2]+`</li>`)
 			continue
 		}
 
@@ -580,7 +584,8 @@ func processBlockquotes(content string) string {
 				result = append(result, `<blockquote class="md-blockquote">`)
 				inBlockquote = true
 			}
-			result = append(result, escapeHTML(match[1]))
+			// Don't escape here - escapeRemainingText() will handle it
+			result = append(result, match[1])
 		} else {
 			if inBlockquote {
 				result = append(result, `</blockquote>`)
