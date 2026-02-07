@@ -3,13 +3,16 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/randlee/claude-history/internal/output"
+	"github.com/randlee/claude-history/pkg/export"
 	"github.com/randlee/claude-history/pkg/models"
 	"github.com/randlee/claude-history/pkg/paths"
 	"github.com/randlee/claude-history/pkg/resolver"
@@ -69,6 +72,7 @@ Examples:
   # Output formats
   claude-history query /path/to/project --format json
   claude-history query /path/to/project --format summary
+  claude-history query /path/to/project --format html
 
   # Control text truncation
   claude-history query /path/to/project --limit 0        # No truncation (full content)

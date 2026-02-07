@@ -986,7 +986,7 @@ func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.Co
 		sb.WriteString("\n")
 
 		sb.WriteString(fmt.Sprintf(`    <div class="notification-result">%s</div>`,
-			escapeHTML(taskNotif.Result)))
+			RenderMarkdown(taskNotif.Result)))
 		sb.WriteString("\n")
 
 		sb.WriteString(`  </div>`)
