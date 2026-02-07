@@ -6,7 +6,8 @@ before:
     - sh -c "cd src && go test ./..."
 
 builds:
-  - main: ./src
+  - main: .
+    dir: ./src
     binary: claude-history
     env:
       - CGO_ENABLED=0
