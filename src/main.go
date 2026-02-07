@@ -6,7 +6,7 @@ import (
 
 // Version information (set by GoReleaser)
 var (
-	version = "dev"
+	version = "0.3.0-dev"
 	commit  = "none"
 	date    = "unknown"
 )
