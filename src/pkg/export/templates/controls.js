@@ -408,14 +408,11 @@
     function smoothScrollToElement(element) {
         if (!element) return;
 
-        var headerHeight = 80; // Account for sticky header
-        var elementRect = element.getBoundingClientRect();
-        var absoluteElementTop = elementRect.top + window.pageYOffset;
-        var targetPosition = absoluteElementTop - headerHeight;
-
-        window.scrollTo({
-            top: targetPosition,
-            behavior: 'smooth'
+        // Use scrollIntoView with center alignment for better visibility
+        element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
         });
     }
 
