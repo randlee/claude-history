@@ -657,5 +657,5 @@ func convertNewlinesToBr(content string) string {
 		}
 	}
 
-	return strings.Join(result, "\n")
+	return strings.Join(result, "")
 }
