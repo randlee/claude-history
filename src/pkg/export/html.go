@@ -15,15 +15,19 @@ import (
 
 // SessionStats contains statistics about a session for display in the header.
 type SessionStats struct {
-	SessionID     string // Full session ID
-	ProjectPath   string // Project directory path
-	ExportTime    string // Formatted export timestamp (kept for backward compat, not displayed)
-	SessionStart  string // First entry timestamp (formatted for display)
-	SessionEnd    string // Last entry timestamp (formatted for display)
-	Duration      string // Human-readable duration (e.g., "2h 35m")
-	MessageCount  int    // Count of user + assistant messages
-	AgentCount    int    // Count of subagents
-	ToolCallCount int    // Count of tool calls
+	SessionID          string // Full session ID
+	ProjectPath        string // Project directory path
+	ExportTime         string // Formatted export timestamp (kept for backward compat, not displayed)
+	SessionStart       string // First entry timestamp (formatted for display)
+	SessionEnd         string // Last entry timestamp (formatted for display)
+	Duration           string // Human-readable duration (e.g., "2h 35m")
+	MessageCount       int    // Count of user + assistant messages (deprecated, kept for backward compat)
+	UserMessages       int    // Count of user messages
+	AssistantMessages  int    // Count of assistant messages (main session only)
+	SubagentMessages   int    // Count of all subagent messages
+	AgentCount         int    // Count of subagents
+	TotalAgentMessages int    // Total messages across all subagents
+	ToolCallCount      int    // Count of tool calls
 }
 
 // ExportFormatVersion is the current version of the export format.
@@ -126,10 +130,14 @@ func ComputeSessionStats(entries []models.ConversationEntry, agents []*agent.Tre
 		}
 	}
 
-	// Count messages (user + assistant)
+	// Count messages by type
 	for _, entry := range entries {
-		if entry.Type == models.EntryTypeUser || entry.Type == models.EntryTypeAssistant {
-			stats.MessageCount++
+		if entry.Type == models.EntryTypeUser {
+			stats.UserMessages++
+			stats.MessageCount++ // Keep for backward compat
+		} else if entry.Type == models.EntryTypeAssistant {
+			stats.AssistantMessages++
+			stats.MessageCount++ // Keep for backward compat
 		}
 		// Count tool calls from assistant messages
 		if entry.Type == models.EntryTypeAssistant {
@@ -142,10 +150,16 @@ func ComputeSessionStats(entries []models.ConversationEntry, agents []*agent.Tre
 		}
 	}
 
-	// Count agents
+	// Count agents and subagent messages
 	if len(agents) > 0 {
 		agentMap := buildAgentMap(agents)
 		stats.AgentCount = len(agentMap)
+
+		// Sum all subagent entry counts
+		for _, count := range agentMap {
+			stats.TotalAgentMessages += count
+		}
+		stats.SubagentMessages = stats.TotalAgentMessages
 	}
 
 	return stats
@@ -629,16 +643,10 @@ func renderHTMLHeader(stats *SessionStats) string {
 `, escapeHTML(stats.Duration)))
 	}
 
-	// Message count
+	// Enhanced message statistics
 	if stats != nil {
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Messages: %d</span>
-`, stats.MessageCount))
-	}
-
-	// Agent count
-	if stats != nil {
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Agents: %d</span>
-`, stats.AgentCount))
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">User: %d | Assistant: %d | Subagents[%d]: %d messages</span>
+`, stats.UserMessages, stats.AssistantMessages, stats.AgentCount, stats.TotalAgentMessages))
 	}
 
 	// Tool call count
