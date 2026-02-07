@@ -460,6 +460,79 @@ func TestRenderConversation_NullContent(t *testing.T) {
 	}
 }
 
+func TestRenderConversation_WhitespaceOnlyContent(t *testing.T) {
+	entries := []models.ConversationEntry{
+		{
+			UUID:      "uuid-whitespace-001",
+			SessionID: "session-001",
+			Type:      models.EntryTypeAssistant,
+			Timestamp: "2026-01-31T10:00:00Z",
+			Message:   json.RawMessage(`{"role": "assistant", "content": [{"type": "text", "text": "   \n\t  "}]}`),
+		},
+		{
+			UUID:      "uuid-whitespace-002",
+			SessionID: "session-001",
+			Type:      models.EntryTypeAssistant,
+			Timestamp: "2026-01-31T10:00:05Z",
+			Message:   json.RawMessage(`{"role": "assistant", "content": [{"type": "text", "text": ""}]}`),
+		},
+		{
+			UUID:      "uuid-whitespace-003",
+			SessionID: "session-001",
+			Type:      models.EntryTypeUser,
+			Timestamp: "2026-01-31T10:00:10Z",
+			Message:   json.RawMessage(`"     "`),
+		},
+	}
+
+	html, err := RenderConversation(entries, nil)
+	if err != nil {
+		t.Fatalf("RenderConversation() error = %v", err)
+	}
+
+	// Whitespace-only assistant entries should be skipped
+	if strings.Contains(html, `data-uuid="uuid-whitespace-001"`) {
+		t.Error("HTML should not render assistant entry with only whitespace")
+	}
+	if strings.Contains(html, `data-uuid="uuid-whitespace-002"`) {
+		t.Error("HTML should not render assistant entry with empty text")
+	}
+	if strings.Contains(html, `data-uuid="uuid-whitespace-003"`) {
+		t.Error("HTML should not render user entry with only whitespace")
+	}
+}
+
+func TestRenderConversation_AssistantWithOnlyToolCalls(t *testing.T) {
+	entries := []models.ConversationEntry{
+		{
+			UUID:      "uuid-toolonly-001",
+			SessionID: "session-001",
+			Type:      models.EntryTypeAssistant,
+			Timestamp: "2026-01-31T10:00:00Z",
+			Message: json.RawMessage(`{
+				"role": "assistant",
+				"content": [
+					{"type": "text", "text": "  "},
+					{"type": "tool_use", "id": "toolu_01", "name": "Read", "input": {"file_path": "/test.go"}}
+				]
+			}`),
+		},
+	}
+
+	html, err := RenderConversation(entries, nil)
+	if err != nil {
+		t.Fatalf("RenderConversation() error = %v", err)
+	}
+
+	// Assistant entries with tool calls should render even if text is only whitespace
+	if !strings.Contains(html, `data-uuid="uuid-toolonly-001"`) {
+		t.Error("HTML should render assistant entry with tool calls even if text is whitespace")
+	}
+	if !strings.Contains(html, "[Read] /test.go") {
+		t.Error("HTML should contain tool call summary")
+	}
+}
+
 func TestRenderConversation_SpecialCharacters(t *testing.T) {
 	entries := []models.ConversationEntry{
 		{
