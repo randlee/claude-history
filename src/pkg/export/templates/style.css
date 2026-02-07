@@ -885,6 +885,125 @@ p {
     line-height: var(--leading-relaxed);
 }
 
+/* User content with XML tool result formatting */
+.user-content .xml-tag-block {
+    display: block;
+    margin: var(--space-3) 0;
+    padding: var(--space-2);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+}
+
+.user-content .xml-tag-block:first-child {
+    margin-top: 0;
+}
+
+.user-content .xml-tag-block:last-child {
+    margin-bottom: 0;
+}
+
+.user-content .xml-tag-content {
+    margin: var(--space-2) 0 var(--space-2) var(--space-4);
+    white-space: pre-wrap;
+    color: var(--text-primary);
+}
+
+/* ============================================
+ * TASK NOTIFICATION STYLES
+ * ============================================ */
+
+.task-notification {
+    display: block;
+    margin: 0;
+    padding: var(--space-3);
+    background: var(--system-overlay-bg);
+    border: 1px solid var(--system-overlay-border);
+    border-left: 4px solid var(--system-overlay-accent);
+    border-radius: var(--radius-md);
+}
+
+.task-notification-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    font-weight: var(--font-semibold);
+    font-size: var(--text-base);
+}
+
+.task-notification-header .status-icon {
+    font-size: var(--text-lg);
+    line-height: 1;
+}
+
+.task-notification-header .summary {
+    flex: 1;
+}
+
+.task-notification-header.status-completed {
+    color: var(--color-success);
+}
+
+.task-notification-header.status-failed {
+    color: var(--color-error);
+}
+
+.task-notification-header.status-running {
+    color: var(--color-warning);
+}
+
+.task-id-badge {
+    display: inline-block;
+    padding: var(--space-1) var(--space-2);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: var(--font-normal);
+    color: var(--text-secondary);
+}
+
+.task-result-content {
+    margin-top: var(--space-2);
+    padding: var(--space-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.task-notification-result {
+    margin-top: var(--space-2);
+}
+
+.task-notification-result summary {
+    cursor: pointer;
+    padding: var(--space-2);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    user-select: none;
+    transition: background-color var(--transition-fast);
+}
+
+.task-notification-result summary:hover {
+    background: var(--bg-tertiary);
+}
+
+.task-notification-result[open] summary {
+    margin-bottom: var(--space-2);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
 /* Dark mode avatar adjustments */
 @media (prefers-color-scheme: dark) {
     .avatar.user {

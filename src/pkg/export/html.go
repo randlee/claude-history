@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"regexp"
 	"strings"
 	"time"
 
@@ -146,8 +147,9 @@ func RenderAgentFragment(agentID string, entries []models.ConversationEntry) (st
 // hasContent checks if an entry has meaningful content worth rendering.
 // Returns false for empty messages, true if the entry has text, tool calls, or other content.
 func hasContent(entry models.ConversationEntry) bool {
-	// Check for text content
-	if entry.GetTextContent() != "" {
+	// Check for text content (trim whitespace to detect empty/whitespace-only messages)
+	textContent := entry.GetTextContent()
+	if strings.TrimSpace(textContent) != "" {
 		return true
 	}
 
@@ -169,8 +171,22 @@ func hasContent(entry models.ConversationEntry) bool {
 func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult) string {
 	var sb strings.Builder
 
-	entryClass := getEntryClass(entry.Type)
+	// Get text content
+	textContent := entry.GetTextContent()
+
+	// Detect task-notification blocks and override entry type/styling
+	isTaskNotif := entry.Type == models.EntryTypeUser && strings.Contains(textContent, "<task-notification>")
+
+	entryType := entry.Type
 	roleLabel := getRoleLabel(entry.Type)
+
+	// Override for task-notification
+	if isTaskNotif {
+		entryType = models.EntryTypeSystem
+		roleLabel = "Agent Notification"
+	}
+
+	entryClass := getEntryClass(entryType)
 	timestamp := formatTimestampReadable(entry.Timestamp)
 
 	// Message row with alignment based on type
@@ -199,14 +215,16 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	// Message content
 	sb.WriteString(`    <div class="message-content">`)
 
-	// Get text content
-	textContent := entry.GetTextContent()
 	if textContent != "" {
-		// Apply markdown rendering for assistant messages
-		if entry.Type == models.EntryTypeAssistant {
+		// Special handling for task-notification blocks
+		if isTaskNotif {
+			sb.WriteString(renderTaskNotification(textContent))
+		} else if entry.Type == models.EntryTypeAssistant {
+			// Apply markdown rendering for assistant messages
 			sb.WriteString(fmt.Sprintf(`<div class="text markdown-content">%s</div>`, RenderMarkdown(textContent)))
 		} else {
-			sb.WriteString(fmt.Sprintf(`<div class="text">%s</div>`, escapeHTML(textContent)))
+			// Regular user message - format XML tags for better display
+			sb.WriteString(fmt.Sprintf(`<div class="text user-content">%s</div>`, formatUserContent(textContent)))
 		}
 	}
 
@@ -682,3 +700,166 @@ var htmlFooter = `<footer class="page-footer">
 </body>
 </html>
 `
+
+// TaskNotificationData holds parsed data from a task-notification XML block.
+type TaskNotificationData struct {
+	TaskID  string
+	Status  string
+	Summary string
+	Result  string
+}
+
+// parseTaskNotification extracts structured data from a task-notification XML block.
+func parseTaskNotification(content string) *TaskNotificationData {
+	if !strings.Contains(content, "<task-notification>") {
+		return nil
+	}
+
+	data := &TaskNotificationData{}
+
+	// Extract task-id
+	if matches := regexp.MustCompile(`<task-id>(.*?)</task-id>`).FindStringSubmatch(content); len(matches) > 1 {
+		data.TaskID = strings.TrimSpace(matches[1])
+	}
+
+	// Extract status
+	if matches := regexp.MustCompile(`<status>(.*?)</status>`).FindStringSubmatch(content); len(matches) > 1 {
+		data.Status = strings.TrimSpace(matches[1])
+	}
+
+	// Extract summary
+	if matches := regexp.MustCompile(`<summary>(.*?)</summary>`).FindStringSubmatch(content); len(matches) > 1 {
+		data.Summary = strings.TrimSpace(matches[1])
+	}
+
+	// Extract result (may contain newlines, use (?s) for dot-all mode)
+	if matches := regexp.MustCompile(`(?s)<result>(.*?)</result>`).FindStringSubmatch(content); len(matches) > 1 {
+		data.Result = strings.TrimSpace(matches[1])
+	}
+
+	return data
+}
+
+// renderTaskNotification renders a task-notification block with special formatting.
+func renderTaskNotification(content string) string {
+	data := parseTaskNotification(content)
+	if data == nil {
+		// Fallback to escaped content if parsing fails
+		return fmt.Sprintf(`<div class="text">%s</div>`, escapeHTML(content))
+	}
+
+	var sb strings.Builder
+
+	sb.WriteString(`<div class="task-notification">`)
+
+	// Header with icon and status
+	statusIcon := "✓"
+	statusClass := "completed"
+	switch data.Status {
+	case "failed", "error":
+		statusIcon = "✗"
+		statusClass = "failed"
+	case "running":
+		statusIcon = "⏳"
+		statusClass = "running"
+	}
+
+	sb.WriteString(fmt.Sprintf(`<div class="task-notification-header status-%s">`, statusClass))
+	sb.WriteString(fmt.Sprintf(`<span class="status-icon">%s</span> `, statusIcon))
+	sb.WriteString(fmt.Sprintf(`<span class="summary">%s</span>`, escapeHTML(data.Summary)))
+
+	// Add task ID badge if present
+	if data.TaskID != "" {
+		sb.WriteString(fmt.Sprintf(` <span class="task-id-badge" title="Task ID">%s</span>`,
+			escapeHTML(data.TaskID)))
+	}
+
+	sb.WriteString("</div>\n")
+
+	// Result content (collapsible if long)
+	if data.Result != "" {
+		isLong := len(data.Result) > 300
+
+		if isLong {
+			// Make it collapsible
+			sb.WriteString(`<details class="task-notification-result">`)
+			sb.WriteString(`<summary>View result</summary>`)
+			sb.WriteString(fmt.Sprintf(`<div class="task-result-content">%s</div>`,
+				escapeHTML(data.Result)))
+			sb.WriteString(`</details>`)
+		} else {
+			// Show inline
+			sb.WriteString(fmt.Sprintf(`<div class="task-result-content">%s</div>`,
+				escapeHTML(data.Result)))
+		}
+	}
+
+	sb.WriteString("</div>\n")
+
+	return sb.String()
+}
+
+// formatUserContent formats user message content, processing XML-like tags for better display.
+// This improves readability of bash-stdout, bash-stderr, and other tool result XML blocks in USER INPUT messages.
+// Empty tags are hidden, and non-empty tags are wrapped in styled divs with proper spacing.
+func formatUserContent(content string) string {
+	if content == "" {
+		return ""
+	}
+
+	// Go's regexp doesn't support backreferences, so we match both tags and verify they match
+	// Pattern: <tag-name>content</any-tag-name>
+	// Use (?s) flag to make . match newlines
+	tagPattern := regexp.MustCompile(`(?s)<([a-z][a-z0-9\-]*)((?:\s+[^>]*)?)>(.*?)</([a-z][a-z0-9\-]*)>`)
+
+	// Find all XML-like tag blocks
+	matches := tagPattern.FindAllStringSubmatch(content, -1)
+	matchIndices := tagPattern.FindAllStringSubmatchIndex(content, -1)
+
+	if len(matches) == 0 {
+		// No XML tags found, just escape and return
+		return escapeHTML(content)
+	}
+
+	var result strings.Builder
+	lastEnd := 0
+
+	for i, match := range matches {
+		matchIndex := matchIndices[i]
+		openingTag := match[1] // Captured opening tag name
+		closingTag := match[4] // Captured closing tag name
+		tagContent := match[3] // Content between tags
+
+		// Only process if opening and closing tags match
+		if openingTag != closingTag {
+			continue
+		}
+
+		// Add any text before this tag
+		if matchIndex[0] > lastEnd {
+			beforeText := content[lastEnd:matchIndex[0]]
+			result.WriteString(escapeHTML(beforeText))
+		}
+
+		// Skip empty tags (e.g., <bash-stderr></bash-stderr>)
+		if strings.TrimSpace(tagContent) == "" {
+			lastEnd = matchIndex[1]
+			continue
+		}
+
+		// Render non-empty tags with proper formatting
+		// Tag names are escaped, content is escaped separately
+		result.WriteString(fmt.Sprintf(`<div class="xml-tag-block">&lt;%s&gt;`, escapeHTML(openingTag)))
+		result.WriteString(fmt.Sprintf(`<div class="xml-tag-content">%s</div>`, escapeHTML(tagContent)))
+		result.WriteString(fmt.Sprintf(`&lt;/%s&gt;</div>`, escapeHTML(openingTag)))
+
+		lastEnd = matchIndex[1]
+	}
+
+	// Add any remaining text after the last tag
+	if lastEnd < len(content) {
+		result.WriteString(escapeHTML(content[lastEnd:]))
+	}
+
+	return result.String()
+}
