@@ -431,6 +431,7 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 
 	// Build tool summary for header if this is a tool-only message
 	toolSummary := ""
+	toolSummaryHTML := ""
 	if isToolOnly && len(toolCalls) > 0 {
 		primaryTool := toolCalls[0]
 		roleLabel = fmt.Sprintf("TOOL: %s", primaryTool.Name)
@@ -438,17 +439,42 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 		// Extract display value for common tools
 		displayValue := extractToolDisplayValue(primaryTool.Name, primaryTool.Input)
 		if displayValue != "" {
+			// Store original value before truncation
+			originalValue := displayValue
+
 			// Truncate if too long for inline display
 			const maxInlineLen = 60
 			if len(displayValue) > maxInlineLen {
 				displayValue = displayValue[:maxInlineLen-3] + "..."
 			}
 			toolSummary = displayValue
+
+			// For file path tools (Read, Write, Edit), make the path clickable
+			if primaryTool.Name == "Read" || primaryTool.Name == "Write" || primaryTool.Name == "Edit" {
+				// Build absolute path
+				absPath := originalValue
+				if !filepath.IsAbs(originalValue) && projectPath != "" {
+					absPath = filepath.Join(projectPath, originalValue)
+				}
+				absPath = filepath.Clean(absPath)
+
+				// Create clickable link
+				fileURL := buildFileURL(absPath)
+				toolSummaryHTML = fmt.Sprintf(`<a href="%s" class="file-link" title="%s">%s</a>`,
+					fileURL,
+					escapeHTML(absPath),
+					escapeHTML(displayValue))
+			}
 		}
 	}
 
 	// Message row with alignment based on type
-	sb.WriteString(fmt.Sprintf(`<div class="message-row %s" data-uuid="%s">`, entryClass, escapeHTML(entry.UUID)))
+	// Add tool-only class if this is a tool-only message for compact styling
+	toolOnlyClass := ""
+	if isToolOnly {
+		toolOnlyClass = " tool-only"
+	}
+	sb.WriteString(fmt.Sprintf(`<div class="message-row %s%s" data-uuid="%s">`, entryClass, toolOnlyClass, escapeHTML(entry.UUID)))
 	sb.WriteString("\n")
 
 	// Avatar placeholder
@@ -471,7 +497,13 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 
 	// Add inline tool summary if present
 	if toolSummary != "" {
-		sb.WriteString(fmt.Sprintf(`<span class="tool-summary-inline">%s</span>`, escapeHTML(toolSummary)))
+		if toolSummaryHTML != "" {
+			// Use pre-built HTML (e.g., clickable file links)
+			sb.WriteString(fmt.Sprintf(`<span class="tool-summary-inline">%s</span>`, toolSummaryHTML))
+		} else {
+			// Plain text, escape HTML
+			sb.WriteString(fmt.Sprintf(`<span class="tool-summary-inline">%s</span>`, escapeHTML(toolSummary)))
+		}
 	}
 
 	// Determine which agent ID to display
@@ -910,6 +942,29 @@ func extractToolDisplayValue(toolName string, input map[string]any) string {
 		if query, ok := input["query"].(string); ok {
 			return query
 		}
+	case "TaskCreate":
+		if subject, ok := input["subject"].(string); ok {
+			return subject
+		}
+	case "TaskUpdate":
+		// Build summary from taskId and status
+		taskID, hasID := input["taskId"].(string)
+		status, hasStatus := input["status"].(string)
+		if hasID {
+			if hasStatus {
+				return fmt.Sprintf("Task #%s: %s", taskID, status)
+			}
+			return fmt.Sprintf("Task #%s", taskID)
+		}
+		if hasStatus {
+			return status
+		}
+	case "TaskGet":
+		if taskID, ok := input["taskId"].(string); ok {
+			return fmt.Sprintf("Task #%s", taskID)
+		}
+	case "TaskList":
+		return "List all tasks"
 	}
 
 	return ""
@@ -1092,7 +1147,6 @@ func renderHTMLHeader(stats *SessionStats, agentDetails map[string]int) string {
         </div>
     </div>
     <nav class="breadcrumbs" id="breadcrumbs" aria-label="Navigation breadcrumbs">
-        <a href="#main" class="breadcrumb-item active" data-agent-id="main" aria-current="page">Main Session</a>
     </nav>
 </header>
 `)
@@ -1170,7 +1224,6 @@ var htmlHeader = `<!DOCTYPE html>
         </div>
     </div>
     <nav class="breadcrumbs" id="breadcrumbs" aria-label="Navigation breadcrumbs">
-        <a href="#main" class="breadcrumb-item active" data-agent-id="main" aria-current="page">Main Session</a>
     </nav>
 </header>
 `

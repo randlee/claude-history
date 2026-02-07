@@ -912,10 +912,37 @@ p {
     color: var(--text-secondary);
     font-weight: var(--font-normal);
     font-style: italic;
-    max-width: 300px;
+    max-width: 600px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Compact vertical spacing for tool-only messages when collapsed
+ * These messages have all info in the header, so we hide the collapsed tool entirely */
+.message-row.tool-only .message-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: 0 !important;
+}
+
+/* Reduce message-bubble padding for tool-only messages - just enough for header */
+.message-row.tool-only .message-bubble {
+    padding: var(--space-2) var(--space-4) !important;
+}
+
+/* Hide the collapsed tool call entirely for tool-only messages - all info is in header */
+.message-row.tool-only .tool-call.collapsed {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* When expanded, show the tool call normally */
+.message-row.tool-only .tool-call:not(.collapsed) {
+    display: block !important;
+    margin-top: var(--space-2) !important;
 }
 
 .message-header .timestamp {
