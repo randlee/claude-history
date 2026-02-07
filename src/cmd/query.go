@@ -421,8 +421,17 @@ func generateQueryHTML(projectPath string, entries []models.ConversationEntry, s
 	}
 	tmpFile := filepath.Join(os.TempDir(), fileName)
 
+	// Determine role labels based on context
+	userLabel := "User"
+	assistantLabel := "Assistant"
+	if agentID != "" {
+		// For subagent queries, use Orchestrator/Agent labels
+		userLabel = "Orchestrator"
+		assistantLabel = "Agent"
+	}
+
 	// Render entries as HTML using export package
-	htmlContent, err := export.RenderQueryResults(entries, projectPath, sessionID)
+	htmlContent, err := export.RenderQueryResults(entries, projectPath, sessionID, userLabel, assistantLabel)
 	if err != nil {
 		return "", err
 	}

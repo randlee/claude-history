@@ -231,7 +231,7 @@ func TestRenderEntry_WithTaskNotification(t *testing.T) {
 		Message:   []byte(`{"role":"user","content":"<task-notification><task-id>abc123</task-id><status>completed</status><summary>Agent completed</summary><result>Done!</result></task-notification>"}`),
 	}
 
-	html := renderEntry(entry, make(map[string]models.ToolResult), "")
+	html := renderEntry(entry, make(map[string]models.ToolResult), "", "User", "Assistant")
 
 	// Should render as standalone notification-row, not message-row
 	if !strings.Contains(html, `class="notification-row completed"`) {

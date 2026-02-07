@@ -42,7 +42,8 @@ func RenderConversation(entries []models.ConversationEntry, agents []*agent.Tree
 // RenderQueryResults generates a simplified HTML page for query results.
 // This is used by the query command to display filtered conversation entries.
 // Unlike RenderConversation, this does not include agent tree navigation or lazy-loading features.
-func RenderQueryResults(entries []models.ConversationEntry, projectPath, sessionID string) (string, error) {
+// userLabel and assistantLabel specify the role names to use (e.g., "User"/"Assistant" or "Orchestrator"/"Agent").
+func RenderQueryResults(entries []models.ConversationEntry, projectPath, sessionID, userLabel, assistantLabel string) (string, error) {
 	var sb strings.Builder
 
 	// Compute basic stats from entries
@@ -92,8 +93,8 @@ func RenderQueryResults(entries []models.ConversationEntry, projectPath, session
 
 	// Message type breakdown
 	if stats.UserMessages > 0 || stats.AssistantMessages > 0 {
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">User: %d | Assistant: %d</span>
-`, stats.UserMessages, stats.AssistantMessages))
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">%s: %d | %s: %d</span>
+`, escapeHTML(userLabel), stats.UserMessages, escapeHTML(assistantLabel), stats.AssistantMessages))
 	}
 
 	sb.WriteString(`    </div>
@@ -113,7 +114,7 @@ func RenderQueryResults(entries []models.ConversationEntry, projectPath, session
 			continue
 		}
 
-		entryHTML := renderEntry(entry, toolResults, projectPath)
+		entryHTML := renderEntry(entry, toolResults, projectPath, userLabel, assistantLabel)
 		sb.WriteString(entryHTML)
 	}
 
@@ -151,6 +152,7 @@ func RenderQueryResults(entries []models.ConversationEntry, projectPath, session
 // RenderConversationWithStats generates a complete HTML page for a conversation with session statistics.
 // entries contains the conversation history, agents contains the agent hierarchy,
 // stats contains optional session statistics for the header (if nil, stats are computed from entries/agents).
+// This function uses "User" and "Assistant" as role labels for full session exports.
 func RenderConversationWithStats(entries []models.ConversationEntry, agents []*agent.TreeNode, stats *SessionStats) (string, error) {
 	var sb strings.Builder
 
@@ -182,7 +184,7 @@ func RenderConversationWithStats(entries []models.ConversationEntry, agents []*a
 			continue
 		}
 
-		entryHTML := renderEntry(entry, toolResults, stats.ProjectPath)
+		entryHTML := renderEntry(entry, toolResults, stats.ProjectPath, "User", "Assistant")
 		sb.WriteString(entryHTML)
 
 		// Check if this entry spawned a subagent
@@ -312,7 +314,8 @@ func RenderAgentFragment(agentID string, entries []models.ConversationEntry) (st
 		}
 
 		// RenderAgentFragment doesn't have access to ProjectPath, pass empty string
-		entryHTML := renderEntry(entry, toolResults, "")
+		// Use "User"/"Assistant" labels for agent fragments (they're viewed in context of the full export)
+		entryHTML := renderEntry(entry, toolResults, "", "User", "Assistant")
 		sb.WriteString(entryHTML)
 	}
 
@@ -344,7 +347,8 @@ func hasContent(entry models.ConversationEntry) bool {
 
 // renderEntry renders a single conversation entry as HTML using the chat bubble layout.
 // projectPath is used for generating CLI commands in task notifications (can be empty string if not available).
-func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult, projectPath string) string {
+// userLabel and assistantLabel specify the role names to display (e.g., "User"/"Assistant" or "Orchestrator"/"Agent").
+func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult, projectPath, userLabel, assistantLabel string) string {
 	var sb strings.Builder
 
 	// Get text content
@@ -358,7 +362,7 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	}
 
 	entryType := entry.Type
-	roleLabel := getRoleLabel(entry.Type)
+	roleLabel := getRoleLabel(entry.Type, userLabel, assistantLabel)
 	entryClass := getEntryClass(entryType)
 	timestamp := formatTimestampReadable(entry.Timestamp)
 
@@ -416,12 +420,13 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 }
 
 // getRoleLabel returns a human-readable label for the entry type.
-func getRoleLabel(entryType models.EntryType) string {
+// userLabel and assistantLabel specify custom role names (e.g., "Orchestrator"/"Agent" for subagent contexts).
+func getRoleLabel(entryType models.EntryType, userLabel, assistantLabel string) string {
 	switch entryType {
 	case models.EntryTypeUser:
-		return "User"
+		return userLabel
 	case models.EntryTypeAssistant:
-		return "Assistant"
+		return assistantLabel
 	case models.EntryTypeSystem:
 		return "System"
 	case models.EntryTypeQueueOperation:

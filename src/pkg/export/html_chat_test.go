@@ -456,7 +456,7 @@ func TestGetRoleLabel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.entryType), func(t *testing.T) {
-			result := getRoleLabel(tt.entryType)
+			result := getRoleLabel(tt.entryType, "User", "Assistant")
 			if result != tt.expected {
 				t.Errorf("getRoleLabel(%q) = %q, want %q", tt.entryType, result, tt.expected)
 			}
@@ -710,7 +710,7 @@ func TestRenderEntry_DirectCall(t *testing.T) {
 		Message:   json.RawMessage(`"Direct test"`),
 	}
 
-	html := renderEntry(entry, nil, "")
+	html := renderEntry(entry, nil, "", "User", "Assistant")
 
 	// Should produce valid HTML structure
 	if !strings.Contains(html, `class="message-row user"`) {
