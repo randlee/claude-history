@@ -264,7 +264,7 @@ func TestRenderHTMLHeader_NilStats(t *testing.T) {
 	if !strings.Contains(html, "<!DOCTYPE html>") {
 		t.Error("Missing DOCTYPE")
 	}
-	if !strings.Contains(html, "<h1>Claude Code Session</h1>") {
+	if !strings.Contains(html, "<h1>Claude Code Session") {
 		t.Error("Missing h1 title")
 	}
 	if !strings.Contains(html, "class=\"controls\"") {

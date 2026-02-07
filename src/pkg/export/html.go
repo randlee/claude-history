@@ -12,6 +12,7 @@ import (
 
 	"github.com/randlee/claude-history/pkg/agent"
 	"github.com/randlee/claude-history/pkg/models"
+	"github.com/randlee/claude-history/pkg/version"
 )
 
 // SessionStats contains statistics about a session for display in the header.
@@ -1062,16 +1063,16 @@ func renderHTMLHeader(stats *SessionStats, agentDetails map[string]int) string {
 		}
 	}
 
-	sb.WriteString(`<!DOCTYPE html>
+	sb.WriteString(fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Claude Code Session [v0.3.0]</title>
+    <title>Claude Code Session [v%s]</title>
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
 <header class="page-header">
-    <h1>Claude Code Session <span style="font-size: 0.5em; color: #999;">[v0.3.0]</span>`)
+    <h1>Claude Code Session <span style="font-size: 0.5em; color: #999;">[v%s]</span>`, version.Version, version.Version))
 	if sessionFolderLink != "" {
 		sb.WriteString(`: `)
 		sb.WriteString(sessionFolderLink)

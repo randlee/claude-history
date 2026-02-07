@@ -364,7 +364,7 @@ func TestHTMLOutput_ValidStructure(t *testing.T) {
 		"<!DOCTYPE html>",
 		"<html>",
 		"<head>",
-		"<title>Claude Code Session</title>",
+		"<title>Claude Code Session [v", // Title includes version number
 		"<link rel=\"stylesheet\" href=\"static/style.css\">",
 		"<body>",
 		"<div class=\"conversation\">",
