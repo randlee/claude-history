@@ -70,7 +70,7 @@ brews:
     repository:
       owner: randlee
       name: homebrew-tap
-      token: "{{ .Env.GITHUB_TOKEN }}"
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: "https://github.com/randlee/claude-history"
     description: "CLI tool for programmatic access to Claude Code's agent history storage"
     license: "MIT"
@@ -87,25 +87,4 @@ release:
   draft: false
   prerelease: auto
   name_template: "{{.ProjectName}} v{{.Version}}"
-  header: |
-    ## Claude History v{{.Version}}
-
-    CLI tool for programmatic access to Claude Code's agent history storage.
-
-    ### Installation
-
-    **Homebrew:**
-    ```bash
-    brew tap randlee/tap
-    brew install claude-history
-    ```
-
-    **Install Script (macOS/Linux):**
-    ```bash
-    curl -fsSL https://raw.githubusercontent.com/randlee/claude-history/main/install.sh | bash
-    ```
-
-    **Go install:**
-    ```bash
-    go install github.com/randlee/claude-history@{{.Tag}}
-    ```
+  header_template_file: .goreleaser/release-notes-template.md
