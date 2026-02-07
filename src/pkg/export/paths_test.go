@@ -24,8 +24,8 @@ func TestMakePathsClickable_AbsoluteUnixPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	defer func() { _ = tmpFile.Close() }()
 
 	text := "Check out " + tmpFile.Name() + " for details"
 	result := makePathsClickable(text, "", func(pathStr, linkHTML string, start, end int) string {
@@ -50,7 +50,7 @@ func TestMakePathsClickable_RelativePath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create a file in the directory
 	testFile := filepath.Join(tmpDir, "test.go")
@@ -79,7 +79,7 @@ func TestMakePathsClickable_RelativePathWithDotSlash(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create a file in the directory
 	testFile := filepath.Join(tmpDir, "test.go")
@@ -120,8 +120,8 @@ func TestMakePathsClickable_PathInCodeBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	defer func() { _ = tmpFile.Close() }()
 
 	// Note: In the actual implementation, code blocks are protected by placeholders
 	// before makePathsClickable is called. This test checks the raw behavior.
@@ -142,15 +142,15 @@ func TestMakePathsClickable_MultiplePaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile1.Name())
-	defer tmpFile1.Close()
+	defer func() { _ = os.Remove(tmpFile1.Name()) }()
+	defer func() { _ = tmpFile1.Close() }()
 
 	tmpFile2, err := os.CreateTemp("", "test2-*.go")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile2.Name())
-	defer tmpFile2.Close()
+	defer func() { _ = os.Remove(tmpFile2.Name()) }()
+	defer func() { _ = tmpFile2.Close() }()
 
 	text := "Check " + tmpFile1.Name() + " and " + tmpFile2.Name() + " for details"
 	result := makePathsClickable(text, "", func(pathStr, linkHTML string, start, end int) string {
@@ -175,7 +175,7 @@ func TestMakePathsClickable_PathWithSpaces(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	// Create a file WITHOUT spaces (spaces are not supported)
 	testFile := filepath.Join(tmpDir, "test-file.go")
@@ -218,8 +218,8 @@ func TestMakePathsClickableWithPlaceholders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
+	defer func() { _ = tmpFile.Close() }()
 
 	text := "Check " + tmpFile.Name() + " for details"
 	placeholders := make(map[string]string)

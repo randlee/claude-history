@@ -403,8 +403,9 @@ func hasContent(entry models.ConversationEntry) bool {
 // sessionID and agentID are used to determine the correct agent ID to display in message headers:
 //   - For main session queries (agentID == ""): show entry.AgentID if present
 //   - For subagent queries (agentID != ""):
-//     - ORCHESTRATOR/User messages: show sessionID (parent)
-//     - AGENT/Assistant messages: show agentID (subagent)
+//   - ORCHESTRATOR/User messages: show sessionID (parent)
+//   - AGENT/Assistant messages: show agentID (subagent)
+//
 // userLabel and assistantLabel specify the role names to display (e.g., "User"/"Assistant" or "Orchestrator"/"Agent").
 func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult, projectPath, sessionID, agentID, userLabel, assistantLabel string) string {
 	var sb strings.Builder
