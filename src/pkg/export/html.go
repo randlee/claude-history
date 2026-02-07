@@ -350,7 +350,7 @@ func RenderAgentFragment(agentID string, entries []models.ConversationEntry) (st
 }
 
 // hasContent checks if an entry has meaningful content worth rendering.
-// Returns false for empty messages, true if the entry has text, tool calls, or other content.
+// Returns false for empty messages, true if the entry has text, tool calls, or tool results.
 func hasContent(entry models.ConversationEntry) bool {
 	// Check for text content (trim whitespace to detect empty/whitespace-only messages)
 	textContent := entry.GetTextContent()
@@ -362,6 +362,14 @@ func hasContent(entry models.ConversationEntry) bool {
 	if entry.Type == models.EntryTypeAssistant {
 		tools := entry.ExtractToolCalls()
 		if len(tools) > 0 {
+			return true
+		}
+	}
+
+	// Check for tool results in user messages
+	if entry.Type == models.EntryTypeUser {
+		results := entry.ExtractToolResults()
+		if len(results) > 0 {
 			return true
 		}
 	}
