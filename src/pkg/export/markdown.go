@@ -608,13 +608,26 @@ func convertNewlinesToBr(content string) string {
 
 	lines := strings.Split(content, "\n")
 	var result []string
+	consecutiveEmpty := 0
 
 	for i, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+
+		// Track consecutive empty lines and collapse them
+		if trimmedLine == "" {
+			consecutiveEmpty++
+			// Skip this empty line if we've already added one (collapse multiple empties)
+			if consecutiveEmpty > 1 {
+				continue
+			}
+		} else {
+			consecutiveEmpty = 0
+		}
+
 		result = append(result, line)
 
 		// Don't add <br> after the last line or after block elements
 		if i < len(lines)-1 {
-			trimmedLine := strings.TrimSpace(line)
 			isBlockEnd := false
 			for _, ending := range blockEndings {
 				if strings.HasSuffix(trimmedLine, ending) {

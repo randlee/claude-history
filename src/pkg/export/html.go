@@ -55,6 +55,16 @@ func RenderConversationWithStats(entries []models.ConversationEntry, agents []*a
 	toolResults := buildToolResultsMap(entries)
 
 	for _, entry := range entries {
+		// Skip entries with no meaningful content
+		if !hasContent(entry) {
+			// Still render subagent placeholder if this entry spawned one
+			if entry.Type == models.EntryTypeQueueOperation && entry.AgentID != "" {
+				subagentHTML := renderSubagentPlaceholder(entry.AgentID, agentMap)
+				sb.WriteString(subagentHTML)
+			}
+			continue
+		}
+
 		entryHTML := renderEntry(entry, toolResults)
 		sb.WriteString(entryHTML)
 
@@ -121,11 +131,38 @@ func RenderAgentFragment(agentID string, entries []models.ConversationEntry) (st
 	toolResults := buildToolResultsMap(entries)
 
 	for _, entry := range entries {
+		// Skip entries with no meaningful content
+		if !hasContent(entry) {
+			continue
+		}
+
 		entryHTML := renderEntry(entry, toolResults)
 		sb.WriteString(entryHTML)
 	}
 
 	return sb.String(), nil
+}
+
+// hasContent checks if an entry has meaningful content worth rendering.
+// Returns false for empty messages, true if the entry has text, tool calls, or other content.
+func hasContent(entry models.ConversationEntry) bool {
+	// Check for text content
+	if entry.GetTextContent() != "" {
+		return true
+	}
+
+	// Check for tool calls in assistant messages
+	if entry.Type == models.EntryTypeAssistant {
+		tools := entry.ExtractToolCalls()
+		if len(tools) > 0 {
+			return true
+		}
+	}
+
+	// Queue operations without content can be skipped (we still render subagent placeholder)
+	// Summary entries without content should be skipped
+	// Other entry types with no text should be skipped
+	return false
 }
 
 // renderEntry renders a single conversation entry as HTML using the chat bubble layout.
@@ -223,11 +260,11 @@ func renderToolCall(tool models.ToolUse, result models.ToolResult, hasResult boo
 
 	toolSummary := formatToolSummary(tool)
 
-	sb.WriteString(fmt.Sprintf(`<div class="tool-call" data-tool-id="%s">`, escapeHTML(tool.ID)))
+	sb.WriteString(fmt.Sprintf(`<div class="tool-call collapsible collapsed" data-tool-id="%s">`, escapeHTML(tool.ID)))
 	sb.WriteString("\n")
 
-	// Collapsible header with tool ID copy button
-	sb.WriteString(fmt.Sprintf(`  <div class="tool-header" onclick="toggleTool(this)"><span class="tool-summary">%s</span>`,
+	// Collapsible header with tool ID copy button and chevron
+	sb.WriteString(fmt.Sprintf(`  <div class="tool-header collapsible-trigger" onclick="toggleTool(this)"><span class="tool-summary">%s</span>`,
 		escapeHTML(toolSummary)))
 	sb.WriteString(fmt.Sprintf(`<span class="tool-id">%s</span>`, renderCopyButton(tool.ID, "tool-id", "Copy tool ID")))
 
@@ -237,10 +274,14 @@ func renderToolCall(tool models.ToolUse, result models.ToolResult, hasResult boo
 		sb.WriteString(fmt.Sprintf(`<span class="file-path-btn">%s</span>`,
 			renderCopyButton(filePath, "file-path", "Copy file path")))
 	}
+
+	// Add chevron indicator
+	sb.WriteString(`<span class="chevron down">▼</span>`)
+
 	sb.WriteString("</div>\n")
 
-	// Hidden body with input and output
-	sb.WriteString(`  <div class="tool-body hidden">`)
+	// Hidden body with input and output (starts collapsed)
+	sb.WriteString(`  <div class="tool-body hidden collapsible-content collapsed">`)
 	sb.WriteString("\n")
 
 	// Tool input
@@ -274,9 +315,9 @@ func renderSubagentPlaceholder(agentID string, agentMap map[string]int) string {
 		shortID = shortID[:7]
 	}
 
-	sb.WriteString(fmt.Sprintf(`<div class="subagent" data-agent-id="%s">`, escapeHTML(agentID)))
+	sb.WriteString(fmt.Sprintf(`<div class="subagent collapsible collapsed" data-agent-id="%s">`, escapeHTML(agentID)))
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf(`  <div class="subagent-header" onclick="loadAgent(this)"><span class="subagent-title">Subagent: %s</span> <span class="subagent-meta">(%d entries)</span>%s</div>`,
+	sb.WriteString(fmt.Sprintf(`  <div class="subagent-header collapsible-trigger" onclick="loadAgent(this)"><span class="subagent-title">Subagent: %s</span> <span class="subagent-meta">(%d entries)</span>%s<span class="chevron down">▼</span></div>`,
 		escapeHTML(shortID),
 		entryCount,
 		renderCopyButton(agentID, "agent-id", "Copy agent ID")))
