@@ -25,6 +25,7 @@ var (
 	queryTools         string // --tool flag
 	queryToolMatch     string // --tool-match flag
 	queryIncludeAgents bool   // --include-agents flag
+	queryLimit         int    // --limit flag for text truncation (0 = no truncation)
 )
 
 // knownTools is used for validation warnings when unknown tool types are specified
@@ -69,6 +70,11 @@ Examples:
   claude-history query /path/to/project --format json
   claude-history query /path/to/project --format summary
 
+  # Control text truncation
+  claude-history query /path/to/project --limit 0        # No truncation (full content)
+  claude-history query /path/to/project --limit 500      # Truncate at 500 chars
+  claude-history query /path/to/project --type assistant --limit 0  # Full assistant responses
+
 Agent Queries:
   When --agent is specified, the command reads the agent's JSONL file directly
   instead of filtering the main session file. This provides accurate results
@@ -91,6 +97,7 @@ func init() {
 	queryCmd.Flags().StringVar(&queryTools, "tool", "", "Filter by tool types (comma-separated: bash,read,write)")
 	queryCmd.Flags().StringVar(&queryToolMatch, "tool-match", "", "Filter by tool input regex pattern")
 	queryCmd.Flags().BoolVar(&queryIncludeAgents, "include-agents", false, "Include entries from all subagents")
+	queryCmd.Flags().IntVar(&queryLimit, "limit", 100, "Maximum characters per entry in text format (0 = no limit)")
 }
 
 func runQuery(cmd *cobra.Command, args []string) error {
@@ -194,7 +201,7 @@ func runQuery(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	return output.WriteEntries(os.Stdout, allEntries, outputFormat)
+	return output.WriteEntries(os.Stdout, allEntries, outputFormat, queryLimit)
 }
 
 func querySession(projectDir string, sessionID string, opts session.FilterOptions) ([]models.ConversationEntry, error) {

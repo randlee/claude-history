@@ -91,27 +91,98 @@ func WriteProjects(w io.Writer, projects []models.Project, format Format) error 
 }
 
 // WriteEntries writes conversation entries.
-func WriteEntries(w io.Writer, entries []models.ConversationEntry, format Format) error {
+func WriteEntries(w io.Writer, entries []models.ConversationEntry, format Format, limit int) error {
 	switch format {
 	case FormatJSON:
 		return WriteJSON(w, entries)
 	case FormatSummary:
 		return writeEntrySummary(w, entries)
 	default:
-		return writeEntryList(w, entries)
+		return writeEntryList(w, entries, limit)
 	}
 }
 
-func writeEntryList(w io.Writer, entries []models.ConversationEntry) error {
+func writeEntryList(w io.Writer, entries []models.ConversationEntry, limit int) error {
+	// Filter out entries with no text content first
+	var textEntries []models.ConversationEntry
 	for _, e := range entries {
+		if e.GetTextContent() != "" {
+			textEntries = append(textEntries, e)
+		}
+	}
+
+	if len(textEntries) == 0 {
+		return nil
+	}
+
+	// Default mode (limit=100): Show preview format
+	if limit == 100 && len(textEntries) > 2 {
+		return writeEntryPreview(w, textEntries)
+	}
+
+	// Full output mode (limit=0) or custom limit: Show all entries
+	for _, e := range textEntries {
 		ts, _ := e.GetTimestamp()
 		text := e.GetTextContent()
-		if len(text) > 100 {
-			text = text[:100] + "..."
+
+		// Apply truncation if limit > 0
+		if limit > 0 && len(text) > limit {
+			text = text[:limit] + "..."
 		}
 		text = strings.ReplaceAll(text, "\n", " ")
 		fmt.Fprintf(w, "[%s] %s: %s\n", ts.Format("15:04:05"), e.Type, text)
 	}
+	return nil
+}
+
+// writeEntryPreview shows first entry, count, and last entry with preview
+func writeEntryPreview(w io.Writer, entries []models.ConversationEntry) error {
+	first := entries[0]
+	last := entries[len(entries)-1]
+
+	// Show first entry
+	firstTS, _ := first.GetTimestamp()
+	firstText := first.GetTextContent()
+	if len(firstText) > 100 {
+		firstText = firstText[:100] + "..."
+	}
+	firstText = strings.ReplaceAll(firstText, "\n", " ")
+	fmt.Fprintf(w, "[%s] %s: %s\n", firstTS.Format("15:04:05"), first.Type, firstText)
+
+	// Show count of middle entries
+	if len(entries) > 2 {
+		fmt.Fprintf(w, "... (%d more entries) ...\n", len(entries)-2)
+	}
+
+	// Show last entry with first 10 lines of full text
+	lastTS, _ := last.GetTimestamp()
+	lastText := last.GetTextContent()
+
+	fmt.Fprintf(w, "[%s] %s: ", lastTS.Format("15:04:05"), last.Type)
+
+	// Split into lines and show first 10
+	lines := strings.Split(lastText, "\n")
+	previewLines := 10
+	if len(lines) < previewLines {
+		previewLines = len(lines)
+	}
+
+	for i := 0; i < previewLines; i++ {
+		if i == 0 {
+			fmt.Fprintf(w, "%s\n", lines[i])
+		} else {
+			fmt.Fprintf(w, "                     %s\n", lines[i])
+		}
+	}
+
+	if len(lines) > previewLines {
+		fmt.Fprintf(w, "                     ... (%d of %d lines shown - TRUNCATED)\n", previewLines, len(lines))
+	}
+
+	// Show help message with exact command
+	fmt.Fprintf(w, "\n⚠️  Text format truncates long outputs. For full content:\n")
+	fmt.Fprintf(w, "   --format json | jq -r '.[-1].message.content[0].text'\n")
+
 	return nil
 }
 
