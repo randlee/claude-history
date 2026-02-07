@@ -1066,12 +1066,12 @@ func renderHTMLHeader(stats *SessionStats, agentDetails map[string]int) string {
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Claude Code Session</title>
+    <title>Claude Code Session [v15.3]</title>
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
 <header class="page-header">
-    <h1>Claude Code Session`)
+    <h1>Claude Code Session <span style="font-size: 0.5em; color: #999;">[v15.3]</span>`)
 	if sessionFolderLink != "" {
 		sb.WriteString(`: `)
 		sb.WriteString(sessionFolderLink)
