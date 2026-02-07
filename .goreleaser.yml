@@ -2,8 +2,8 @@ project_name: claude-history
 
 before:
   hooks:
-    - go mod tidy
-    - go test ./...
+    - sh -c "cd src && go mod tidy"
+    - sh -c "cd src && go test ./..."
 
 builds:
   - main: ./src
