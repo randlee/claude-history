@@ -3,6 +3,7 @@ package export
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -19,6 +20,12 @@ func TestMakePathsClickable_NoPath(t *testing.T) {
 }
 
 func TestMakePathsClickable_AbsoluteUnixPath(t *testing.T) {
+	// Skip on Windows since tmpFile.Name() returns Windows paths
+	// (Windows paths are tested separately)
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping Unix path test on Windows")
+	}
+
 	// Create a temporary file to test against
 	tmpFile, err := os.CreateTemp("", "test-*.go")
 	if err != nil {
@@ -115,6 +122,11 @@ func TestMakePathsClickable_NonExistentPath(t *testing.T) {
 }
 
 func TestMakePathsClickable_PathInCodeBlock(t *testing.T) {
+	// Skip on Windows since tmpFile.Name() returns Windows paths
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping Unix path test on Windows")
+	}
+
 	// Create a temporary file
 	tmpFile, err := os.CreateTemp("", "test-*.go")
 	if err != nil {
@@ -137,6 +149,11 @@ func TestMakePathsClickable_PathInCodeBlock(t *testing.T) {
 }
 
 func TestMakePathsClickable_MultiplePaths(t *testing.T) {
+	// Skip on Windows since tmpFile.Name() returns Windows paths
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping Unix path test on Windows")
+	}
+
 	// Create two temporary files
 	tmpFile1, err := os.CreateTemp("", "test1-*.go")
 	if err != nil {
@@ -165,6 +182,11 @@ func TestMakePathsClickable_MultiplePaths(t *testing.T) {
 }
 
 func TestMakePathsClickable_PathWithSpaces(t *testing.T) {
+	// Skip on Windows since tmpFile.Name() returns Windows paths
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping Unix path test on Windows")
+	}
+
 	// Paths with spaces are NOT automatically detected to avoid false positives.
 	// This is a design decision - spaces in directory/file names cause too many
 	// false matches (e.g., "/path/file.go and another sentence" would be treated
@@ -213,6 +235,11 @@ func TestMakePathsClickable_EmptyProjectPath(t *testing.T) {
 }
 
 func TestMakePathsClickableWithPlaceholders(t *testing.T) {
+	// Skip on Windows since tmpFile.Name() returns Windows paths
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping Unix path test on Windows")
+	}
+
 	// Create a temporary file
 	tmpFile, err := os.CreateTemp("", "test-*.go")
 	if err != nil {

@@ -14,20 +14,22 @@ import (
 // If users have files with spaces, they can reference them with quotes or explicit links.
 var (
 	// Absolute Unix paths: /path/to/file.ext
-	// Components: alphanumeric, underscore, dot, dash (NO SPACES)
-	unixAbsPathRe = regexp.MustCompile(`(?:^|\s)(/(?:[a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_.-]+\.[a-zA-Z0-9]+)(?:\s|$|[,;:)])`)
+	// Components: alphanumeric, underscore, dot, dash, tilde (NO SPACES)
+	// Tilde is included to support 8.3 short filenames and home directories
+	unixAbsPathRe = regexp.MustCompile(`(?:^|\s)(/(?:[a-zA-Z0-9_.~-]+/)*[a-zA-Z0-9_.~-]+\.[a-zA-Z0-9]+)(?:\s|$|[,;:)])`)
 
 	// Absolute Windows paths: C:\path\to\file.ext or C:/path/to/file.ext
-	winAbsPathRe = regexp.MustCompile(`(?:^|\s)([A-Za-z]:[/\\](?:[a-zA-Z0-9_.-]+[/\\])*[a-zA-Z0-9_.-]+\.[a-zA-Z0-9]+)(?:\s|$|[,;:)])`)
+	// Tilde is included to support 8.3 short filenames (e.g., C:\Users\RUNNER~1\)
+	winAbsPathRe = regexp.MustCompile(`(?:^|\s)([A-Za-z]:[/\\](?:[a-zA-Z0-9_.~-]+[/\\])*[a-zA-Z0-9_.~-]+\.[a-zA-Z0-9]+)(?:\s|$|[,;:)])`)
 
 	// Relative paths with ./  or ../ prefix: ./src/file.go, ../pkg/export.go
-	relPathPrefixRe = regexp.MustCompile(`(?:^|\s)(\.\.?/(?:[a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_.-]+(?:\.[a-zA-Z0-9]+)?)(?:\s|$|[,;:)])`)
+	relPathPrefixRe = regexp.MustCompile(`(?:^|\s)(\.\.?/(?:[a-zA-Z0-9_.~-]+/)*[a-zA-Z0-9_.~-]+(?:\.[a-zA-Z0-9]+)?)(?:\s|$|[,;:)])`)
 
 	// Relative paths without prefix but with directory separators: src/file.go, pkg/export/html.go
-	relPathRe = regexp.MustCompile(`(?:^|\s)([a-zA-Z0-9_.-]+/(?:[a-zA-Z0-9_.-]+/)*[a-zA-Z0-9_.-]+\.[a-zA-Z0-9]+)(?:\s|$|[,;:)])`)
+	relPathRe = regexp.MustCompile(`(?:^|\s)([a-zA-Z0-9_.~-]+/(?:[a-zA-Z0-9_.~-]+/)*[a-zA-Z0-9_.~-]+\.[a-zA-Z0-9]+)(?:\s|$|[,;:)])`)
 
 	// Simple filename with extension (no path separators): test.go, main.py
-	simpleFilenameRe = regexp.MustCompile(`(?:^|\s)([a-zA-Z0-9_][a-zA-Z0-9_.-]*\.[a-zA-Z0-9]+)(?:\s|$|[,;:.)])`)
+	simpleFilenameRe = regexp.MustCompile(`(?:^|\s)([a-zA-Z0-9_~][a-zA-Z0-9_.~-]*\.[a-zA-Z0-9]+)(?:\s|$|[,;:.)])`)
 )
 
 // makePathsClickableWithPlaceholders scans text for file paths and converts them to placeholders.
