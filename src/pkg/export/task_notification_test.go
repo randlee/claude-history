@@ -302,8 +302,8 @@ func TestRenderFlatTaskNotification(t *testing.T) {
 				`class="notification-summary">✓ Deep dive on Test Agent</span>`,
 				`class="agent-id-badge"`,
 				`data-full-id="abc123"`, // Agent ID without brackets
-				`>abc123<`, // Truncated ID displayed without brackets
-				`claude-history query`, // Check for CLI command (HTML escaped in title)
+				`>abc123<`,              // Truncated ID displayed without brackets
+				`claude-history query`,  // Check for CLI command (HTML escaped in title)
 				`--session test-session --agent abc123`,
 				`class="notification-content"`,
 				`Agent completed successfully`,
