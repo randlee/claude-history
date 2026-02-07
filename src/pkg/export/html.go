@@ -755,10 +755,11 @@ func renderTaskNotification(content string) string {
 	// Header with icon and status
 	statusIcon := "✓"
 	statusClass := "completed"
-	if data.Status == "failed" || data.Status == "error" {
+	switch data.Status {
+	case "failed", "error":
 		statusIcon = "✗"
 		statusClass = "failed"
-	} else if data.Status == "running" {
+	case "running":
 		statusIcon = "⏳"
 		statusClass = "running"
 	}
@@ -825,9 +826,9 @@ func formatUserContent(content string) string {
 
 	for i, match := range matches {
 		matchIndex := matchIndices[i]
-		openingTag := match[1]  // Captured opening tag name
-		closingTag := match[4]  // Captured closing tag name
-		tagContent := match[3]  // Content between tags
+		openingTag := match[1] // Captured opening tag name
+		closingTag := match[4] // Captured closing tag name
+		tagContent := match[3] // Content between tags
 
 		// Only process if opening and closing tags match
 		if openingTag != closingTag {

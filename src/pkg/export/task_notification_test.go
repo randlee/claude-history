@@ -16,7 +16,7 @@ func TestTaskNotificationDetection(t *testing.T) {
 		{
 			name: "user entry with task-notification",
 			entry: models.ConversationEntry{
-				Type: models.EntryTypeUser,
+				Type:    models.EntryTypeUser,
 				Message: []byte(`{"role":"user","content":"<task-notification><task-id>abc123</task-id><status>completed</status><summary>Test task</summary><result>Success</result></task-notification>"}`),
 			},
 			expected: true,

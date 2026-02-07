@@ -7,20 +7,20 @@ import (
 
 func TestFormatUserContent(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		wantContains []string
+		name            string
+		input           string
+		wantContains    []string
 		wantNotContains []string
 	}{
 		{
-			name:  "empty string",
-			input: "",
+			name:         "empty string",
+			input:        "",
 			wantContains: []string{},
 		},
 		{
-			name:  "plain text without XML",
-			input: "Hello world",
-			wantContains: []string{"Hello world"},
+			name:            "plain text without XML",
+			input:           "Hello world",
+			wantContains:    []string{"Hello world"},
 			wantNotContains: []string{"xml-tag-block"},
 		},
 		{
@@ -38,15 +38,15 @@ func TestFormatUserContent(t *testing.T) {
 			wantNotContains: []string{},
 		},
 		{
-			name:  "bash-stderr empty (should be hidden)",
-			input: "<bash-stderr></bash-stderr>",
-			wantContains: []string{},
+			name:            "bash-stderr empty (should be hidden)",
+			input:           "<bash-stderr></bash-stderr>",
+			wantContains:    []string{},
 			wantNotContains: []string{"bash-stderr"},
 		},
 		{
-			name:  "bash-stderr with only whitespace (should be hidden)",
-			input: "<bash-stderr>   \n  </bash-stderr>",
-			wantContains: []string{},
+			name:            "bash-stderr with only whitespace (should be hidden)",
+			input:           "<bash-stderr>   \n  </bash-stderr>",
+			wantContains:    []string{},
 			wantNotContains: []string{"bash-stderr"},
 		},
 		{
