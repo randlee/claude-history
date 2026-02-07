@@ -132,15 +132,14 @@ func ComputeSessionStats(entries []models.ConversationEntry, agents []*agent.Tre
 
 	// Count messages by type
 	for _, entry := range entries {
-		if entry.Type == models.EntryTypeUser {
+		switch entry.Type {
+		case models.EntryTypeUser:
 			stats.UserMessages++
 			stats.MessageCount++ // Keep for backward compat
-		} else if entry.Type == models.EntryTypeAssistant {
+		case models.EntryTypeAssistant:
 			stats.AssistantMessages++
 			stats.MessageCount++ // Keep for backward compat
-		}
-		// Count tool calls from assistant messages
-		if entry.Type == models.EntryTypeAssistant {
+			// Count tool calls from assistant messages
 			tools := entry.ExtractToolCalls()
 			stats.ToolCallCount += len(tools)
 		}
