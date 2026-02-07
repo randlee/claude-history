@@ -99,8 +99,10 @@ func ExtractCodeBlocks(content string) []CodeBlock {
 // Supports: headers (h1-h6), lists (ordered, unordered, nested), tables, blockquotes,
 // code blocks (fenced and inline), links, images, bold, italic, task lists, and horizontal rules.
 // Code blocks are rendered with language badges and copy buttons for enhanced UX.
+// File paths that exist on disk are automatically converted to clickable file:// links.
 // All plain text is HTML-escaped to prevent XSS attacks.
-func RenderMarkdown(content string) string {
+// projectPath is used to resolve relative file paths (can be empty string to disable relative path detection).
+func RenderMarkdown(content string, projectPath string) string {
 	if content == "" {
 		return ""
 	}
@@ -119,12 +121,32 @@ func RenderMarkdown(content string) string {
 	}
 
 	// Protect inline code and replace with placeholders
+	// IMPORTANT: Check if inline code contains file paths and linkify them first
 	inlineCodePlaceholders := make(map[string]string)
 	inlineIdx := 0
 	result = inlineCodeRe.ReplaceAllStringFunc(result, func(match string) string {
 		code := inlineCodeRe.FindStringSubmatch(match)[1]
 		placeholder := fmt.Sprintf("\x00INLINE_CODE_%d\x00", inlineIdx)
-		inlineCodePlaceholders[placeholder] = `<code class="inline-code">` + escapeHTML(code) + `</code>`
+
+		// Check if this inline code looks like a file path
+		// Try to make paths clickable within the inline code
+		processedCode := makePathsClickable(code, projectPath, func(pathStr string, linkHTML string, start int, end int) string {
+			// Return just the link HTML (already has file-link class)
+			return linkHTML
+		})
+
+		// If no paths were found, processedCode == code
+		// If paths were found, processedCode contains the link HTML
+		// We need to wrap in inline-code class only if no links were created
+		if processedCode == code {
+			// No paths found, escape and wrap as normal inline code
+			inlineCodePlaceholders[placeholder] = `<code class="inline-code">` + escapeHTML(code) + `</code>`
+		} else {
+			// Paths were found and converted to links
+			// Wrap the whole thing (which may contain links) in inline-code styling
+			inlineCodePlaceholders[placeholder] = `<code class="inline-code">` + processedCode + `</code>`
+		}
+
 		inlineIdx++
 		return placeholder
 	})
@@ -157,6 +179,11 @@ func RenderMarkdown(content string) string {
 		}
 		return match
 	})
+
+	// Process file paths and store in placeholders (before escaping remaining text)
+	pathPlaceholders := make(map[string]string)
+	pathIdx := 0
+	result = makePathsClickableWithPlaceholders(result, projectPath, &pathPlaceholders, &pathIdx)
 
 	// Process tables (before escaping so we can detect the | delimiters)
 	result = processMarkdownTables(result)
@@ -222,6 +249,9 @@ func RenderMarkdown(content string) string {
 		result = strings.ReplaceAll(result, placeholder, html)
 	}
 	for placeholder, html := range linkPlaceholders {
+		result = strings.ReplaceAll(result, placeholder, html)
+	}
+	for placeholder, html := range pathPlaceholders {
 		result = strings.ReplaceAll(result, placeholder, html)
 	}
 	for placeholder, html := range inlineCodePlaceholders {

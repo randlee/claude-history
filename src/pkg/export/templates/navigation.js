@@ -22,7 +22,7 @@
      * Navigation state tracking.
      */
     var state = {
-        currentPath: [{ id: MAIN_SESSION_ID, label: 'Main Session' }],
+        currentPath: [], // Empty - no "Main Session" breadcrumb
         history: [],
         historyIndex: -1,
         loadedAgents: {},

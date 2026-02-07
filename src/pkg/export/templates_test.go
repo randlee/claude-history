@@ -561,9 +561,6 @@ func TestHTMLHeader_ContainsBreadcrumbs(t *testing.T) {
 	if !strings.Contains(htmlHeader, `class="breadcrumbs"`) {
 		t.Error("HTML header should contain breadcrumbs class")
 	}
-	if !strings.Contains(htmlHeader, "Main Session") {
-		t.Error("HTML header should contain default Main Session breadcrumb")
-	}
 }
 
 func TestHTMLFooter_IncludesNavigationScript(t *testing.T) {
