@@ -50,14 +50,14 @@ func RenderConversationWithStats(entries []models.ConversationEntry, agents []*a
 		stats = ComputeSessionStats(entries, agents)
 	}
 
-	// Write HTML header with metadata
-	sb.WriteString(renderHTMLHeader(stats))
+	// Build a map of agent IDs to entry counts for subagent display and tooltip
+	agentMap := buildAgentMap(agents)
+
+	// Write HTML header with metadata and agent details
+	sb.WriteString(renderHTMLHeader(stats, agentMap))
 
 	// Write conversation entries
 	sb.WriteString(`<div class="conversation">` + "\n")
-
-	// Build a map of agent IDs to entry counts for subagent display
-	agentMap := buildAgentMap(agents)
 
 	// Track tool results for matching with tool calls
 	toolResults := buildToolResultsMap(entries)
@@ -599,7 +599,8 @@ func buildToolResultsMap(entries []models.ConversationEntry) map[string]models.T
 }
 
 // renderHTMLHeader generates the HTML header with session metadata.
-func renderHTMLHeader(stats *SessionStats) string {
+// agentDetails is an optional map of agent IDs to message counts for the interactive tooltip.
+func renderHTMLHeader(stats *SessionStats, agentDetails map[string]int) string {
 	var sb strings.Builder
 
 	sb.WriteString(`<!DOCTYPE html>
@@ -642,10 +643,32 @@ func renderHTMLHeader(stats *SessionStats) string {
 `, escapeHTML(stats.Duration)))
 	}
 
-	// Enhanced message statistics
+	// Enhanced message statistics with interactive agent tooltip
 	if stats != nil {
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">User: %d | Assistant: %d | Subagents[%d]: %d messages</span>
-`, stats.UserMessages, stats.AssistantMessages, stats.AgentCount, stats.TotalAgentMessages))
+		// Encode agent details as JSON for JavaScript
+		agentDetailsJSON := "{}"
+		if len(agentDetails) > 0 {
+			jsonBytes, err := json.Marshal(agentDetails)
+			if err == nil {
+				agentDetailsJSON = string(jsonBytes)
+			}
+		}
+
+		// Build the statistics line with interactive agent tooltip
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">User: %d | Assistant: %d | `, stats.UserMessages, stats.AssistantMessages))
+
+		// Add interactive agent stats span if there are agents
+		if stats.AgentCount > 0 {
+			sb.WriteString(fmt.Sprintf(`<span class="agent-stats-interactive" data-session-id="%s" data-agent-details='%s' title="Click to copy agent list">Subagents[%d]: %d messages</span>`,
+				escapeHTML(stats.SessionID),
+				escapeHTML(agentDetailsJSON),
+				stats.AgentCount,
+				stats.TotalAgentMessages))
+		} else {
+			sb.WriteString(fmt.Sprintf(`Subagents[%d]: %d messages`, stats.AgentCount, stats.TotalAgentMessages))
+		}
+
+		sb.WriteString("</span>\n")
 	}
 
 	// Tool call count
@@ -711,6 +734,7 @@ func renderHTMLFooter(stats *SessionStats) string {
     <script src="static/clipboard.js"></script>
     <script src="static/controls.js"></script>
     <script src="static/navigation.js"></script>
+    <script src="static/agent-tooltip.js"></script>
 </body>
 </html>
 `)

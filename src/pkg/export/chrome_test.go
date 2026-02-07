@@ -198,7 +198,7 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 		ToolCallCount:      247,
 	}
 
-	html := renderHTMLHeader(stats)
+	html := renderHTMLHeader(stats, nil)
 
 	// Check structure
 	if !strings.Contains(html, "<!DOCTYPE html>") {
@@ -259,7 +259,7 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 
 // TestRenderHTMLHeader_NilStats tests header generation without stats.
 func TestRenderHTMLHeader_NilStats(t *testing.T) {
-	html := renderHTMLHeader(nil)
+	html := renderHTMLHeader(nil, nil)
 
 	// Should still have basic structure
 	if !strings.Contains(html, "<!DOCTYPE html>") {
@@ -276,7 +276,7 @@ func TestRenderHTMLHeader_NilStats(t *testing.T) {
 // TestRenderHTMLHeader_EmptyStats tests header with empty stats.
 func TestRenderHTMLHeader_EmptyStats(t *testing.T) {
 	stats := &SessionStats{}
-	html := renderHTMLHeader(stats)
+	html := renderHTMLHeader(stats, nil)
 
 	// Should have basic structure
 	if !strings.Contains(html, "<header class=\"page-header\">") {
@@ -513,7 +513,7 @@ func TestRenderHTMLHeader_XSSPrevention(t *testing.T) {
 		ProjectPath: "<img onerror='alert(1)'>",
 	}
 
-	html := renderHTMLHeader(stats)
+	html := renderHTMLHeader(stats, nil)
 
 	// Script and img tags should be escaped
 	if strings.Contains(html, "<script>alert") {
@@ -547,7 +547,7 @@ func TestCopyButtonIntegration(t *testing.T) {
 		ProjectPath: "/path/to/project",
 	}
 
-	html := renderHTMLHeader(stats)
+	html := renderHTMLHeader(stats, nil)
 
 	// Check session ID copy button
 	if !strings.Contains(html, "class=\"copy-btn\"") {
@@ -644,7 +644,7 @@ func TestSessionStats_Struct(t *testing.T) {
 
 // TestRenderHTMLHeader_Controls tests that controls are included in header.
 func TestRenderHTMLHeader_Controls(t *testing.T) {
-	html := renderHTMLHeader(nil)
+	html := renderHTMLHeader(nil, nil)
 
 	// Check controls are present
 	if !strings.Contains(html, "id=\"expand-all-btn\"") {
@@ -669,7 +669,7 @@ func TestRenderHTMLHeader_Controls(t *testing.T) {
 
 // TestRenderHTMLHeader_Accessibility tests accessibility attributes.
 func TestRenderHTMLHeader_Accessibility(t *testing.T) {
-	html := renderHTMLHeader(nil)
+	html := renderHTMLHeader(nil, nil)
 
 	if !strings.Contains(html, "role=\"toolbar\"") {
 		t.Error("Missing toolbar role")
