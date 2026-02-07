@@ -345,15 +345,26 @@
             }
 
             // Expand hidden tool-body sections
-            if (parent.classList && parent.classList.contains('tool-body') && parent.classList.contains('hidden')) {
-                parent.classList.remove('hidden');
+            if (parent.classList && parent.classList.contains('tool-body')) {
+                var wasHidden = parent.classList.contains('hidden') || parent.classList.contains('collapsed');
+                if (wasHidden) {
+                    parent.classList.remove('hidden');
+                    parent.classList.remove('collapsed');
 
-                // Update the toggle indicator for this tool
-                var toolCall = parent.previousElementSibling;
-                if (toolCall && toolCall.classList.contains('tool-header')) {
-                    var toggle = toolCall.querySelector('.tool-toggle');
-                    if (toggle) {
-                        toggle.textContent = '[-]';
+                    // Also remove collapsed from parent tool-call container
+                    var toolCall = parent.closest('.tool-call');
+                    if (toolCall && toolCall.classList.contains('collapsed')) {
+                        toolCall.classList.remove('collapsed');
+                    }
+
+                    // Update the toggle indicator for this tool
+                    var toolHeader = parent.previousElementSibling;
+                    if (toolHeader && toolHeader.classList.contains('tool-header')) {
+                        var toggle = toolHeader.querySelector('.tool-toggle');
+                        if (toggle) {
+                            toggle.textContent = '[-]';
+                        }
+                        // Note: Chevron rotation is handled by CSS based on .collapsed class
                     }
                 }
             }
@@ -387,8 +398,10 @@
         // Auto-expand collapsed parent sections before scrolling
         expandParentSections(current);
 
-        // Scroll into view smoothly
-        smoothScrollToElement(current);
+        // Wait a tick for DOM updates to render before scrolling
+        setTimeout(function() {
+            smoothScrollToElement(current);
+        }, 10);
 
         updateSearchResults(currentMatches.length, currentSearchIndex + 1);
     }
