@@ -939,11 +939,25 @@ func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.Co
 			tooltipText = "Agent ID: " + taskNotif.TaskID
 		}
 
+		// Build full copy text with context
+		copyText := ""
+		if cliCommand != "" {
+			copyText = fmt.Sprintf("Subagent \"%s\" [%s]\n%s",
+				taskNotif.Summary,
+				taskNotif.TaskID,
+				cliCommand)
+		} else {
+			copyText = fmt.Sprintf("Subagent \"%s\" [%s]\nAgent ID: %s",
+				taskNotif.Summary,
+				taskNotif.TaskID,
+				taskNotif.TaskID)
+		}
+
 		truncatedID := truncateID(taskNotif.TaskID, 8)
 		sb.WriteString(fmt.Sprintf(`    <span class="agent-id-badge" data-full-id="%s" title="%s">`,
 			escapeHTML(taskNotif.TaskID), escapeHTML(tooltipText)))
 		sb.WriteString(fmt.Sprintf(`[%s]`, escapeHTML(truncatedID)))
-		sb.WriteString(renderCopyButton(taskNotif.TaskID, "agent-id", "Copy agent ID"))
+		sb.WriteString(renderCopyButton(copyText, "agent-notification", "Copy agent details"))
 		sb.WriteString(`</span>`)
 		sb.WriteString("\n")
 	}
