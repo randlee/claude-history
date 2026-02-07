@@ -1,0 +1,145 @@
+# Release Process
+
+This document describes the release process for claude-history, including how release notes are generated and what happens with each release.
+
+## Release Notes Template
+
+Release notes are generated automatically by GoReleaser using the template at `.goreleaser/release-notes-template.md`.
+
+### Template Contents
+
+The template includes:
+- **Installation instructions** for all distribution methods:
+  - Homebrew (macOS/Linux)
+  - winget (Windows)
+  - Install script (macOS/Linux)
+  - Go install (all platforms)
+  - Direct download (all platforms)
+- **Quick Start** examples
+- **Documentation** links
+
+### Why All Methods Are Listed
+
+The template lists **all** installation methods (Homebrew, winget, install script, etc.) even if they're not immediately available for a given release. This is intentional:
+
+1. **Consistency** - Users see the same format for every release
+2. **Documentation** - Users know what installation options exist
+3. **Forward-looking** - Methods may become available shortly after release
+4. **Platform parity** - Shows commitment to supporting all platforms
+
+### Installation Method Availability
+
+Different installation methods become available at different times:
+
+| Method | Availability | Notes |
+|--------|--------------|-------|
+| **Direct Download** | Immediate | Binaries published to GitHub Releases by GoReleaser |
+| **Go install** | Immediate | Published to GitHub, works via `go install` |
+| **Install Script** | Immediate | Script downloads from GitHub Releases |
+| **Homebrew** | ~5-10 minutes | GoReleaser pushes to `randlee/homebrew-tap` (requires tap repo exists) |
+| **winget** | Manual | Requires PR to microsoft/winget-pkgs (see WINGET_SETUP.md) |
+
+## Release Checklist
+
+### Prerequisites
+
+- [ ] All tests passing (`go test ./...`)
+- [ ] Linter clean (`golangci-lint run`)
+- [ ] CHANGELOG.md updated with new version
+- [ ] Version number follows [Semantic Versioning](https://semver.org/)
+
+### Creating a Release
+
+1. **Tag the release:**
+   ```bash
+   git tag -a v0.x.0 -m "Release v0.x.0"
+   git push origin v0.x.0
+   ```
+
+2. **GoReleaser builds and publishes:**
+   - Builds binaries for all platforms
+   - Creates GitHub Release with release notes from template
+   - Publishes to GitHub Releases
+   - Attempts to update Homebrew tap (if `randlee/homebrew-tap` exists)
+
+3. **Verify GitHub Release:**
+   - Check https://github.com/randlee/claude-history/releases/latest
+   - Verify all binaries are present in Assets
+   - Verify release notes rendered correctly
+
+### Post-Release Tasks
+
+#### Homebrew (if tap exists)
+
+- [ ] Verify formula updated in `randlee/homebrew-tap`
+- [ ] Test installation: `brew install randlee/tap/claude-history`
+
+#### winget (manual process)
+
+See [WINGET_SETUP.md](./WINGET_SETUP.md) for detailed instructions.
+
+1. [ ] Calculate SHA256 for Windows zip
+2. [ ] Update `.winget/randlee.claude-history.yaml` with new version and hash
+3. [ ] Submit PR to microsoft/winget-pkgs
+4. [ ] Wait for validation (automated tests)
+5. [ ] PR merged (~1-2 days)
+6. [ ] Available via winget (~24 hours after merge)
+
+## Troubleshooting
+
+### Homebrew tap doesn't exist
+
+If you see:
+```
+Error: failed to publish artifacts: homebrew: repository randlee/homebrew-tap not found
+```
+
+**Solution**: Create the tap repository first (see [HOMEBREW_SETUP.md](./HOMEBREW_SETUP.md))
+
+### GoReleaser authentication errors
+
+Ensure `GITHUB_TOKEN` environment variable is set:
+```bash
+export GITHUB_TOKEN="ghp_..."
+goreleaser release --clean
+```
+
+### Release notes template not rendering
+
+Verify the template path in `.goreleaser.yml`:
+```yaml
+release:
+  header_template_file: .goreleaser/release-notes-template.md
+```
+
+## Modifying the Template
+
+To update the release notes format:
+
+1. Edit `.goreleaser/release-notes-template.md`
+2. Test with a local build:
+   ```bash
+   goreleaser release --snapshot --clean
+   cat dist/release-notes.md  # Preview generated notes
+   ```
+3. Commit changes
+4. Next release will use updated template
+
+### Template Variables
+
+GoReleaser provides these variables for use in the template:
+
+- `{{.Version}}` - Version number (e.g., "0.2.0")
+- `{{.Tag}}` - Git tag (e.g., "v0.2.0")
+- `{{.ProjectName}}` - Project name ("claude-history")
+- `{{.Date}}` - Release date
+- `{{.Commit}}` - Git commit hash
+
+See [GoReleaser documentation](https://goreleaser.com/customization/release/) for more template options.
+
+## References
+
+- [GoReleaser Release Customization](https://goreleaser.com/customization/release/)
+- [Semantic Versioning](https://semver.org/)
+- [Homebrew Tap Setup](./HOMEBREW_SETUP.md)
+- [winget Setup](./WINGET_SETUP.md)
