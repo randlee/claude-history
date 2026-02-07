@@ -91,23 +91,24 @@ func WriteProjects(w io.Writer, projects []models.Project, format Format) error 
 }
 
 // WriteEntries writes conversation entries.
-func WriteEntries(w io.Writer, entries []models.ConversationEntry, format Format) error {
+func WriteEntries(w io.Writer, entries []models.ConversationEntry, format Format, limit int) error {
 	switch format {
 	case FormatJSON:
 		return WriteJSON(w, entries)
 	case FormatSummary:
 		return writeEntrySummary(w, entries)
 	default:
-		return writeEntryList(w, entries)
+		return writeEntryList(w, entries, limit)
 	}
 }
 
-func writeEntryList(w io.Writer, entries []models.ConversationEntry) error {
+func writeEntryList(w io.Writer, entries []models.ConversationEntry, limit int) error {
 	for _, e := range entries {
 		ts, _ := e.GetTimestamp()
 		text := e.GetTextContent()
-		if len(text) > 100 {
-			text = text[:100] + "..."
+		// Apply truncation if limit > 0
+		if limit > 0 && len(text) > limit {
+			text = text[:limit] + "..."
 		}
 		text = strings.ReplaceAll(text, "\n", " ")
 		fmt.Fprintf(w, "[%s] %s: %s\n", ts.Format("15:04:05"), e.Type, text)
