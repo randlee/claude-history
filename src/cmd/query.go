@@ -76,6 +76,11 @@ Examples:
   claude-history query /path/to/project --limit 500      # Truncate at 500 chars
   claude-history query /path/to/project --type assistant --limit 0  # Full assistant responses
 
+  # Control text truncation
+  claude-history query /path/to/project --limit 0        # No truncation (full content)
+  claude-history query /path/to/project --limit 500      # Truncate at 500 chars
+  claude-history query /path/to/project --type assistant --limit 0  # Full assistant responses
+
 Agent Queries:
   When --agent is specified, the command reads the agent's JSONL file directly
   instead of filtering the main session file. This provides accurate results
