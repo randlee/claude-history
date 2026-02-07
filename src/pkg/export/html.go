@@ -15,12 +15,19 @@ import (
 
 // SessionStats contains statistics about a session for display in the header.
 type SessionStats struct {
-	SessionID     string // Full session ID
-	ProjectPath   string // Project directory path
-	ExportTime    string // Formatted export timestamp
-	MessageCount  int    // Count of user + assistant messages
-	AgentCount    int    // Count of subagents
-	ToolCallCount int    // Count of tool calls
+	SessionID          string // Full session ID
+	ProjectPath        string // Project directory path
+	ExportTime         string // Formatted export timestamp (kept for backward compat, not displayed)
+	SessionStart       string // First entry timestamp (formatted for display)
+	SessionEnd         string // Last entry timestamp (formatted for display)
+	Duration           string // Human-readable duration (e.g., "2h 35m")
+	MessageCount       int    // Count of user + assistant messages (deprecated, kept for backward compat)
+	UserMessages       int    // Count of user messages
+	AssistantMessages  int    // Count of assistant messages (main session only)
+	SubagentMessages   int    // Count of all subagent messages
+	AgentCount         int    // Count of subagents
+	TotalAgentMessages int    // Total messages across all subagents
+	ToolCallCount      int    // Count of tool calls
 }
 
 // ExportFormatVersion is the current version of the export format.
@@ -43,14 +50,14 @@ func RenderConversationWithStats(entries []models.ConversationEntry, agents []*a
 		stats = ComputeSessionStats(entries, agents)
 	}
 
-	// Write HTML header with metadata
-	sb.WriteString(renderHTMLHeader(stats))
+	// Build a map of agent IDs to entry counts for subagent display and tooltip
+	agentMap := buildAgentMap(agents)
+
+	// Write HTML header with metadata and agent details
+	sb.WriteString(renderHTMLHeader(stats, agentMap))
 
 	// Write conversation entries
 	sb.WriteString(`<div class="conversation">` + "\n")
-
-	// Build a map of agent IDs to entry counts for subagent display
-	agentMap := buildAgentMap(agents)
 
 	// Track tool results for matching with tool calls
 	toolResults := buildToolResultsMap(entries)
@@ -66,7 +73,7 @@ func RenderConversationWithStats(entries []models.ConversationEntry, agents []*a
 			continue
 		}
 
-		entryHTML := renderEntry(entry, toolResults)
+		entryHTML := renderEntry(entry, toolResults, stats.ProjectPath)
 		sb.WriteString(entryHTML)
 
 		// Check if this entry spawned a subagent
@@ -90,13 +97,49 @@ func ComputeSessionStats(entries []models.ConversationEntry, agents []*agent.Tre
 		ExportTime: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
-	// Count messages (user + assistant)
-	for _, entry := range entries {
-		if entry.Type == models.EntryTypeUser || entry.Type == models.EntryTypeAssistant {
-			stats.MessageCount++
+	// Get session start/end times from first/last entries with timestamps
+	if len(entries) > 0 {
+		// Find first entry with a timestamp
+		var firstTime time.Time
+		for _, entry := range entries {
+			if entry.Timestamp != "" {
+				if t, err := time.Parse(time.RFC3339Nano, entry.Timestamp); err == nil {
+					firstTime = t
+					stats.SessionStart = firstTime.Format("2006-01-02 15:04")
+					break
+				}
+			}
 		}
-		// Count tool calls from assistant messages
-		if entry.Type == models.EntryTypeAssistant {
+
+		// Find last entry with a timestamp (search backwards)
+		var lastTime time.Time
+		for i := len(entries) - 1; i >= 0; i-- {
+			if entries[i].Timestamp != "" {
+				if t, err := time.Parse(time.RFC3339Nano, entries[i].Timestamp); err == nil {
+					lastTime = t
+					stats.SessionEnd = lastTime.Format("2006-01-02 15:04")
+					break
+				}
+			}
+		}
+
+		// Calculate duration if we have both timestamps
+		if !firstTime.IsZero() && !lastTime.IsZero() {
+			duration := lastTime.Sub(firstTime)
+			stats.Duration = formatDuration(duration)
+		}
+	}
+
+	// Count messages by type
+	for _, entry := range entries {
+		switch entry.Type {
+		case models.EntryTypeUser:
+			stats.UserMessages++
+			stats.MessageCount++ // Keep for backward compat
+		case models.EntryTypeAssistant:
+			stats.AssistantMessages++
+			stats.MessageCount++ // Keep for backward compat
+			// Count tool calls from assistant messages
 			tools := entry.ExtractToolCalls()
 			stats.ToolCallCount += len(tools)
 		}
@@ -106,13 +149,35 @@ func ComputeSessionStats(entries []models.ConversationEntry, agents []*agent.Tre
 		}
 	}
 
-	// Count agents
+	// Count agents and subagent messages
 	if len(agents) > 0 {
 		agentMap := buildAgentMap(agents)
 		stats.AgentCount = len(agentMap)
+
+		// Sum all subagent entry counts
+		for _, count := range agentMap {
+			stats.TotalAgentMessages += count
+		}
+		stats.SubagentMessages = stats.TotalAgentMessages
 	}
 
 	return stats
+}
+
+// formatDuration formats a duration into a human-readable string.
+// Examples: "2h 35m", "45m", "30s"
+func formatDuration(d time.Duration) string {
+	hours := int(d.Hours())
+	minutes := int(d.Minutes()) % 60
+
+	if hours > 0 {
+		return fmt.Sprintf("%dh %dm", hours, minutes)
+	}
+	if minutes > 0 {
+		return fmt.Sprintf("%dm", minutes)
+	}
+	seconds := int(d.Seconds())
+	return fmt.Sprintf("%ds", seconds)
 }
 
 // TruncateSessionID returns a truncated session ID for display (first 8 chars).
@@ -137,7 +202,8 @@ func RenderAgentFragment(agentID string, entries []models.ConversationEntry) (st
 			continue
 		}
 
-		entryHTML := renderEntry(entry, toolResults)
+		// RenderAgentFragment doesn't have access to ProjectPath, pass empty string
+		entryHTML := renderEntry(entry, toolResults, "")
 		sb.WriteString(entryHTML)
 	}
 
@@ -168,24 +234,22 @@ func hasContent(entry models.ConversationEntry) bool {
 }
 
 // renderEntry renders a single conversation entry as HTML using the chat bubble layout.
-func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult) string {
+// projectPath is used for generating CLI commands in task notifications (can be empty string if not available).
+func renderEntry(entry models.ConversationEntry, toolResults map[string]models.ToolResult, projectPath string) string {
 	var sb strings.Builder
 
 	// Get text content
 	textContent := entry.GetTextContent()
 
-	// Detect task-notification blocks and override entry type/styling
+	// Detect task-notification blocks and render with flattened structure
 	isTaskNotif := entry.Type == models.EntryTypeUser && strings.Contains(textContent, "<task-notification>")
+	if isTaskNotif {
+		taskNotif := parseTaskNotification(textContent)
+		return renderFlatTaskNotification(taskNotif, entry, projectPath)
+	}
 
 	entryType := entry.Type
 	roleLabel := getRoleLabel(entry.Type)
-
-	// Override for task-notification
-	if isTaskNotif {
-		entryType = models.EntryTypeSystem
-		roleLabel = "Agent Notification"
-	}
-
 	entryClass := getEntryClass(entryType)
 	timestamp := formatTimestampReadable(entry.Timestamp)
 
@@ -216,10 +280,7 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	sb.WriteString(`    <div class="message-content">`)
 
 	if textContent != "" {
-		// Special handling for task-notification blocks
-		if isTaskNotif {
-			sb.WriteString(renderTaskNotification(textContent))
-		} else if entry.Type == models.EntryTypeAssistant {
+		if entry.Type == models.EntryTypeAssistant {
 			// Apply markdown rendering for assistant messages
 			sb.WriteString(fmt.Sprintf(`<div class="text markdown-content">%s</div>`, RenderMarkdown(textContent)))
 		} else {
@@ -534,7 +595,8 @@ func buildToolResultsMap(entries []models.ConversationEntry) map[string]models.T
 }
 
 // renderHTMLHeader generates the HTML header with session metadata.
-func renderHTMLHeader(stats *SessionStats) string {
+// agentDetails is an optional map of agent IDs to message counts for the interactive tooltip.
+func renderHTMLHeader(stats *SessionStats, agentDetails map[string]int) string {
 	var sb strings.Builder
 
 	sb.WriteString(`<!DOCTYPE html>
@@ -565,22 +627,44 @@ func renderHTMLHeader(stats *SessionStats) string {
 `, escapeHTML(stats.ProjectPath)))
 	}
 
-	// Export timestamp
-	if stats != nil && stats.ExportTime != "" {
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Exported: %s</span>
-`, escapeHTML(stats.ExportTime)))
+	// Session start time
+	if stats != nil && stats.SessionStart != "" {
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Started: %s</span>
+`, escapeHTML(stats.SessionStart)))
 	}
 
-	// Message count
-	if stats != nil {
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Messages: %d</span>
-`, stats.MessageCount))
+	// Session duration
+	if stats != nil && stats.Duration != "" {
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Duration: %s</span>
+`, escapeHTML(stats.Duration)))
 	}
 
-	// Agent count
+	// Enhanced message statistics with interactive agent tooltip
 	if stats != nil {
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Agents: %d</span>
-`, stats.AgentCount))
+		// Encode agent details as JSON for JavaScript
+		agentDetailsJSON := "{}"
+		if len(agentDetails) > 0 {
+			jsonBytes, err := json.Marshal(agentDetails)
+			if err == nil {
+				agentDetailsJSON = string(jsonBytes)
+			}
+		}
+
+		// Build the statistics line with interactive agent tooltip
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">User: %d | Assistant: %d | `, stats.UserMessages, stats.AssistantMessages))
+
+		// Add interactive agent stats span if there are agents
+		if stats.AgentCount > 0 {
+			sb.WriteString(fmt.Sprintf(`<span class="agent-stats-interactive" data-session-id="%s" data-agent-details='%s' title="Click to copy agent list">Subagents[%d]: %d messages</span>`,
+				escapeHTML(stats.SessionID),
+				escapeHTML(agentDetailsJSON),
+				stats.AgentCount,
+				stats.TotalAgentMessages))
+		} else {
+			sb.WriteString(fmt.Sprintf(`Subagents[%d]: %d messages`, stats.AgentCount, stats.TotalAgentMessages))
+		}
+
+		sb.WriteString("</span>\n")
 	}
 
 	// Tool call count
@@ -646,6 +730,7 @@ func renderHTMLFooter(stats *SessionStats) string {
     <script src="static/clipboard.js"></script>
     <script src="static/controls.js"></script>
     <script src="static/navigation.js"></script>
+    <script src="static/agent-tooltip.js"></script>
 </body>
 </html>
 `)
@@ -797,6 +882,129 @@ func renderTaskNotification(content string) string {
 	sb.WriteString("</div>\n")
 
 	return sb.String()
+}
+
+// renderFlatTaskNotification renders a task notification with flattened structure (2-level DOM).
+// Returns a standalone notification-row div, not wrapped in message-row/bubble structure.
+// projectPath is used for generating CLI commands (can be empty string if not available).
+func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.ConversationEntry, projectPath string) string {
+	if taskNotif == nil {
+		// Fallback to empty string
+		return ""
+	}
+
+	var sb strings.Builder
+
+	// Status icon and class
+	statusIcon := "⏳"
+	statusClass := "running"
+	switch taskNotif.Status {
+	case "completed":
+		statusIcon = "✓"
+		statusClass = "completed"
+	case "failed", "error":
+		statusIcon = "✗"
+		statusClass = "failed"
+	}
+
+	// Build CLI command for tooltip (if we have session + agent info)
+	cliCommand := ""
+	if entry.SessionID != "" && taskNotif.TaskID != "" {
+		// Use projectPath if available, otherwise use placeholder
+		pathArg := projectPath
+		if pathArg == "" {
+			pathArg = "<project-path>"
+		}
+		cliCommand = fmt.Sprintf("claude-history query %s --session %s --agent %s",
+			pathArg, entry.SessionID, taskNotif.TaskID)
+	}
+
+	// Main notification row
+	sb.WriteString(fmt.Sprintf(`<div class="notification-row %s" data-uuid="%s">`, statusClass, escapeHTML(entry.UUID)))
+	sb.WriteString("\n")
+
+	// Collapsible header (single line)
+	sb.WriteString(`  <div class="notification-header" aria-expanded="true">`)
+	sb.WriteString("\n")
+
+	// Collapse toggle
+	sb.WriteString(`    <button class="collapse-toggle" aria-label="Toggle notification">▼</button>`)
+	sb.WriteString("\n")
+
+	// Notification type
+	sb.WriteString(`    <span class="notification-type">Subagent</span>`)
+	sb.WriteString("\n")
+
+	// Summary/description with status icon
+	sb.WriteString(fmt.Sprintf(`    <span class="notification-summary">%s %s</span>`,
+		statusIcon, escapeHTML(taskNotif.Summary)))
+	sb.WriteString("\n")
+
+	// Agent/Task ID badge with tooltip and copy button
+	if taskNotif.TaskID != "" {
+		tooltipText := cliCommand
+		if tooltipText == "" {
+			tooltipText = "Agent ID: " + taskNotif.TaskID
+		}
+
+		// Build full copy text with context
+		copyText := ""
+		if cliCommand != "" {
+			copyText = fmt.Sprintf("Subagent \"%s\" %s\n%s",
+				taskNotif.Summary,
+				taskNotif.TaskID,
+				cliCommand)
+		} else {
+			copyText = fmt.Sprintf("Subagent \"%s\" %s\nAgent ID: %s",
+				taskNotif.Summary,
+				taskNotif.TaskID,
+				taskNotif.TaskID)
+		}
+
+		truncatedID := truncateID(taskNotif.TaskID, 8)
+		sb.WriteString(fmt.Sprintf(`    <span class="agent-id-badge" data-full-id="%s" title="%s">`,
+			escapeHTML(taskNotif.TaskID), escapeHTML(tooltipText)))
+		sb.WriteString(escapeHTML(truncatedID))
+		sb.WriteString(renderCopyButton(copyText, "agent-notification", "Copy agent details"))
+		sb.WriteString(`</span>`)
+		sb.WriteString("\n")
+	}
+
+	// Timestamp
+	if entry.Timestamp != "" {
+		sb.WriteString(fmt.Sprintf(`    <span class="timestamp">%s</span>`,
+			formatTimestampReadable(entry.Timestamp)))
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString(`  </div>`)
+	sb.WriteString("\n")
+
+	// Collapsible content
+	if taskNotif.Result != "" {
+		sb.WriteString(`  <div class="notification-content">`)
+		sb.WriteString("\n")
+
+		sb.WriteString(fmt.Sprintf(`    <div class="notification-result">%s</div>`,
+			RenderMarkdown(taskNotif.Result)))
+		sb.WriteString("\n")
+
+		sb.WriteString(`  </div>`)
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString(`</div>`)
+	sb.WriteString("\n")
+
+	return sb.String()
+}
+
+// truncateID truncates an ID to the specified length
+func truncateID(id string, length int) string {
+	if len(id) <= length {
+		return id
+	}
+	return id[:length]
 }
 
 // formatUserContent formats user message content, processing XML-like tags for better display.

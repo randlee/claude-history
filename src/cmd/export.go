@@ -137,7 +137,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 	}
 
 	// Call export
-	result, err := export.ExportSession(projectPath, exportSessionID, opts)
+	result, err := export.ExportSession(projectPath, resolvedSessionID, opts)
 	if err != nil {
 		return fmt.Errorf("export failed: %w", err)
 	}
@@ -169,7 +169,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 		OutputDir: outputDir,
 		ClaudeDir: claudeDir,
 	}
-	result2, err := export.ExportSession(projectPath, exportSessionID, opts)
+	result2, err := export.ExportSession(projectPath, resolvedSessionID, opts)
 	if err != nil {
 		return fmt.Errorf("failed to export session: %w", err)
 	}
@@ -185,7 +185,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 
 	// If HTML format requested, generate HTML pages
 	if exportFormat == "html" {
-		if err := renderHTML(result, projectPath, projectDir, exportSessionID); err != nil {
+		if err := renderHTML(result, projectPath, projectDir, resolvedSessionID); err != nil {
 			// Non-fatal: JSONL files are already exported
 			fmt.Fprintf(os.Stderr, "Warning: HTML rendering failed: %v\n", err)
 		} else {
@@ -241,30 +241,34 @@ func renderHTML(result *export.ExportResult, projectPath, projectDir, sessionID 
 		agentNodes = agentTree.Children
 	}
 
-	// 3. Render main conversation HTML
-	htmlContent, err := export.RenderConversation(entries, agentNodes)
+	// 3. Compute session stats with project path
+	stats := export.ComputeSessionStats(entries, agentNodes)
+	stats.ProjectPath = projectPath
+
+	// 4. Render main conversation HTML with stats
+	htmlContent, err := export.RenderConversationWithStats(entries, agentNodes, stats)
 	if err != nil {
 		return fmt.Errorf("failed to render conversation: %w", err)
 	}
 
-	// 4. Write index.html
+	// 5. Write index.html
 	indexPath := filepath.Join(result.OutputDir, "index.html")
 	if err := os.WriteFile(indexPath, []byte(htmlContent), 0644); err != nil {
 		return fmt.Errorf("failed to write index.html: %w", err)
 	}
 
-	// 5. Render agent fragments
+	// 6. Render agent fragments
 	if err := renderAgentFragments(result, agentTree); err != nil {
 		// Non-fatal: log warning and continue
 		fmt.Fprintf(os.Stderr, "Warning: some agent fragments failed: %v\n", err)
 	}
 
-	// 6. Write static assets (CSS, JS)
+	// 7. Write static assets (CSS, JS)
 	if err := export.WriteStaticAssets(result.OutputDir); err != nil {
 		return fmt.Errorf("failed to write static assets: %w", err)
 	}
 
-	// 7. Generate and write manifest.json
+	// 8. Generate and write manifest.json
 	manifest, err := export.GenerateManifest(projectDir, sessionID, result.OutputDir)
 	if err != nil {
 		// Non-fatal: log warning

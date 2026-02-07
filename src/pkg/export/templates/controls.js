@@ -109,6 +109,18 @@
             el.classList.remove('hidden');
         });
 
+        // Handle <details> elements
+        var detailsElements = document.querySelectorAll('details');
+        detailsElements.forEach(function(el) {
+            el.open = true;
+        });
+
+        // Handle notification headers
+        var notificationHeaders = document.querySelectorAll('.notification-header');
+        notificationHeaders.forEach(function(header) {
+            header.setAttribute('aria-expanded', 'true');
+        });
+
         // Update toggle indicators
         updateAllToggles(true);
 
@@ -123,6 +135,18 @@
         var bodies = document.querySelectorAll('.tool-body');
         bodies.forEach(function(el) {
             el.classList.add('hidden');
+        });
+
+        // Handle <details> elements
+        var detailsElements = document.querySelectorAll('details');
+        detailsElements.forEach(function(el) {
+            el.open = false;
+        });
+
+        // Handle notification headers
+        var notificationHeaders = document.querySelectorAll('.notification-header');
+        notificationHeaders.forEach(function(header) {
+            header.setAttribute('aria-expanded', 'false');
         });
 
         // Update toggle indicators
@@ -205,12 +229,12 @@
         }
 
         var lowerQuery = query.toLowerCase().trim();
-        var entries = document.querySelectorAll('.entry');
+        var entries = document.querySelectorAll('.message-row');
         currentMatches = [];
         currentSearchIndex = -1;
 
         entries.forEach(function(entry) {
-            var content = entry.querySelector('.content');
+            var content = entry.querySelector('.message-content');
             if (!content) return;
 
             var textContent = content.textContent.toLowerCase();
@@ -320,6 +344,37 @@
     }
 
     /**
+     * Expand any collapsed parent sections containing the element.
+     * @param {HTMLElement} element - The element whose parents should be expanded
+     */
+    function expandParentSections(element) {
+        // Walk up the DOM tree and expand any collapsed parents
+        var parent = element.parentElement;
+        while (parent) {
+            // Expand <details> elements
+            if (parent.tagName === 'DETAILS' && !parent.open) {
+                parent.open = true;
+            }
+
+            // Expand hidden tool-body sections
+            if (parent.classList && parent.classList.contains('tool-body') && parent.classList.contains('hidden')) {
+                parent.classList.remove('hidden');
+
+                // Update the toggle indicator for this tool
+                var toolCall = parent.previousElementSibling;
+                if (toolCall && toolCall.classList.contains('tool-header')) {
+                    var toggle = toolCall.querySelector('.tool-toggle');
+                    if (toggle) {
+                        toggle.textContent = '[-]';
+                    }
+                }
+            }
+
+            parent = parent.parentElement;
+        }
+    }
+
+    /**
      * Navigate to a specific match by index.
      * @param {number} index - The match index to navigate to
      */
@@ -340,6 +395,9 @@
         // Add active class to current
         var current = currentMatches[currentSearchIndex];
         current.classList.add('search-active');
+
+        // Auto-expand collapsed parent sections before scrolling
+        expandParentSections(current);
 
         // Scroll into view smoothly
         smoothScrollToElement(current);
@@ -396,14 +454,11 @@
     function smoothScrollToElement(element) {
         if (!element) return;
 
-        var headerHeight = 80; // Account for sticky header
-        var elementRect = element.getBoundingClientRect();
-        var absoluteElementTop = elementRect.top + window.pageYOffset;
-        var targetPosition = absoluteElementTop - headerHeight;
-
-        window.scrollTo({
-            top: targetPosition,
-            behavior: 'smooth'
+        // Use scrollIntoView with center alignment for better visibility
+        element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'nearest'
         });
     }
 
@@ -619,6 +674,7 @@
         prevMatch: prevMatch,
         focusSearch: focusSearchBox,
         scrollTo: smoothScrollToElement,
+        expandParents: expandParentSections,
         getState: getCurrentState,
         loadState: loadState,
         saveState: saveState

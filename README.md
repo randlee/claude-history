@@ -14,6 +14,31 @@ A Go CLI tool for programmatic access to Claude Code's agent history storage.
 
 ## Installation
 
+### Windows (winget)
+
+```powershell
+winget install randlee.claude-history
+```
+
+### macOS (Homebrew)
+
+```bash
+brew tap randlee/tap
+brew install claude-history
+```
+
+### Linux / macOS (Install Script)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/randlee/claude-history/main/install.sh | bash
+```
+
+### Go Install
+
+```bash
+go install github.com/randlee/claude-history/src@latest
+```
+
 ### Build from Source
 
 ```bash

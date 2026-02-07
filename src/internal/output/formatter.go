@@ -23,6 +23,7 @@ const (
 	FormatASCII   Format = "ascii"
 	FormatDOT     Format = "dot"
 	FormatPath    Format = "path"
+	FormatHTML    Format = "html"
 )
 
 // ParseFormat parses a format string, returning FormatList as default.
@@ -40,6 +41,8 @@ func ParseFormat(s string) Format {
 		return FormatDOT
 	case "path":
 		return FormatPath
+	case "html":
+		return FormatHTML
 	default:
 		return FormatList
 	}

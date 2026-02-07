@@ -1,0 +1,27 @@
+PackageIdentifier: randlee.claude-history
+PackageVersion: 0.2.0
+PackageLocale: en-US
+Publisher: Randy Lee
+PublisherUrl: https://github.com/randlee
+PackageName: claude-history
+PackageUrl: https://github.com/randlee/claude-history
+License: MIT
+LicenseUrl: https://github.com/randlee/claude-history/blob/main/LICENSE
+ShortDescription: CLI tool for programmatic access to Claude Code's agent history storage
+Description: |
+  claude-history maps between filesystem paths and Claude Code's internal storage format,
+  enabling you to query conversation history, list projects and sessions, display agent
+  hierarchy trees, find agents by task description, and export sessions to HTML or JSONL.
+Tags:
+  - cli
+  - claude
+  - history
+  - agent
+  - developer-tools
+Installers:
+  - Architecture: x64
+    InstallerType: zip
+    InstallerUrl: https://github.com/randlee/claude-history/releases/download/v0.2.0/claude-history_0.2.0_windows_amd64.zip
+    InstallerSha256: <SHA256_HASH_TO_BE_FILLED_AFTER_RELEASE>
+ManifestType: installer
+ManifestVersion: 1.0.0

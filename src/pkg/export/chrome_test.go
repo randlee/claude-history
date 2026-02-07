@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/randlee/claude-history/pkg/agent"
 	"github.com/randlee/claude-history/pkg/models"
@@ -28,17 +29,26 @@ func TestComputeSessionStats_Empty(t *testing.T) {
 	if stats.ExportTime == "" {
 		t.Error("ExportTime should not be empty")
 	}
+	if stats.SessionStart != "" {
+		t.Error("SessionStart should be empty when no entries")
+	}
+	if stats.SessionEnd != "" {
+		t.Error("SessionEnd should be empty when no entries")
+	}
+	if stats.Duration != "" {
+		t.Error("Duration should be empty when no entries")
+	}
 }
 
 // TestComputeSessionStats_WithMessages tests message counting.
 func TestComputeSessionStats_WithMessages(t *testing.T) {
 	entries := []models.ConversationEntry{
-		{Type: models.EntryTypeUser, SessionID: "session-123"},
-		{Type: models.EntryTypeAssistant},
-		{Type: models.EntryTypeUser},
-		{Type: models.EntryTypeAssistant},
-		{Type: models.EntryTypeSystem},         // Should not count
-		{Type: models.EntryTypeQueueOperation}, // Should not count
+		{Type: models.EntryTypeUser, SessionID: "session-123", Timestamp: "2026-02-06T14:23:00Z"},
+		{Type: models.EntryTypeAssistant, Timestamp: "2026-02-06T14:23:30Z"},
+		{Type: models.EntryTypeUser, Timestamp: "2026-02-06T16:58:00Z"},
+		{Type: models.EntryTypeAssistant, Timestamp: "2026-02-06T16:58:30Z"},
+		{Type: models.EntryTypeSystem, Timestamp: "2026-02-06T16:59:00Z"},         // Should not count
+		{Type: models.EntryTypeQueueOperation, Timestamp: "2026-02-06T16:59:30Z"}, // Should not count
 	}
 
 	stats := ComputeSessionStats(entries, nil)
@@ -46,8 +56,23 @@ func TestComputeSessionStats_WithMessages(t *testing.T) {
 	if stats.MessageCount != 4 {
 		t.Errorf("MessageCount = %d, want 4", stats.MessageCount)
 	}
+	if stats.UserMessages != 2 {
+		t.Errorf("UserMessages = %d, want 2", stats.UserMessages)
+	}
+	if stats.AssistantMessages != 2 {
+		t.Errorf("AssistantMessages = %d, want 2", stats.AssistantMessages)
+	}
 	if stats.SessionID != "session-123" {
 		t.Errorf("SessionID = %q, want %q", stats.SessionID, "session-123")
+	}
+	if stats.SessionStart != "2026-02-06 14:23" {
+		t.Errorf("SessionStart = %q, want %q", stats.SessionStart, "2026-02-06 14:23")
+	}
+	if stats.SessionEnd != "2026-02-06 16:59" {
+		t.Errorf("SessionEnd = %q, want %q", stats.SessionEnd, "2026-02-06 16:59")
+	}
+	if stats.Duration != "2h 36m" {
+		t.Errorf("Duration = %q, want %q", stats.Duration, "2h 36m")
 	}
 }
 
@@ -82,6 +107,32 @@ func TestComputeSessionStats_WithToolCalls(t *testing.T) {
 	}
 }
 
+// TestFormatDuration tests duration formatting.
+func TestFormatDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration string
+		expected string
+	}{
+		{"less than minute", "30s", "30s"},
+		{"one minute", "1m", "1m"},
+		{"minutes only", "45m", "45m"},
+		{"one hour", "1h", "1h 0m"},
+		{"hours and minutes", "2h35m", "2h 35m"},
+		{"long session", "5h23m", "5h 23m"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, _ := time.ParseDuration(tt.duration)
+			result := formatDuration(d)
+			if result != tt.expected {
+				t.Errorf("formatDuration(%s) = %q, want %q", tt.duration, result, tt.expected)
+			}
+		})
+	}
+}
+
 // TestComputeSessionStats_WithAgents tests agent counting.
 func TestComputeSessionStats_WithAgents(t *testing.T) {
 	agents := []*agent.TreeNode{
@@ -100,6 +151,12 @@ func TestComputeSessionStats_WithAgents(t *testing.T) {
 
 	if stats.AgentCount != 4 {
 		t.Errorf("AgentCount = %d, want 4", stats.AgentCount)
+	}
+	if stats.TotalAgentMessages != 38 {
+		t.Errorf("TotalAgentMessages = %d, want 38 (10+20+5+3)", stats.TotalAgentMessages)
+	}
+	if stats.SubagentMessages != 38 {
+		t.Errorf("SubagentMessages = %d, want 38", stats.SubagentMessages)
 	}
 }
 
@@ -129,15 +186,19 @@ func TestTruncateSessionID(t *testing.T) {
 // TestRenderHTMLHeader_WithStats tests header generation with stats.
 func TestRenderHTMLHeader_WithStats(t *testing.T) {
 	stats := &SessionStats{
-		SessionID:     "fbd51e2b-1234-5678-90ab-cdef12345678",
-		ProjectPath:   "/Users/name/project",
-		ExportTime:    "2026-02-01 22:39:20",
-		MessageCount:  914,
-		AgentCount:    11,
-		ToolCallCount: 247,
+		SessionID:          "fbd51e2b-1234-5678-90ab-cdef12345678",
+		ProjectPath:        "/Users/name/project",
+		SessionStart:       "2026-02-01 14:23",
+		Duration:           "2h 35m",
+		MessageCount:       914,
+		UserMessages:       42,
+		AssistantMessages:  128,
+		AgentCount:         11,
+		TotalAgentMessages: 488,
+		ToolCallCount:      247,
 	}
 
-	html := renderHTMLHeader(stats)
+	html := renderHTMLHeader(stats, nil)
 
 	// Check structure
 	if !strings.Contains(html, "<!DOCTYPE html>") {
@@ -166,14 +227,25 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 	if !strings.Contains(html, "/Users/name/project") {
 		t.Error("Missing project path")
 	}
-	if !strings.Contains(html, "Exported: 2026-02-01 22:39:20") {
-		t.Error("Missing export time")
+	if !strings.Contains(html, "Started: 2026-02-01 14:23") {
+		t.Error("Missing session start time")
 	}
-	if !strings.Contains(html, "Messages: 914") {
-		t.Error("Missing message count")
+	if !strings.Contains(html, "Duration: 2h 35m") {
+		t.Error("Missing duration")
 	}
-	if !strings.Contains(html, "Agents: 11") {
-		t.Error("Missing agent count")
+	// Verify export time is NOT displayed
+	if strings.Contains(html, "Exported:") {
+		t.Error("Export time should not be displayed in header")
+	}
+	// Check enhanced message statistics
+	if !strings.Contains(html, "User: 42") {
+		t.Error("Missing user message count")
+	}
+	if !strings.Contains(html, "Assistant: 128") {
+		t.Error("Missing assistant message count")
+	}
+	if !strings.Contains(html, "Subagents[11]: 488 messages") {
+		t.Error("Missing subagent message count")
 	}
 	if !strings.Contains(html, "Tools: 247 calls") {
 		t.Error("Missing tool call count")
@@ -187,7 +259,7 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 
 // TestRenderHTMLHeader_NilStats tests header generation without stats.
 func TestRenderHTMLHeader_NilStats(t *testing.T) {
-	html := renderHTMLHeader(nil)
+	html := renderHTMLHeader(nil, nil)
 
 	// Should still have basic structure
 	if !strings.Contains(html, "<!DOCTYPE html>") {
@@ -204,18 +276,15 @@ func TestRenderHTMLHeader_NilStats(t *testing.T) {
 // TestRenderHTMLHeader_EmptyStats tests header with empty stats.
 func TestRenderHTMLHeader_EmptyStats(t *testing.T) {
 	stats := &SessionStats{}
-	html := renderHTMLHeader(stats)
+	html := renderHTMLHeader(stats, nil)
 
 	// Should have basic structure
 	if !strings.Contains(html, "<header class=\"page-header\">") {
 		t.Error("Missing header element")
 	}
-	// Should have zero counts
-	if !strings.Contains(html, "Messages: 0") {
-		t.Error("Missing zero message count")
-	}
-	if !strings.Contains(html, "Agents: 0") {
-		t.Error("Missing zero agent count")
+	// Should have zero counts in enhanced format
+	if !strings.Contains(html, "User: 0 | Assistant: 0 | Subagents[0]: 0 messages") {
+		t.Error("Missing enhanced zero message counts")
 	}
 	if !strings.Contains(html, "Tools: 0 calls") {
 		t.Error("Missing zero tool count")
@@ -332,12 +401,16 @@ func TestRenderConversationWithStats_Integration(t *testing.T) {
 	}
 
 	stats := &SessionStats{
-		SessionID:     "test-session-123",
-		ProjectPath:   "/test/project",
-		ExportTime:    "2026-02-01 10:00:00",
-		MessageCount:  2,
-		AgentCount:    0,
-		ToolCallCount: 1,
+		SessionID:          "test-session-123",
+		ProjectPath:        "/test/project",
+		SessionStart:       "2026-01-31 10:00",
+		Duration:           "5s",
+		MessageCount:       2,
+		UserMessages:       1,
+		AssistantMessages:  1,
+		AgentCount:         0,
+		TotalAgentMessages: 0,
+		ToolCallCount:      1,
 	}
 
 	html, err := RenderConversationWithStats(entries, nil, stats)
@@ -355,8 +428,14 @@ func TestRenderConversationWithStats_Integration(t *testing.T) {
 	if !strings.Contains(html, "/test/project") {
 		t.Error("Missing project path in header")
 	}
-	if !strings.Contains(html, "Messages: 2") {
-		t.Error("Missing message count in header")
+	if !strings.Contains(html, "Started: 2026-01-31 10:00") {
+		t.Error("Missing session start time in header")
+	}
+	if !strings.Contains(html, "Duration: 5s") {
+		t.Error("Missing duration in header")
+	}
+	if !strings.Contains(html, "User: 1 | Assistant: 1 | Subagents[0]: 0 messages") {
+		t.Error("Missing enhanced message counts in header")
 	}
 
 	// Check conversation content
@@ -407,9 +486,9 @@ func TestRenderConversationWithStats_AutoComputeStats(t *testing.T) {
 		t.Fatalf("RenderConversationWithStats() error = %v", err)
 	}
 
-	// Should have auto-computed message count
-	if !strings.Contains(html, "Messages: 2") {
-		t.Error("Missing auto-computed message count")
+	// Should have auto-computed enhanced message counts
+	if !strings.Contains(html, "User: 1 | Assistant: 1 | Subagents[0]: 0 messages") {
+		t.Error("Missing auto-computed enhanced message counts")
 	}
 	// Session ID should be extracted from entries
 	if !strings.Contains(html, "auto-ses") {
@@ -434,7 +513,7 @@ func TestRenderHTMLHeader_XSSPrevention(t *testing.T) {
 		ProjectPath: "<img onerror='alert(1)'>",
 	}
 
-	html := renderHTMLHeader(stats)
+	html := renderHTMLHeader(stats, nil)
 
 	// Script and img tags should be escaped
 	if strings.Contains(html, "<script>alert") {
@@ -468,7 +547,7 @@ func TestCopyButtonIntegration(t *testing.T) {
 		ProjectPath: "/path/to/project",
 	}
 
-	html := renderHTMLHeader(stats)
+	html := renderHTMLHeader(stats, nil)
 
 	// Check session ID copy button
 	if !strings.Contains(html, "class=\"copy-btn\"") {
@@ -565,7 +644,7 @@ func TestSessionStats_Struct(t *testing.T) {
 
 // TestRenderHTMLHeader_Controls tests that controls are included in header.
 func TestRenderHTMLHeader_Controls(t *testing.T) {
-	html := renderHTMLHeader(nil)
+	html := renderHTMLHeader(nil, nil)
 
 	// Check controls are present
 	if !strings.Contains(html, "id=\"expand-all-btn\"") {
@@ -590,7 +669,7 @@ func TestRenderHTMLHeader_Controls(t *testing.T) {
 
 // TestRenderHTMLHeader_Accessibility tests accessibility attributes.
 func TestRenderHTMLHeader_Accessibility(t *testing.T) {
-	html := renderHTMLHeader(nil)
+	html := renderHTMLHeader(nil, nil)
 
 	if !strings.Contains(html, "role=\"toolbar\"") {
 		t.Error("Missing toolbar role")

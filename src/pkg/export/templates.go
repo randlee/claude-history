@@ -55,6 +55,15 @@ func GetNavigationJS() string {
 	return string(data)
 }
 
+// GetAgentTooltipJS returns the contents of the embedded agent-tooltip JavaScript file.
+func GetAgentTooltipJS() string {
+	data, err := templatesFS.ReadFile("templates/agent-tooltip.js")
+	if err != nil {
+		return ""
+	}
+	return string(data)
+}
+
 // WriteStaticAssets writes all static assets to the output directory.
 // Creates a 'static' subdirectory containing style.css and script.js.
 func WriteStaticAssets(outputDir string) error {
@@ -106,6 +115,15 @@ func WriteStaticAssets(outputDir string) error {
 	if navigationContent != "" {
 		navigationPath := filepath.Join(staticDir, "navigation.js")
 		if err := os.WriteFile(navigationPath, []byte(navigationContent), 0644); err != nil {
+			return err
+		}
+	}
+
+	// Write agent-tooltip JavaScript file
+	agentTooltipContent := GetAgentTooltipJS()
+	if agentTooltipContent != "" {
+		agentTooltipPath := filepath.Join(staticDir, "agent-tooltip.js")
+		if err := os.WriteFile(agentTooltipPath, []byte(agentTooltipContent), 0644); err != nil {
 			return err
 		}
 	}
