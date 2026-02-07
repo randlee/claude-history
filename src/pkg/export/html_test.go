@@ -1048,7 +1048,7 @@ func TestRenderSubagentPlaceholder_ShortAgentID(t *testing.T) {
 		"abc": 5,
 	}
 
-	html := renderSubagentPlaceholder("abc", agentMap)
+	html := renderSubagentPlaceholder("abc", agentMap, "session-123", "/test/project")
 
 	// Short IDs should not be truncated
 	if !strings.Contains(html, "Subagent: abc") {
@@ -1061,7 +1061,7 @@ func TestRenderSubagentPlaceholder_LongAgentID(t *testing.T) {
 		"a12eb64abc123def456": 10,
 	}
 
-	html := renderSubagentPlaceholder("a12eb64abc123def456", agentMap)
+	html := renderSubagentPlaceholder("a12eb64abc123def456", agentMap, "session-456", "/test/project")
 
 	// Long IDs should be truncated to 7 chars in display
 	if !strings.Contains(html, "Subagent: a12eb64") {
@@ -1076,7 +1076,7 @@ func TestRenderSubagentPlaceholder_LongAgentID(t *testing.T) {
 func TestRenderSubagentPlaceholder_ZeroEntries(t *testing.T) {
 	agentMap := map[string]int{}
 
-	html := renderSubagentPlaceholder("agent-x", agentMap)
+	html := renderSubagentPlaceholder("agent-x", agentMap, "session-789", "/test/project")
 
 	// Should show 0 entries when not in map
 	if !strings.Contains(html, "(0 entries)") {

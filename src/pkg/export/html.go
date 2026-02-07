@@ -69,9 +69,7 @@ func RenderQueryResults(entries []models.ConversationEntry, projectPath, session
 	}
 	sessionFolderLink := ""
 	if stats.SessionFolderPath != "" {
-		fileURL := buildFileURL(stats.SessionFolderPath)
-		sessionFolderLink = fmt.Sprintf(`<a href="%s" class="folder-link" title="Open in Finder/Explorer">%s</a>`,
-			escapeHTML(fileURL), escapeHTML(sessionFolderName))
+		sessionFolderLink = renderFileLink(stats.SessionFolderPath, sessionFolderName, "folder-link")
 	} else if sessionFolderName != "" {
 		sessionFolderLink = escapeHTML(sessionFolderName)
 	}
@@ -107,15 +105,8 @@ func RenderQueryResults(entries []models.ConversationEntry, projectPath, session
 
 	// Session ID if available
 	if sessionID != "" {
-		truncatedID := TruncateSessionID(sessionID)
-
-		// Build session copy context
-		sessionCopyContext := buildSessionCopyContext(sessionID, projectPath, agentID)
-
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Session: <code>%s</code>%s</span>
-`,
-			escapeHTML(truncatedID),
-			renderCopyButton(sessionCopyContext, "session-id", "Copy session details")))
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Session: %s</span>
+`, renderSessionIDWithCopy(sessionID, projectPath, agentID)))
 	}
 
 	// Entry counts
@@ -209,7 +200,7 @@ func RenderConversationWithStats(entries []models.ConversationEntry, agents []*a
 		if !hasContent(entry) {
 			// Still render subagent placeholder if this entry spawned one
 			if entry.Type == models.EntryTypeQueueOperation && entry.AgentID != "" {
-				subagentHTML := renderSubagentPlaceholder(entry.AgentID, agentMap)
+				subagentHTML := renderSubagentPlaceholder(entry.AgentID, agentMap, stats.SessionID, stats.ProjectPath)
 				sb.WriteString(subagentHTML)
 			}
 			continue
@@ -221,7 +212,7 @@ func RenderConversationWithStats(entries []models.ConversationEntry, agents []*a
 
 		// Check if this entry spawned a subagent
 		if entry.Type == models.EntryTypeQueueOperation && entry.AgentID != "" {
-			subagentHTML := renderSubagentPlaceholder(entry.AgentID, agentMap)
+			subagentHTML := renderSubagentPlaceholder(entry.AgentID, agentMap, stats.SessionID, stats.ProjectPath)
 			sb.WriteString(subagentHTML)
 		}
 	}
@@ -323,12 +314,20 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%ds", seconds)
 }
 
-// TruncateSessionID returns a truncated session ID for display (first 8 chars).
-func TruncateSessionID(sessionID string) string {
-	if len(sessionID) > 8 {
-		return sessionID[:8]
+// truncateID truncates an ID to the specified length.
+// Used for displaying shortened IDs in the UI while preserving full IDs in copy operations.
+// This prevents ID collision issues (birthday paradox) by keeping full IDs in clipboard.
+func truncateID(id string, length int) string {
+	if len(id) <= length {
+		return id
 	}
-	return sessionID
+	return id[:length]
+}
+
+// TruncateSessionID returns a truncated session ID for display (first 8 chars).
+// Deprecated: Use truncateID instead for consistency.
+func TruncateSessionID(sessionID string) string {
+	return truncateID(sessionID, 8)
 }
 
 // RenderAgentFragment generates an HTML fragment for a subagent's conversation.
@@ -440,15 +439,7 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	// Determine which agent ID to display
 	displayAgentID := determineDisplayAgentID(entry, sessionID, agentID)
 	if displayAgentID != "" {
-		// Truncate agent ID for display
-		truncatedID := TruncateSessionID(displayAgentID)
-
-		// Build copy context for this message's agent ID
-		copyContext := buildAgentIDCopyContext(entry, displayAgentID, sessionID, agentID, projectPath, roleLabel)
-
-		sb.WriteString(fmt.Sprintf(`<span class="agent-id-badge">%s%s</span>`,
-			escapeHTML(truncatedID),
-			renderCopyButton(copyContext, "agent-id", "Copy agent details")))
+		sb.WriteString(renderAgentIDWithCopy(entry, displayAgentID, sessionID, agentID, projectPath, roleLabel))
 	}
 
 	sb.WriteString(fmt.Sprintf(` <span class="timestamp">%s</span>`, escapeHTML(timestamp)))
@@ -669,21 +660,19 @@ func renderToolCall(tool models.ToolUse, result models.ToolResult, hasResult boo
 }
 
 // renderSubagentPlaceholder renders a placeholder for a subagent section.
-func renderSubagentPlaceholder(agentID string, agentMap map[string]int) string {
+// sessionID and projectPath are used to build the full copy context with CLI commands.
+func renderSubagentPlaceholder(agentID string, agentMap map[string]int, sessionID, projectPath string) string {
 	var sb strings.Builder
 
 	entryCount := agentMap[agentID]
-	shortID := agentID
-	if len(shortID) > 7 {
-		shortID = shortID[:7]
-	}
+	shortID := truncateID(agentID, 7)
 
 	sb.WriteString(fmt.Sprintf(`<div class="subagent collapsible collapsed" data-agent-id="%s">`, escapeHTML(agentID)))
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf(`  <div class="subagent-header collapsible-trigger" onclick="loadAgent(this)"><span class="subagent-title">Subagent: %s</span> <span class="subagent-meta">(%d entries)</span>%s<span class="chevron down">▼</span></div>`,
 		escapeHTML(shortID),
 		entryCount,
-		renderCopyButton(agentID, "agent-id", "Copy agent ID")))
+		renderSubagentBadgeWithCopy(agentID, sessionID, projectPath)))
 	sb.WriteString("\n")
 	sb.WriteString(`  <div class="subagent-content"></div>`)
 	sb.WriteString("\n")
@@ -695,6 +684,88 @@ func renderSubagentPlaceholder(agentID string, agentMap map[string]int) string {
 // escapeHTML escapes a string to prevent XSS attacks.
 func escapeHTML(s string) string {
 	return html.EscapeString(s)
+}
+
+// ============================================================================
+// Helper Functions for DRY (Don't Repeat Yourself)
+// ============================================================================
+// These functions provide a single source of truth for common HTML rendering
+// patterns, ensuring consistency across the codebase.
+
+// renderSessionIDWithCopy renders a session ID badge with truncated display and copy button.
+// The display shows only the first 8 chars for clean UI, but the copy button includes
+// full context (session ID, project path, and CLI command) to prevent ID collisions.
+func renderSessionIDWithCopy(sessionID, projectPath, agentID string) string {
+	if sessionID == "" {
+		return ""
+	}
+
+	truncatedID := truncateID(sessionID, 8)
+	copyContext := buildSessionCopyContext(sessionID, projectPath, agentID)
+
+	return fmt.Sprintf(`<code>%s</code>%s`,
+		escapeHTML(truncatedID),
+		renderCopyButton(copyContext, "session-id", "Copy session details"))
+}
+
+// renderAgentIDWithCopy renders an agent ID badge with truncated display and copy button.
+// The display shows only the first 8 chars for clean UI, but the copy button includes
+// full context (role, agent ID, session, and CLI command) to prevent ID collisions.
+func renderAgentIDWithCopy(entry models.ConversationEntry, displayAgentID, sessionID, agentID, projectPath, roleLabel string) string {
+	if displayAgentID == "" {
+		return ""
+	}
+
+	truncatedID := truncateID(displayAgentID, 8)
+	copyContext := buildAgentIDCopyContext(entry, displayAgentID, sessionID, agentID, projectPath, roleLabel)
+
+	return fmt.Sprintf(`<span class="agent-id-badge">%s%s</span>`,
+		escapeHTML(truncatedID),
+		renderCopyButton(copyContext, "agent-id", "Copy agent details"))
+}
+
+// renderSubagentBadgeWithCopy renders a subagent placeholder badge with copy button.
+// Used in subagent placeholder sections to show agent ID and provide copy functionality.
+// The copy button includes the full agent ID to prevent collisions.
+func renderSubagentBadgeWithCopy(agentID, sessionID, projectPath string) string {
+	if agentID == "" {
+		return ""
+	}
+
+	// Build full copy context for subagent
+	var copyText strings.Builder
+	copyText.WriteString(fmt.Sprintf("Subagent: %s\n", agentID))
+
+	if sessionID != "" {
+		copyText.WriteString(fmt.Sprintf("Session: %s\n", sessionID))
+	}
+
+	if projectPath != "" {
+		copyText.WriteString(fmt.Sprintf("Project: %s\n", projectPath))
+	}
+
+	// Build CLI command
+	pathArg := projectPath
+	if pathArg == "" {
+		pathArg = "/path/to/project"
+	}
+
+	if sessionID != "" {
+		copyText.WriteString(fmt.Sprintf("claude-history query %s --session %s --agent %s", pathArg, sessionID, agentID))
+	}
+
+	return renderCopyButton(copyText.String(), "agent-id", "Copy agent details")
+}
+
+// renderFileLink renders a clickable file:// link for opening files in Finder/Explorer.
+func renderFileLink(path, displayText, cssClass string) string {
+	if path == "" {
+		return escapeHTML(displayText)
+	}
+
+	fileURL := buildFileURL(path)
+	return fmt.Sprintf(`<a href="%s" class="%s" title="Open in Finder/Explorer">%s</a>`,
+		escapeHTML(fileURL), escapeHTML(cssClass), escapeHTML(displayText))
 }
 
 // renderCopyButton generates HTML for a copy-to-clipboard button.
@@ -892,9 +963,7 @@ func renderHTMLHeader(stats *SessionStats, agentDetails map[string]int) string {
 			sessionFolderName = extractSessionFolderName(stats.ProjectPath)
 		}
 		if stats.SessionFolderPath != "" {
-			fileURL := buildFileURL(stats.SessionFolderPath)
-			sessionFolderLink = fmt.Sprintf(`<a href="%s" class="folder-link" title="Open in Finder/Explorer">%s</a>`,
-				escapeHTML(fileURL), escapeHTML(sessionFolderName))
+			sessionFolderLink = renderFileLink(stats.SessionFolderPath, sessionFolderName, "folder-link")
 		} else if sessionFolderName != "" {
 			sessionFolderLink = escapeHTML(sessionFolderName)
 		}
@@ -920,11 +989,8 @@ func renderHTMLHeader(stats *SessionStats, agentDetails map[string]int) string {
 
 	// Session ID with copy button
 	if stats != nil && stats.SessionID != "" {
-		truncatedID := TruncateSessionID(stats.SessionID)
-		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Session: <code>%s</code>%s</span>
-`,
-			escapeHTML(truncatedID),
-			renderCopyButton(stats.SessionID, "session-id", "Copy full session ID")))
+		sb.WriteString(fmt.Sprintf(`        <span class="meta-item">Session: %s</span>
+`, renderSessionIDWithCopy(stats.SessionID, stats.ProjectPath, "")))
 	}
 
 	// Session start time
@@ -1297,14 +1363,6 @@ func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.Co
 	sb.WriteString("\n")
 
 	return sb.String()
-}
-
-// truncateID truncates an ID to the specified length
-func truncateID(id string, length int) string {
-	if len(id) <= length {
-		return id
-	}
-	return id[:length]
 }
 
 // extractSessionFolderName extracts the last component of a path (session folder name).

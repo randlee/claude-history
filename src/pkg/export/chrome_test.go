@@ -246,9 +246,13 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 		t.Error("Missing tool call count")
 	}
 
-	// Check copy button for session ID
-	if !strings.Contains(html, "data-copy-text=\"fbd51e2b-1234-5678-90ab-cdef12345678\"") {
+	// Check copy button contains full session ID (now includes context with CLI command)
+	if !strings.Contains(html, "fbd51e2b-1234-5678-90ab-cdef12345678") {
 		t.Error("Missing copy button with full session ID")
+	}
+	// Should also include project path in copy context
+	if !strings.Contains(html, "/Users/name/project") {
+		t.Error("Copy button should include project path context")
 	}
 }
 
@@ -546,14 +550,19 @@ func TestCopyButtonIntegration(t *testing.T) {
 	if !strings.Contains(html, "class=\"copy-btn\"") {
 		t.Error("Missing copy button class")
 	}
-	if !strings.Contains(html, "data-copy-text=\"full-session-id-12345\"") {
-		t.Error("Missing copy text for full session ID")
+	// Copy text now includes full context (session ID + project path + CLI command)
+	if !strings.Contains(html, "full-session-id-12345") {
+		t.Error("Missing full session ID in copy text")
 	}
 	if !strings.Contains(html, "data-copy-type=\"session-id\"") {
 		t.Error("Missing copy type for session ID")
 	}
-	if !strings.Contains(html, "title=\"Copy full session ID\"") {
+	if !strings.Contains(html, "title=\"Copy session details\"") {
 		t.Error("Missing tooltip for session copy button")
+	}
+	// Should include project path in copy context
+	if !strings.Contains(html, "/path/to/project") {
+		t.Error("Copy text should include project path")
 	}
 }
 
