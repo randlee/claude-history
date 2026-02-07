@@ -137,7 +137,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 	}
 
 	// Call export
-	result, err := export.ExportSession(projectPath, exportSessionID, opts)
+	result, err := export.ExportSession(projectPath, resolvedSessionID, opts)
 	if err != nil {
 		return fmt.Errorf("export failed: %w", err)
 	}
@@ -169,7 +169,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 		OutputDir: outputDir,
 		ClaudeDir: claudeDir,
 	}
-	result2, err := export.ExportSession(projectPath, exportSessionID, opts)
+	result2, err := export.ExportSession(projectPath, resolvedSessionID, opts)
 	if err != nil {
 		return fmt.Errorf("failed to export session: %w", err)
 	}
@@ -185,7 +185,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 
 	// If HTML format requested, generate HTML pages
 	if exportFormat == "html" {
-		if err := renderHTML(result, projectPath, projectDir, exportSessionID); err != nil {
+		if err := renderHTML(result, projectPath, projectDir, resolvedSessionID); err != nil {
 			// Non-fatal: JSONL files are already exported
 			fmt.Fprintf(os.Stderr, "Warning: HTML rendering failed: %v\n", err)
 		} else {

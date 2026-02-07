@@ -56,6 +56,12 @@ func TestComputeSessionStats_WithMessages(t *testing.T) {
 	if stats.MessageCount != 4 {
 		t.Errorf("MessageCount = %d, want 4", stats.MessageCount)
 	}
+	if stats.UserMessages != 2 {
+		t.Errorf("UserMessages = %d, want 2", stats.UserMessages)
+	}
+	if stats.AssistantMessages != 2 {
+		t.Errorf("AssistantMessages = %d, want 2", stats.AssistantMessages)
+	}
 	if stats.SessionID != "session-123" {
 		t.Errorf("SessionID = %q, want %q", stats.SessionID, "session-123")
 	}
@@ -146,6 +152,12 @@ func TestComputeSessionStats_WithAgents(t *testing.T) {
 	if stats.AgentCount != 4 {
 		t.Errorf("AgentCount = %d, want 4", stats.AgentCount)
 	}
+	if stats.TotalAgentMessages != 38 {
+		t.Errorf("TotalAgentMessages = %d, want 38 (10+20+5+3)", stats.TotalAgentMessages)
+	}
+	if stats.SubagentMessages != 38 {
+		t.Errorf("SubagentMessages = %d, want 38", stats.SubagentMessages)
+	}
 }
 
 // TestTruncateSessionID tests session ID truncation.
@@ -174,13 +186,16 @@ func TestTruncateSessionID(t *testing.T) {
 // TestRenderHTMLHeader_WithStats tests header generation with stats.
 func TestRenderHTMLHeader_WithStats(t *testing.T) {
 	stats := &SessionStats{
-		SessionID:     "fbd51e2b-1234-5678-90ab-cdef12345678",
-		ProjectPath:   "/Users/name/project",
-		SessionStart:  "2026-02-01 14:23",
-		Duration:      "2h 35m",
-		MessageCount:  914,
-		AgentCount:    11,
-		ToolCallCount: 247,
+		SessionID:          "fbd51e2b-1234-5678-90ab-cdef12345678",
+		ProjectPath:        "/Users/name/project",
+		SessionStart:       "2026-02-01 14:23",
+		Duration:           "2h 35m",
+		MessageCount:       914,
+		UserMessages:       42,
+		AssistantMessages:  128,
+		AgentCount:         11,
+		TotalAgentMessages: 488,
+		ToolCallCount:      247,
 	}
 
 	html := renderHTMLHeader(stats)
@@ -222,11 +237,15 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 	if strings.Contains(html, "Exported:") {
 		t.Error("Export time should not be displayed in header")
 	}
-	if !strings.Contains(html, "Messages: 914") {
-		t.Error("Missing message count")
+	// Check enhanced message statistics
+	if !strings.Contains(html, "User: 42") {
+		t.Error("Missing user message count")
 	}
-	if !strings.Contains(html, "Agents: 11") {
-		t.Error("Missing agent count")
+	if !strings.Contains(html, "Assistant: 128") {
+		t.Error("Missing assistant message count")
+	}
+	if !strings.Contains(html, "Subagents[11]: 488 messages") {
+		t.Error("Missing subagent message count")
 	}
 	if !strings.Contains(html, "Tools: 247 calls") {
 		t.Error("Missing tool call count")
@@ -263,12 +282,9 @@ func TestRenderHTMLHeader_EmptyStats(t *testing.T) {
 	if !strings.Contains(html, "<header class=\"page-header\">") {
 		t.Error("Missing header element")
 	}
-	// Should have zero counts
-	if !strings.Contains(html, "Messages: 0") {
-		t.Error("Missing zero message count")
-	}
-	if !strings.Contains(html, "Agents: 0") {
-		t.Error("Missing zero agent count")
+	// Should have zero counts in enhanced format
+	if !strings.Contains(html, "User: 0 | Assistant: 0 | Subagents[0]: 0 messages") {
+		t.Error("Missing enhanced zero message counts")
 	}
 	if !strings.Contains(html, "Tools: 0 calls") {
 		t.Error("Missing zero tool count")
@@ -385,13 +401,16 @@ func TestRenderConversationWithStats_Integration(t *testing.T) {
 	}
 
 	stats := &SessionStats{
-		SessionID:     "test-session-123",
-		ProjectPath:   "/test/project",
-		SessionStart:  "2026-01-31 10:00",
-		Duration:      "5s",
-		MessageCount:  2,
-		AgentCount:    0,
-		ToolCallCount: 1,
+		SessionID:          "test-session-123",
+		ProjectPath:        "/test/project",
+		SessionStart:       "2026-01-31 10:00",
+		Duration:           "5s",
+		MessageCount:       2,
+		UserMessages:       1,
+		AssistantMessages:  1,
+		AgentCount:         0,
+		TotalAgentMessages: 0,
+		ToolCallCount:      1,
 	}
 
 	html, err := RenderConversationWithStats(entries, nil, stats)
@@ -415,8 +434,8 @@ func TestRenderConversationWithStats_Integration(t *testing.T) {
 	if !strings.Contains(html, "Duration: 5s") {
 		t.Error("Missing duration in header")
 	}
-	if !strings.Contains(html, "Messages: 2") {
-		t.Error("Missing message count in header")
+	if !strings.Contains(html, "User: 1 | Assistant: 1 | Subagents[0]: 0 messages") {
+		t.Error("Missing enhanced message counts in header")
 	}
 
 	// Check conversation content
@@ -467,9 +486,9 @@ func TestRenderConversationWithStats_AutoComputeStats(t *testing.T) {
 		t.Fatalf("RenderConversationWithStats() error = %v", err)
 	}
 
-	// Should have auto-computed message count
-	if !strings.Contains(html, "Messages: 2") {
-		t.Error("Missing auto-computed message count")
+	// Should have auto-computed enhanced message counts
+	if !strings.Contains(html, "User: 1 | Assistant: 1 | Subagents[0]: 0 messages") {
+		t.Error("Missing auto-computed enhanced message counts")
 	}
 	// Session ID should be extracted from entries
 	if !strings.Contains(html, "auto-ses") {
