@@ -1180,3 +1180,182 @@ func TestRenderConversation_ToolCallWithoutMatchingResult(t *testing.T) {
 		t.Error("HTML should not have tool-output for orphan tool call")
 	}
 }
+
+func TestRenderConversation_ToolOnlyMessages(t *testing.T) {
+	tests := []struct {
+		name            string
+		toolName        string
+		toolInput       map[string]any
+		expectedLabel   string
+		expectedSummary string
+	}{
+		{
+			name:            "Task tool only",
+			toolName:        "Task",
+			toolInput:       map[string]any{"description": "Search for files"},
+			expectedLabel:   "TOOL: Task",
+			expectedSummary: "Search for files",
+		},
+		{
+			name:            "Bash tool only",
+			toolName:        "Bash",
+			toolInput:       map[string]any{"command": "ls -la /tmp"},
+			expectedLabel:   "TOOL: Bash",
+			expectedSummary: "ls -la /tmp",
+		},
+		{
+			name:            "Read tool only",
+			toolName:        "Read",
+			toolInput:       map[string]any{"file_path": "/path/to/file.txt"},
+			expectedLabel:   "TOOL: Read",
+			expectedSummary: "/path/to/file.txt",
+		},
+		{
+			name:            "Write tool only",
+			toolName:        "Write",
+			toolInput:       map[string]any{"file_path": "/path/to/output.txt"},
+			expectedLabel:   "TOOL: Write",
+			expectedSummary: "/path/to/output.txt",
+		},
+		{
+			name:            "Grep tool only",
+			toolName:        "Grep",
+			toolInput:       map[string]any{"pattern": "error.*404"},
+			expectedLabel:   "TOOL: Grep",
+			expectedSummary: "error.*404",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create tool input JSON
+			inputJSON, _ := json.Marshal(tt.toolInput)
+
+			// Create assistant message with ONLY tool call (no text)
+			entries := []models.ConversationEntry{
+				{
+					UUID:      "uuid-001",
+					SessionID: "session-001",
+					Type:      models.EntryTypeAssistant,
+					Timestamp: "2026-01-31T10:00:00Z",
+					Message: json.RawMessage(`{
+						"role": "assistant",
+						"content": [
+							{
+								"type": "tool_use",
+								"id": "toolu_123",
+								"name": "` + tt.toolName + `",
+								"input": ` + string(inputJSON) + `
+							}
+						]
+					}`),
+				},
+			}
+
+			html, err := RenderConversation(entries, nil)
+			if err != nil {
+				t.Fatalf("RenderConversation() error = %v", err)
+			}
+
+			// Check for tool-only label
+			if !strings.Contains(html, `class="role tool-only-label">`) {
+				t.Error("HTML should contain tool-only-label class")
+			}
+
+			// Check for correct tool type in label
+			if !strings.Contains(html, tt.expectedLabel) {
+				t.Errorf("HTML should contain label %q, got HTML:\n%s", tt.expectedLabel, html)
+			}
+
+			// Check for inline tool summary
+			if !strings.Contains(html, `class="tool-summary-inline">`) {
+				t.Error("HTML should contain tool-summary-inline class")
+			}
+
+			// Check for expected summary content (may be truncated)
+			if !strings.Contains(html, tt.expectedSummary) {
+				t.Errorf("HTML should contain summary %q", tt.expectedSummary)
+			}
+
+			// Verify message is NOT filtered out (was previously filtered)
+			if !strings.Contains(html, "uuid-001") {
+				t.Error("Tool-only message should be rendered, not filtered out")
+			}
+		})
+	}
+}
+
+func TestRenderConversation_ToolOnlyVsTextWithTools(t *testing.T) {
+	entries := []models.ConversationEntry{
+		// Assistant message with text AND tool call - should use normal "Assistant" label
+		{
+			UUID:      "uuid-001",
+			SessionID: "session-001",
+			Type:      models.EntryTypeAssistant,
+			Timestamp: "2026-01-31T10:00:00Z",
+			Message: json.RawMessage(`{
+				"role": "assistant",
+				"content": [
+					{"type": "text", "text": "Let me read that file for you."},
+					{
+						"type": "tool_use",
+						"id": "toolu_123",
+						"name": "Read",
+						"input": {"file_path": "/test.txt"}
+					}
+				]
+			}`),
+		},
+		// Assistant message with ONLY tool call (no text) - should use "TOOL: X" label
+		{
+			UUID:      "uuid-002",
+			SessionID: "session-001",
+			Type:      models.EntryTypeAssistant,
+			Timestamp: "2026-01-31T10:00:05Z",
+			Message: json.RawMessage(`{
+				"role": "assistant",
+				"content": [
+					{
+						"type": "tool_use",
+						"id": "toolu_456",
+						"name": "Bash",
+						"input": {"command": "ls -la"}
+					}
+				]
+			}`),
+		},
+	}
+
+	html, err := RenderConversation(entries, nil)
+	if err != nil {
+		t.Fatalf("RenderConversation() error = %v", err)
+	}
+
+	// First message should have normal "Assistant" label (has text + tool)
+	htmlParts := strings.Split(html, "uuid-001")
+	if len(htmlParts) < 2 {
+		t.Fatal("Could not find uuid-001 in HTML")
+	}
+	firstMessageHTML := htmlParts[1][:500] // Get section after uuid-001
+
+	if !strings.Contains(firstMessageHTML, `class="role">Assistant</span>`) {
+		t.Error("First message (text + tool) should have normal 'Assistant' label")
+	}
+	if strings.Contains(firstMessageHTML, "tool-only-label") {
+		t.Error("First message (text + tool) should NOT have tool-only-label")
+	}
+
+	// Second message should have "TOOL: Bash" label (tool only, no text)
+	htmlParts = strings.Split(html, "uuid-002")
+	if len(htmlParts) < 2 {
+		t.Fatal("Could not find uuid-002 in HTML")
+	}
+	secondMessageHTML := htmlParts[1][:500]
+
+	if !strings.Contains(secondMessageHTML, `class="role tool-only-label">TOOL: Bash</span>`) {
+		t.Error("Second message (tool only) should have 'TOOL: Bash' label with tool-only-label class")
+	}
+	if strings.Contains(secondMessageHTML, `>Assistant</span>`) {
+		t.Error("Second message (tool only) should NOT have 'Assistant' label")
+	}
+}

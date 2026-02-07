@@ -370,10 +370,13 @@ func hasContent(entry models.ConversationEntry) bool {
 		}
 	}
 
-	// Check for tool calls in assistant messages
+	// For assistant messages with tool calls but NO text:
+	// Keep them so we can display them with "TOOL: X" header.
+	// The renderEntry function will format these specially.
 	if entry.Type == models.EntryTypeAssistant {
 		tools := entry.ExtractToolCalls()
 		if len(tools) > 0 {
+			// Keep tool-only messages - they'll get special formatting
 			return true
 		}
 	}
@@ -420,6 +423,30 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	entryClass := getEntryClass(entryType)
 	timestamp := formatTimestampReadable(entry.Timestamp)
 
+	// Check if this is a tool-only message (assistant message with no text, only tool calls)
+	hasText := strings.TrimSpace(textContent) != ""
+	toolCalls := entry.ExtractToolCalls()
+	hasTools := len(toolCalls) > 0
+	isToolOnly := entry.Type == models.EntryTypeAssistant && !hasText && hasTools
+
+	// Build tool summary for header if this is a tool-only message
+	toolSummary := ""
+	if isToolOnly && len(toolCalls) > 0 {
+		primaryTool := toolCalls[0]
+		roleLabel = fmt.Sprintf("TOOL: %s", primaryTool.Name)
+
+		// Extract display value for common tools
+		displayValue := extractToolDisplayValue(primaryTool.Name, primaryTool.Input)
+		if displayValue != "" {
+			// Truncate if too long for inline display
+			const maxInlineLen = 60
+			if len(displayValue) > maxInlineLen {
+				displayValue = displayValue[:maxInlineLen-3] + "..."
+			}
+			toolSummary = displayValue
+		}
+	}
+
 	// Message row with alignment based on type
 	sb.WriteString(fmt.Sprintf(`<div class="message-row %s" data-uuid="%s">`, entryClass, escapeHTML(entry.UUID)))
 	sb.WriteString("\n")
@@ -434,7 +461,18 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 
 	// Message header with role and timestamp
 	sb.WriteString(`    <div class="message-header">`)
-	sb.WriteString(fmt.Sprintf(`<span class="role">%s</span>`, escapeHTML(roleLabel)))
+
+	// Apply special styling for tool-only messages
+	roleClass := "role"
+	if isToolOnly {
+		roleClass = "role tool-only-label"
+	}
+	sb.WriteString(fmt.Sprintf(`<span class="%s">%s</span>`, roleClass, escapeHTML(roleLabel)))
+
+	// Add inline tool summary if present
+	if toolSummary != "" {
+		sb.WriteString(fmt.Sprintf(`<span class="tool-summary-inline">%s</span>`, escapeHTML(toolSummary)))
+	}
 
 	// Determine which agent ID to display
 	displayAgentID := determineDisplayAgentID(entry, sessionID, agentID)

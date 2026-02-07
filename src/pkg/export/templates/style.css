@@ -895,6 +895,29 @@ p {
     letter-spacing: var(--tracking-wider);
 }
 
+/* Tool-only label - distinct styling for assistant messages with only tool calls */
+.message-header .role.tool-only-label {
+    color: hsl(var(--teal-700));
+    font-weight: var(--font-bold);
+    background: hsl(var(--teal-50));
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    border: 1px solid hsl(var(--teal-200));
+}
+
+/* Inline tool summary shown next to tool-only label */
+.message-header .tool-summary-inline {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    font-weight: var(--font-normal);
+    font-style: italic;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .message-header .timestamp {
     color: var(--text-muted);
 }
