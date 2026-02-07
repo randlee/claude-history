@@ -74,7 +74,7 @@ claude-history query /path/to/project --session abc123 --agent def456
 claude-history find-agent /path/to/project authentication api
 
 # Export session to HTML
-claude-history export /path/to/project --session abc123 --open
+claude-history export /path/to/project --session abc123
 ```
 
 ## Common Workflows
@@ -92,6 +92,24 @@ claude-history tree /path/to/project --session abc123
 claude-history query /path/to/project --session abc123 --agent def456
 ```
 
+### Querying Subagents
+
+There are two ways to include subagent data:
+
+**Query a specific agent's work:**
+```bash
+# Reads agent's JSONL file directly
+claude-history query /path/to/project --session abc123 --agent def456
+```
+
+**Query session including ALL subagents:**
+```bash
+# Recursively includes all subagent entries
+claude-history query /path/to/project --session abc123 --include-agents
+```
+
+**Note:** `--agent` and `--include-agents` cannot be used together.
+
 ### Searching by Topic
 
 ```bash
@@ -108,8 +126,21 @@ claude-history query /path/to/project --session abc123 --type assistant
 # 1. Identify the session you want to export
 claude-history list /path/to/project
 
-# 2. Export to HTML and open in browser
-claude-history export /path/to/project --session abc123 --open
+# 2. Export to HTML
+claude-history export /path/to/project --session abc123
+```
+
+### Generating HTML Reports from Queries
+
+```bash
+# Generate interactive HTML report for a specific agent
+claude-history query /path/to/project --session abc123 --agent def456 --format html
+
+# Generate HTML report with filters
+claude-history query /path/to/project --type assistant --tool bash --format html
+
+# Show full content without truncation
+claude-history query /path/to/project --type assistant --limit 0
 ```
 
 ## Commands
@@ -140,7 +171,8 @@ claude-history query /path/to/project \
 - `--end <date>` - Show entries before date
 - `--tool <name>` - Filter by exact tool name
 - `--tool-match <pattern>` - Filter by tool name regex
-- `--format <fmt>` - Output format: text, json, tree
+- `--format <fmt>` - Output format: text, json, tree, html, summary
+- `--limit <n>` - Maximum characters per entry (default: 100, use 0 for no limit)
 
 ### `tree`
 Display agent hierarchy:
@@ -159,15 +191,14 @@ Export session to HTML or JSONL:
 ```bash
 claude-history export /path/to/project \
   --session abc123 \
-  --output report.html \
-  --open
+  --output report.html
 ```
 
 **Flags:**
-- `--output <file>` - Output file path
+- `--output <dir>` - Output directory (default: creates temp directory)
 - `--format <fmt>` - Export format: html, jsonl
-- `--open` - Open HTML in browser after export
-- `--template <file>` - Custom HTML template
+
+**Note:** The `export` command creates files but does not auto-open them. Use `query --format html` to generate and auto-open HTML reports in your browser.
 
 ### `resolve`
 Resolve filesystem paths to Claude storage (debugging):

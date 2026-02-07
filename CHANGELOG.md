@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-07
+
+### Added - Phase 15: Query HTML Format & UX Improvements
+- **HTML Format for Query Command** - Added `--format html` option to query command with auto-open in browser
+- **Clickable File Paths** - Automatic detection and linking of file paths in conversation text
+  - Supports Unix absolute paths (`/path/to/file.go`)
+  - Supports Windows absolute paths (`C:\path\to\file.go`)
+  - Supports relative paths (`./src/main.go`, `src/main.go`)
+  - Creates `file://` links that open in Finder/Explorer
+  - 113+ file links generated in typical sessions
+- **Tool-Only Message Enhancement** - Compact display for messages with only tool calls
+  - Headers show tool type: "TOOL: Read", "TOOL: Task", "TOOL: Bash", etc.
+  - Inline summaries for task operations (TaskUpdate, TaskCreate, TaskList, TaskGet)
+  - Single-line collapsed view, expandable on click
+- **Version Management System** - Single source of truth in `pkg/version/version.go`
+  - Version constant used in CLI and HTML output
+  - Unit test enforces no hardcoded versions
+  - Compatible with GoReleaser ldflags override
+
+### Improved
+- **HTML Export UX** - Removed "Main Session" breadcrumb badge to save vertical space
+- **Navigation** - Hide empty breadcrumbs completely with CSS
+- **Tool Headers** - Increased max-width from 300px to 600px for better path visibility
+- **Copy Buttons** - Include full CLI commands with complete UUIDs (not just truncated IDs)
+- **Role Labels** - Clean styling without boxes (like ORCHESTRATOR/AGENT)
+
+### Fixed
+- **Empty Message Bubbles** - Comprehensive filtering and detection
+  - Tool-only messages no longer appear as empty "Assistant" boxes
+  - Added automated test suite for empty bubble detection
+- **File Path Detection** - Fixed markdown processing order to handle paths in inline code blocks
+- **Windows CI Tests** - Platform-aware test skipping for Windows-specific path format tests
+- **Lint Errors** - Fixed errcheck warnings and gofmt formatting
+
+### Testing
+- Added `src/pkg/export/paths_test.go` - File path detection tests (Unix and Windows)
+- Added `src/pkg/export/html_empty_test.go` - Empty bubble detection tests
+- Added `src/pkg/export/html_empty_full_test.go` - Full integration tests
+- Added `src/pkg/export/html_empty_edgecases_test.go` - Edge case tests
+- Added `src/pkg/version/version_test.go` - Version consistency unit test
+- Added `scripts/check-empty-bubbles.sh` - Automated empty bubble checker
+
+### Documentation
+- Updated `README.md` with `--format html` examples and `--include-agents` flag documentation
+- Updated `docs/PROJECT_PLAN.md` with Phase 15 completion details
+- Added design rationale for path detection (no spaces to avoid false positives)
+- Documented Windows 8.3 short filename support (e.g., `RUNNER~1`)
+
 ## [0.1.0] - 2026-02-07
 
 ### Added

@@ -89,9 +89,8 @@ You are using the **claude-history** CLI tool to query Claude Code's agent histo
 3. Use `tree` to understand the agent hierarchy
 
 **When user wants to export:**
-1. Use `export` command with session ID
-2. Add `--open` flag to open in browser automatically
-3. Use `--template` flag for custom styling if needed
+1. Use `export` command with session ID to create HTML files
+2. Or use `query --format html` to generate and auto-open HTML report in browser
 
 ### Examples
 
@@ -109,7 +108,10 @@ claude-history query /path/to/project --session abc123 --type user
 claude-history find-agent /path/to/project authentication
 
 # Export session to HTML
-claude-history export /path/to/project --session abc123 --output report.html --open
+claude-history export /path/to/project --session abc123
+
+# Generate and auto-open HTML report
+claude-history query /path/to/project --session abc123 --format html
 
 # Query specific agent's work (supports git-style prefixes)
 claude-history query /path/to/project --session abc123 --agent def456
