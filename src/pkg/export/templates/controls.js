@@ -115,6 +115,12 @@
             el.open = true;
         });
 
+        // Handle notification headers
+        var notificationHeaders = document.querySelectorAll('.notification-header');
+        notificationHeaders.forEach(function(header) {
+            header.setAttribute('aria-expanded', 'true');
+        });
+
         // Update toggle indicators
         updateAllToggles(true);
 
@@ -135,6 +141,12 @@
         var detailsElements = document.querySelectorAll('details');
         detailsElements.forEach(function(el) {
             el.open = false;
+        });
+
+        // Handle notification headers
+        var notificationHeaders = document.querySelectorAll('.notification-header');
+        notificationHeaders.forEach(function(header) {
+            header.setAttribute('aria-expanded', 'false');
         });
 
         // Update toggle indicators
