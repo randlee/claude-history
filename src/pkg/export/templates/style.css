@@ -912,9 +912,136 @@ p {
 }
 
 /* ============================================
- * TASK NOTIFICATION STYLES
+ * TASK NOTIFICATION STYLES (FLATTENED STRUCTURE)
  * ============================================ */
 
+/* Flattened notification rows - standalone blocks */
+.notification-row {
+    margin: 16px 0;
+    border-left: 3px solid #444;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.notification-row.completed {
+    border-left-color: #10b981;
+}
+
+.notification-row.failed {
+    border-left-color: #ef4444;
+}
+
+.notification-row.running {
+    border-left-color: #3b82f6;
+}
+
+/* Notification header - single line layout */
+.notification-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.notification-header:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Collapse toggle button */
+.collapse-toggle {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+}
+
+.notification-header[aria-expanded="false"] .collapse-toggle {
+    transform: rotate(-90deg);
+}
+
+/* Notification type badge */
+.notification-type {
+    font-weight: 600;
+    font-size: 13px;
+    color: #60a5fa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+/* Notification summary */
+.notification-summary {
+    flex: 1;
+    font-size: 14px;
+    color: #d4d4d4;
+}
+
+/* Agent ID badge in notification */
+.agent-id-badge {
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 12px;
+    color: #9ca3af;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.agent-id-badge:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Notification content (collapsible) */
+.notification-content {
+    padding: 0 16px 16px 44px; /* Indent under summary */
+    display: block;
+}
+
+.notification-header[aria-expanded="false"] + .notification-content {
+    display: none;
+}
+
+.notification-result {
+    font-size: 13px;
+    color: #9ca3af;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    font-family: var(--font-mono);
+    background: rgba(255, 255, 255, 0.02);
+    padding: 12px;
+    border-radius: 4px;
+}
+
+.notification-usage {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 8px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+}
+
+/* Timestamp in notification */
+.notification-header .timestamp {
+    font-size: 12px;
+    color: #6b7280;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* Legacy task-notification styles (for backward compatibility) */
 .task-notification {
     display: block;
     margin: 0;

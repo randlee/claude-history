@@ -239,18 +239,15 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	// Get text content
 	textContent := entry.GetTextContent()
 
-	// Detect task-notification blocks and override entry type/styling
+	// Detect task-notification blocks and render with flattened structure
 	isTaskNotif := entry.Type == models.EntryTypeUser && strings.Contains(textContent, "<task-notification>")
+	if isTaskNotif {
+		taskNotif := parseTaskNotification(textContent)
+		return renderFlatTaskNotification(taskNotif, entry)
+	}
 
 	entryType := entry.Type
 	roleLabel := getRoleLabel(entry.Type)
-
-	// Override for task-notification
-	if isTaskNotif {
-		entryType = models.EntryTypeSystem
-		roleLabel = "Agent Notification"
-	}
-
 	entryClass := getEntryClass(entryType)
 	timestamp := formatTimestampReadable(entry.Timestamp)
 
@@ -281,10 +278,7 @@ func renderEntry(entry models.ConversationEntry, toolResults map[string]models.T
 	sb.WriteString(`    <div class="message-content">`)
 
 	if textContent != "" {
-		// Special handling for task-notification blocks
-		if isTaskNotif {
-			sb.WriteString(renderTaskNotification(textContent))
-		} else if entry.Type == models.EntryTypeAssistant {
+		if entry.Type == models.EntryTypeAssistant {
 			// Apply markdown rendering for assistant messages
 			sb.WriteString(fmt.Sprintf(`<div class="text markdown-content">%s</div>`, RenderMarkdown(textContent)))
 		} else {
@@ -886,6 +880,109 @@ func renderTaskNotification(content string) string {
 	sb.WriteString("</div>\n")
 
 	return sb.String()
+}
+
+// renderFlatTaskNotification renders a task notification with flattened structure (2-level DOM).
+// Returns a standalone notification-row div, not wrapped in message-row/bubble structure.
+func renderFlatTaskNotification(taskNotif *TaskNotificationData, entry models.ConversationEntry) string {
+	if taskNotif == nil {
+		// Fallback to empty string
+		return ""
+	}
+
+	var sb strings.Builder
+
+	// Status icon and class
+	statusIcon := "⏳"
+	statusClass := "running"
+	switch taskNotif.Status {
+	case "completed":
+		statusIcon = "✓"
+		statusClass = "completed"
+	case "failed", "error":
+		statusIcon = "✗"
+		statusClass = "failed"
+	}
+
+	// Build CLI command for tooltip (if we have session + agent info)
+	cliCommand := ""
+	if entry.SessionID != "" && taskNotif.TaskID != "" {
+		cliCommand = fmt.Sprintf("claude-history query <project-path> --session %s --agent %s",
+			entry.SessionID, taskNotif.TaskID)
+	}
+
+	// Main notification row
+	sb.WriteString(fmt.Sprintf(`<div class="notification-row %s" data-uuid="%s">`, statusClass, escapeHTML(entry.UUID)))
+	sb.WriteString("\n")
+
+	// Collapsible header (single line)
+	sb.WriteString(`  <div class="notification-header" aria-expanded="true">`)
+	sb.WriteString("\n")
+
+	// Collapse toggle
+	sb.WriteString(`    <button class="collapse-toggle" aria-label="Toggle notification">▼</button>`)
+	sb.WriteString("\n")
+
+	// Notification type
+	sb.WriteString(`    <span class="notification-type">Subagent</span>`)
+	sb.WriteString("\n")
+
+	// Summary/description with status icon
+	sb.WriteString(fmt.Sprintf(`    <span class="notification-summary">%s %s</span>`,
+		statusIcon, escapeHTML(taskNotif.Summary)))
+	sb.WriteString("\n")
+
+	// Agent/Task ID badge with tooltip and copy button
+	if taskNotif.TaskID != "" {
+		tooltipText := cliCommand
+		if tooltipText == "" {
+			tooltipText = "Agent ID: " + taskNotif.TaskID
+		}
+
+		truncatedID := truncateID(taskNotif.TaskID, 8)
+		sb.WriteString(fmt.Sprintf(`    <span class="agent-id-badge" data-full-id="%s" title="%s">`,
+			escapeHTML(taskNotif.TaskID), escapeHTML(tooltipText)))
+		sb.WriteString(fmt.Sprintf(`[%s]`, escapeHTML(truncatedID)))
+		sb.WriteString(renderCopyButton(taskNotif.TaskID, "agent-id", "Copy agent ID"))
+		sb.WriteString(`</span>`)
+		sb.WriteString("\n")
+	}
+
+	// Timestamp
+	if entry.Timestamp != "" {
+		sb.WriteString(fmt.Sprintf(`    <span class="timestamp">%s</span>`,
+			formatTimestampReadable(entry.Timestamp)))
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString(`  </div>`)
+	sb.WriteString("\n")
+
+	// Collapsible content
+	if taskNotif.Result != "" {
+		sb.WriteString(`  <div class="notification-content">`)
+		sb.WriteString("\n")
+
+		sb.WriteString(fmt.Sprintf(`    <div class="notification-result">%s</div>`,
+			escapeHTML(taskNotif.Result)))
+		sb.WriteString("\n")
+
+		sb.WriteString(`  </div>`)
+		sb.WriteString("\n")
+	}
+
+	sb.WriteString(`</div>`)
+	sb.WriteString("\n")
+
+	return sb.String()
+}
+
+// truncateID truncates an ID to the specified length
+func truncateID(id string, length int) string {
+	if len(id) <= length {
+		return id
+	}
+	return id[:length]
 }
 
 // formatUserContent formats user message content, processing XML-like tags for better display.

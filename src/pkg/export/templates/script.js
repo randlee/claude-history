@@ -377,6 +377,22 @@ function getStats() {
 }
 
 /**
+ * Initialize notification collapse toggles.
+ */
+function initNotificationToggles() {
+    var headers = document.querySelectorAll('.notification-header');
+    headers.forEach(function(header) {
+        header.addEventListener('click', function(e) {
+            // Don't toggle if clicking copy button
+            if (e.target.closest('.copy-btn')) return;
+
+            var expanded = header.getAttribute('aria-expanded') === 'true';
+            header.setAttribute('aria-expanded', !expanded);
+        });
+    });
+}
+
+/**
  * Initialize the page when DOM is ready.
  */
 function init() {
@@ -385,6 +401,9 @@ function init() {
 
     // Initialize subagent headers
     initSubagentHeaders(document);
+
+    // Initialize notification collapse toggles
+    initNotificationToggles();
 
     // Start with tool bodies collapsed
     collapseAll();
