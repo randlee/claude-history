@@ -106,6 +106,12 @@ func writeEntryList(w io.Writer, entries []models.ConversationEntry, limit int) 
 	for _, e := range entries {
 		ts, _ := e.GetTimestamp()
 		text := e.GetTextContent()
+
+		// Skip entries with no text content (tool-use only, progress, etc.)
+		if text == "" {
+			continue
+		}
+
 		// Apply truncation if limit > 0
 		if limit > 0 && len(text) > limit {
 			text = text[:limit] + "..."
