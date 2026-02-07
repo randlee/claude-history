@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/randlee/claude-history/pkg/agent"
 	"github.com/randlee/claude-history/pkg/models"
@@ -28,17 +29,26 @@ func TestComputeSessionStats_Empty(t *testing.T) {
 	if stats.ExportTime == "" {
 		t.Error("ExportTime should not be empty")
 	}
+	if stats.SessionStart != "" {
+		t.Error("SessionStart should be empty when no entries")
+	}
+	if stats.SessionEnd != "" {
+		t.Error("SessionEnd should be empty when no entries")
+	}
+	if stats.Duration != "" {
+		t.Error("Duration should be empty when no entries")
+	}
 }
 
 // TestComputeSessionStats_WithMessages tests message counting.
 func TestComputeSessionStats_WithMessages(t *testing.T) {
 	entries := []models.ConversationEntry{
-		{Type: models.EntryTypeUser, SessionID: "session-123"},
-		{Type: models.EntryTypeAssistant},
-		{Type: models.EntryTypeUser},
-		{Type: models.EntryTypeAssistant},
-		{Type: models.EntryTypeSystem},         // Should not count
-		{Type: models.EntryTypeQueueOperation}, // Should not count
+		{Type: models.EntryTypeUser, SessionID: "session-123", Timestamp: "2026-02-06T14:23:00Z"},
+		{Type: models.EntryTypeAssistant, Timestamp: "2026-02-06T14:23:30Z"},
+		{Type: models.EntryTypeUser, Timestamp: "2026-02-06T16:58:00Z"},
+		{Type: models.EntryTypeAssistant, Timestamp: "2026-02-06T16:58:30Z"},
+		{Type: models.EntryTypeSystem, Timestamp: "2026-02-06T16:59:00Z"},         // Should not count
+		{Type: models.EntryTypeQueueOperation, Timestamp: "2026-02-06T16:59:30Z"}, // Should not count
 	}
 
 	stats := ComputeSessionStats(entries, nil)
@@ -48,6 +58,15 @@ func TestComputeSessionStats_WithMessages(t *testing.T) {
 	}
 	if stats.SessionID != "session-123" {
 		t.Errorf("SessionID = %q, want %q", stats.SessionID, "session-123")
+	}
+	if stats.SessionStart != "2026-02-06 14:23" {
+		t.Errorf("SessionStart = %q, want %q", stats.SessionStart, "2026-02-06 14:23")
+	}
+	if stats.SessionEnd != "2026-02-06 16:59" {
+		t.Errorf("SessionEnd = %q, want %q", stats.SessionEnd, "2026-02-06 16:59")
+	}
+	if stats.Duration != "2h 36m" {
+		t.Errorf("Duration = %q, want %q", stats.Duration, "2h 36m")
 	}
 }
 
@@ -79,6 +98,32 @@ func TestComputeSessionStats_WithToolCalls(t *testing.T) {
 
 	if stats.ToolCallCount != 3 {
 		t.Errorf("ToolCallCount = %d, want 3", stats.ToolCallCount)
+	}
+}
+
+// TestFormatDuration tests duration formatting.
+func TestFormatDuration(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration string
+		expected string
+	}{
+		{"less than minute", "30s", "30s"},
+		{"one minute", "1m", "1m"},
+		{"minutes only", "45m", "45m"},
+		{"one hour", "1h", "1h 0m"},
+		{"hours and minutes", "2h35m", "2h 35m"},
+		{"long session", "5h23m", "5h 23m"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d, _ := time.ParseDuration(tt.duration)
+			result := formatDuration(d)
+			if result != tt.expected {
+				t.Errorf("formatDuration(%s) = %q, want %q", tt.duration, result, tt.expected)
+			}
+		})
 	}
 }
 
@@ -131,7 +176,8 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 	stats := &SessionStats{
 		SessionID:     "fbd51e2b-1234-5678-90ab-cdef12345678",
 		ProjectPath:   "/Users/name/project",
-		ExportTime:    "2026-02-01 22:39:20",
+		SessionStart:  "2026-02-01 14:23",
+		Duration:      "2h 35m",
 		MessageCount:  914,
 		AgentCount:    11,
 		ToolCallCount: 247,
@@ -166,8 +212,15 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 	if !strings.Contains(html, "/Users/name/project") {
 		t.Error("Missing project path")
 	}
-	if !strings.Contains(html, "Exported: 2026-02-01 22:39:20") {
-		t.Error("Missing export time")
+	if !strings.Contains(html, "Started: 2026-02-01 14:23") {
+		t.Error("Missing session start time")
+	}
+	if !strings.Contains(html, "Duration: 2h 35m") {
+		t.Error("Missing duration")
+	}
+	// Verify export time is NOT displayed
+	if strings.Contains(html, "Exported:") {
+		t.Error("Export time should not be displayed in header")
 	}
 	if !strings.Contains(html, "Messages: 914") {
 		t.Error("Missing message count")
@@ -334,7 +387,8 @@ func TestRenderConversationWithStats_Integration(t *testing.T) {
 	stats := &SessionStats{
 		SessionID:     "test-session-123",
 		ProjectPath:   "/test/project",
-		ExportTime:    "2026-02-01 10:00:00",
+		SessionStart:  "2026-01-31 10:00",
+		Duration:      "5s",
 		MessageCount:  2,
 		AgentCount:    0,
 		ToolCallCount: 1,
@@ -354,6 +408,12 @@ func TestRenderConversationWithStats_Integration(t *testing.T) {
 	}
 	if !strings.Contains(html, "/test/project") {
 		t.Error("Missing project path in header")
+	}
+	if !strings.Contains(html, "Started: 2026-01-31 10:00") {
+		t.Error("Missing session start time in header")
+	}
+	if !strings.Contains(html, "Duration: 5s") {
+		t.Error("Missing duration in header")
 	}
 	if !strings.Contains(html, "Messages: 2") {
 		t.Error("Missing message count in header")
