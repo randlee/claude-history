@@ -8,10 +8,19 @@
  */
 function toggleTool(header) {
     var body = header.nextElementSibling;
-    if (body && body.classList.contains('tool-body')) {
-        body.classList.toggle('hidden');
+    var toolCall = header.parentElement;
 
-        // Update toggle indicator
+    if (body && body.classList.contains('tool-body')) {
+        // Toggle visibility classes
+        body.classList.toggle('hidden');
+        body.classList.toggle('collapsed');
+
+        // Toggle collapsed state on parent container for chevron rotation
+        if (toolCall && toolCall.classList.contains('tool-call')) {
+            toolCall.classList.toggle('collapsed');
+        }
+
+        // Update toggle indicator (if present)
         var toggle = header.querySelector('.tool-toggle');
         if (toggle) {
             toggle.textContent = body.classList.contains('hidden') ? '[+]' : '[-]';
@@ -97,8 +106,9 @@ function loadAgent(header) {
     var agentId = parent.dataset.agentId;
 
     // Already loaded check
-    if (container.innerHTML.trim() !== '' && !container.querySelector('.subagent-loading')) {
+    if (container && container.innerHTML.trim() !== '' && !container.querySelector('.subagent-loading')) {
         // Just toggle visibility if already loaded
+        parent.classList.toggle('collapsed');
         container.classList.toggle('collapsed');
         return;
     }
@@ -116,6 +126,8 @@ function loadAgent(header) {
         })
         .then(function(html) {
             container.innerHTML = html;
+            parent.classList.remove('collapsed');
+            container.classList.remove('collapsed');
             // Initialize any tool toggles in the loaded content
             initToolToggles(container);
         })

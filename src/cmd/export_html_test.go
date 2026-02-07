@@ -27,12 +27,12 @@ func TestExportCommand_HTMLFormat(t *testing.T) {
 		t.Fatalf("Failed to create Claude project directory: %v", err)
 	}
 
-	sessionID := "test-session-123"
+	sessionID := "11111111-1111-1111-1111-111111111111"
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 
 	// Create a minimal session file with valid JSONL
-	sessionContent := `{"uuid":"entry-1","type":"user","timestamp":"2026-02-01T10:00:00Z","message":[{"type":"text","text":"Hello"}]}
-{"uuid":"entry-2","type":"assistant","timestamp":"2026-02-01T10:00:01Z","message":[{"type":"text","text":"Hello! How can I help?"}]}
+	sessionContent := `{"uuid":"entry-1","type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"11111111-1111-1111-1111-111111111111","message":[{"type":"text","text":"Hello"}]}
+{"uuid":"entry-2","type":"assistant","timestamp":"2026-02-01T10:00:01Z","sessionId":"11111111-1111-1111-1111-111111111111","message":[{"type":"text","text":"Hello! How can I help?"}]}
 `
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {
 		t.Fatalf("Failed to write session file: %v", err)
@@ -118,12 +118,12 @@ func TestExportCommand_HTMLWithAgents(t *testing.T) {
 		t.Fatalf("Failed to create Claude project directory: %v", err)
 	}
 
-	sessionID := "test-session-456"
+	sessionID := "22222222-2222-2222-2222-222222222222"
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 
 	// Create a session with a queue-operation that spawns an agent
-	sessionContent := `{"uuid":"entry-1","type":"user","timestamp":"2026-02-01T10:00:00Z","message":[{"type":"text","text":"Hello"}]}
-{"uuid":"entry-2","type":"queue-operation","timestamp":"2026-02-01T10:00:01Z","agentId":"agent-abc123"}
+	sessionContent := `{"uuid":"entry-1","type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"22222222-2222-2222-2222-222222222222","message":[{"type":"text","text":"Hello"}]}
+{"uuid":"entry-2","type":"queue-operation","timestamp":"2026-02-01T10:00:01Z","sessionId":"22222222-2222-2222-2222-222222222222","agentId":"agent-abc123"}
 `
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {
 		t.Fatalf("Failed to write session file: %v", err)
@@ -201,11 +201,11 @@ func TestRenderHTML(t *testing.T) {
 		t.Fatalf("Failed to create Claude project directory: %v", err)
 	}
 
-	sessionID := "test-session-789"
+	sessionID := "33333333-3333-3333-3333-333333333333"
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 
 	// Create a minimal session
-	sessionContent := `{"uuid":"entry-1","type":"user","timestamp":"2026-02-01T10:00:00Z","message":[{"type":"text","text":"Test"}]}
+	sessionContent := `{"uuid":"entry-1","type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"33333333-3333-3333-3333-333333333333","message":[{"type":"text","text":"Test"}]}
 `
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {
 		t.Fatalf("Failed to write session file: %v", err)
@@ -322,13 +322,13 @@ func TestHTMLOutput_ValidStructure(t *testing.T) {
 		t.Fatalf("Failed to create Claude project directory: %v", err)
 	}
 
-	sessionID := "test-session-valid"
+	sessionID := "44444444-4444-4444-4444-444444444444"
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 
 	// Create a session with various entry types
-	sessionContent := `{"uuid":"e-1","type":"user","timestamp":"2026-02-01T10:00:00Z","message":[{"type":"text","text":"Test user message"}]}
-{"uuid":"e-2","type":"assistant","timestamp":"2026-02-01T10:00:01Z","message":[{"type":"text","text":"Test response"},{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"echo test"}}]}
-{"uuid":"e-3","type":"user","timestamp":"2026-02-01T10:00:02Z","message":[{"type":"tool_result","tool_use_id":"tool-1","message":"test","is_error":false}]}
+	sessionContent := `{"uuid":"e-1","type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"44444444-4444-4444-4444-444444444444","message":[{"type":"text","text":"Test user message"}]}
+{"uuid":"e-2","type":"assistant","timestamp":"2026-02-01T10:00:01Z","sessionId":"44444444-4444-4444-4444-444444444444","message":[{"type":"text","text":"Test response"},{"type":"tool_use","id":"tool-1","name":"Bash","input":{"command":"echo test"}}]}
+{"uuid":"e-3","type":"user","timestamp":"2026-02-01T10:00:02Z","sessionId":"44444444-4444-4444-4444-444444444444","message":[{"type":"tool_result","tool_use_id":"tool-1","message":"test","is_error":false}]}
 `
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {
 		t.Fatalf("Failed to write session file: %v", err)
@@ -370,7 +370,7 @@ func TestHTMLOutput_ValidStructure(t *testing.T) {
 		"<div class=\"conversation\">",
 		"<div class=\"message-row user\"",
 		"<div class=\"message-row assistant\"",
-		"<div class=\"tool-call\"",
+		"<div class=\"tool-call", // Changed: removed closing quote to match additional CSS classes
 		"<script src=\"static/script.js\">",
 		"</body>",
 		"</html>",

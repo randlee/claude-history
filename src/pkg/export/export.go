@@ -11,6 +11,7 @@ import (
 
 	"github.com/randlee/claude-history/pkg/agent"
 	"github.com/randlee/claude-history/pkg/paths"
+	"github.com/randlee/claude-history/pkg/resolver"
 	"github.com/randlee/claude-history/pkg/session"
 )
 
@@ -49,6 +50,7 @@ type ExportOptions struct {
 
 // ExportSession exports a session's JSONL files to the specified output directory.
 // If outputDir in options is empty, generates a temp folder with the session ID and timestamp.
+// Supports session ID prefixes (like git) which are automatically resolved to full IDs.
 func ExportSession(projectPath, sessionID string, opts ExportOptions) (*ExportResult, error) {
 	// Resolve the project directory
 	projectDir, err := paths.ProjectDir(opts.ClaudeDir, projectPath)
@@ -56,8 +58,14 @@ func ExportSession(projectPath, sessionID string, opts ExportOptions) (*ExportRe
 		return nil, fmt.Errorf("failed to resolve project directory: %w", err)
 	}
 
+	// Resolve session ID prefix to full ID (supports partial IDs like git)
+	resolvedSessionID, err := resolver.ResolveSessionID(projectDir, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve session ID: %w", err)
+	}
+
 	// Find the session
-	sess, err := session.FindSession(projectDir, sessionID)
+	sess, err := session.FindSession(projectDir, resolvedSessionID)
 	if err != nil {
 		return nil, fmt.Errorf("session not found: %w", err)
 	}
@@ -65,7 +73,7 @@ func ExportSession(projectPath, sessionID string, opts ExportOptions) (*ExportRe
 	// Determine output directory
 	outputDir := opts.OutputDir
 	if outputDir == "" {
-		outputDir, err = generateTempPath(sessionID, sess.Modified)
+		outputDir, err = generateTempPath(resolvedSessionID, sess.Modified)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate temp path: %w", err)
 		}
@@ -81,13 +89,13 @@ func ExportSession(projectPath, sessionID string, opts ExportOptions) (*ExportRe
 
 	result := &ExportResult{
 		OutputDir:  outputDir,
-		SessionID:  sessionID,
+		SessionID:  resolvedSessionID,
 		SourceDir:  sourceDir,
 		AgentFiles: make(map[string]string),
 	}
 
 	// Copy main session file
-	sessionFilePath := filepath.Join(projectDir, sessionID+".jsonl")
+	sessionFilePath := filepath.Join(projectDir, resolvedSessionID+".jsonl")
 	destSessionFile := filepath.Join(sourceDir, "session.jsonl")
 	if err := copyFile(sessionFilePath, destSessionFile); err != nil {
 		return nil, fmt.Errorf("failed to copy session file: %w", err)
@@ -95,7 +103,7 @@ func ExportSession(projectPath, sessionID string, opts ExportOptions) (*ExportRe
 	result.MainSessionFile = destSessionFile
 
 	// Copy agent files recursively
-	sessionDir := filepath.Join(projectDir, sessionID)
+	sessionDir := filepath.Join(projectDir, resolvedSessionID)
 	if err := copyAgentFiles(sessionDir, agentsDir, result); err != nil {
 		// Non-fatal: add to errors but continue
 		result.Errors = append(result.Errors, fmt.Sprintf("error copying agent files: %v", err))

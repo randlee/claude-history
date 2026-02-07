@@ -425,20 +425,24 @@ func TestExportSession_SessionNotFound(t *testing.T) {
 		ClaudeDir: tempDir,
 	}
 
-	_, err := ExportSession("/test/project", "nonexistent-session", opts)
+	// Use a valid session ID prefix that doesn't match any sessions
+	_, err := ExportSession("/test/project", "nonexist", opts)
 	if err == nil {
 		t.Error("ExportSession() expected error for nonexistent session")
 	}
 
-	if !strings.Contains(err.Error(), "not found") {
-		t.Errorf("ExportSession() error = %v, should contain 'not found'", err)
+	// Error should indicate session was not found (either "not found" or "no sessions found")
+	errorMsg := err.Error()
+	if !strings.Contains(errorMsg, "not found") && !strings.Contains(errorMsg, "no sessions found") {
+		t.Errorf("ExportSession() error = %v, should contain 'not found' or 'no sessions found'", err)
 	}
 }
 
 func TestExportSession_NoAgents(t *testing.T) {
 	tempDir := t.TempDir()
 
-	sessionID := "session-no-agents"
+	// Use a valid UUID format as session ID
+	sessionID := "12345678-1234-1234-1234-123456789abc"
 	projectDir := filepath.Join(tempDir, "projects", "-test-project")
 
 	if err := os.MkdirAll(projectDir, 0755); err != nil {
@@ -446,8 +450,8 @@ func TestExportSession_NoAgents(t *testing.T) {
 	}
 
 	// Create session file without any agents directory
-	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"session-no-agents","uuid":"entry-1"}
-{"type":"assistant","timestamp":"2026-02-01T10:01:00Z","sessionId":"session-no-agents","uuid":"entry-2"}
+	sessionContent := `{"type":"user","timestamp":"2026-02-01T10:00:00Z","sessionId":"12345678-1234-1234-1234-123456789abc","uuid":"entry-1"}
+{"type":"assistant","timestamp":"2026-02-01T10:01:00Z","sessionId":"12345678-1234-1234-1234-123456789abc","uuid":"entry-2"}
 `
 	sessionFile := filepath.Join(projectDir, sessionID+".jsonl")
 	if err := os.WriteFile(sessionFile, []byte(sessionContent), 0644); err != nil {

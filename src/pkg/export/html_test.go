@@ -162,15 +162,15 @@ func TestRenderConversation_ToolCall(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Check tool call structure
-	if !strings.Contains(html, `class="tool-call"`) {
-		t.Error("HTML missing tool-call class")
+	// Check tool call structure (now includes collapsible collapsed classes)
+	if !strings.Contains(html, `class="tool-call collapsible collapsed"`) {
+		t.Error("HTML missing tool-call class with collapsible collapsed")
 	}
 	if !strings.Contains(html, `data-tool-id="toolu_01ABC"`) {
 		t.Error("HTML missing tool-id attribute")
 	}
-	if !strings.Contains(html, `class="tool-header"`) {
-		t.Error("HTML missing tool-header class")
+	if !strings.Contains(html, `class="tool-header collapsible-trigger"`) {
+		t.Error("HTML missing tool-header collapsible-trigger class")
 	}
 	if !strings.Contains(html, `onclick="toggleTool(this)"`) {
 		t.Error("HTML missing toggle onclick handler")
@@ -178,8 +178,8 @@ func TestRenderConversation_ToolCall(t *testing.T) {
 	if !strings.Contains(html, "[Bash] git status") {
 		t.Error("HTML missing tool summary")
 	}
-	if !strings.Contains(html, `class="tool-body hidden"`) {
-		t.Error("HTML missing hidden tool-body class")
+	if !strings.Contains(html, `class="tool-body hidden collapsible-content collapsed"`) {
+		t.Error("HTML missing hidden tool-body class with collapsible content")
 	}
 	if !strings.Contains(html, `class="tool-input"`) {
 		t.Error("HTML missing tool-input class")
@@ -255,8 +255,8 @@ func TestRenderConversation_SubagentPlaceholder(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	if !strings.Contains(html, `class="subagent"`) {
-		t.Error("HTML missing subagent class")
+	if !strings.Contains(html, `class="subagent collapsible collapsed"`) {
+		t.Error("HTML missing subagent class with collapsible collapsed")
 	}
 	if !strings.Contains(html, `data-agent-id="a12eb64abc123"`) {
 		t.Error("HTML missing agent-id attribute")
@@ -454,9 +454,82 @@ func TestRenderConversation_NullContent(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Should handle nil message gracefully
-	if !strings.Contains(html, `class="message-row user"`) {
-		t.Error("HTML should render message-row even with null content")
+	// Null content should be skipped (no message-row rendered)
+	if strings.Contains(html, `class="message-row user"`) {
+		t.Error("HTML should not render message-row for null content")
+	}
+}
+
+func TestRenderConversation_WhitespaceOnlyContent(t *testing.T) {
+	entries := []models.ConversationEntry{
+		{
+			UUID:      "uuid-whitespace-001",
+			SessionID: "session-001",
+			Type:      models.EntryTypeAssistant,
+			Timestamp: "2026-01-31T10:00:00Z",
+			Message:   json.RawMessage(`{"role": "assistant", "content": [{"type": "text", "text": "   \n\t  "}]}`),
+		},
+		{
+			UUID:      "uuid-whitespace-002",
+			SessionID: "session-001",
+			Type:      models.EntryTypeAssistant,
+			Timestamp: "2026-01-31T10:00:05Z",
+			Message:   json.RawMessage(`{"role": "assistant", "content": [{"type": "text", "text": ""}]}`),
+		},
+		{
+			UUID:      "uuid-whitespace-003",
+			SessionID: "session-001",
+			Type:      models.EntryTypeUser,
+			Timestamp: "2026-01-31T10:00:10Z",
+			Message:   json.RawMessage(`"     "`),
+		},
+	}
+
+	html, err := RenderConversation(entries, nil)
+	if err != nil {
+		t.Fatalf("RenderConversation() error = %v", err)
+	}
+
+	// Whitespace-only assistant entries should be skipped
+	if strings.Contains(html, `data-uuid="uuid-whitespace-001"`) {
+		t.Error("HTML should not render assistant entry with only whitespace")
+	}
+	if strings.Contains(html, `data-uuid="uuid-whitespace-002"`) {
+		t.Error("HTML should not render assistant entry with empty text")
+	}
+	if strings.Contains(html, `data-uuid="uuid-whitespace-003"`) {
+		t.Error("HTML should not render user entry with only whitespace")
+	}
+}
+
+func TestRenderConversation_AssistantWithOnlyToolCalls(t *testing.T) {
+	entries := []models.ConversationEntry{
+		{
+			UUID:      "uuid-toolonly-001",
+			SessionID: "session-001",
+			Type:      models.EntryTypeAssistant,
+			Timestamp: "2026-01-31T10:00:00Z",
+			Message: json.RawMessage(`{
+				"role": "assistant",
+				"content": [
+					{"type": "text", "text": "  "},
+					{"type": "tool_use", "id": "toolu_01", "name": "Read", "input": {"file_path": "/test.go"}}
+				]
+			}`),
+		},
+	}
+
+	html, err := RenderConversation(entries, nil)
+	if err != nil {
+		t.Fatalf("RenderConversation() error = %v", err)
+	}
+
+	// Assistant entries with tool calls should render even if text is only whitespace
+	if !strings.Contains(html, `data-uuid="uuid-toolonly-001"`) {
+		t.Error("HTML should render assistant entry with tool calls even if text is whitespace")
+	}
+	if !strings.Contains(html, "[Read] /test.go") {
+		t.Error("HTML should contain tool call summary")
 	}
 }
 
@@ -529,8 +602,8 @@ func TestRenderConversation_MultipleToolCalls(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Count tool-call divs
-	count := strings.Count(html, `class="tool-call"`)
+	// Count tool-call divs (now with collapsible collapsed classes)
+	count := strings.Count(html, `class="tool-call collapsible collapsed"`)
 	if count != 3 {
 		t.Errorf("HTML has %d tool-call divs, want 3", count)
 	}
@@ -859,9 +932,9 @@ func TestRenderToolCall_NoResult(t *testing.T) {
 
 	html := renderToolCall(tool, models.ToolResult{}, false)
 
-	// Should have tool-call structure
-	if !strings.Contains(html, `class="tool-call"`) {
-		t.Error("HTML missing tool-call class")
+	// Should have tool-call structure (with collapsible collapsed classes)
+	if !strings.Contains(html, `class="tool-call collapsible collapsed"`) {
+		t.Error("HTML missing tool-call class with collapsible collapsed")
 	}
 	if !strings.Contains(html, `class="tool-input"`) {
 		t.Error("HTML missing tool-input class")
@@ -964,9 +1037,9 @@ func TestRenderConversation_MalformedJSON(t *testing.T) {
 		t.Fatalf("RenderConversation() should not error on malformed JSON: %v", err)
 	}
 
-	// Should still produce valid structure with chat bubble layout
-	if !strings.Contains(html, `class="message-row assistant"`) {
-		t.Error("HTML should still render message-row with malformed content")
+	// Malformed content with no parseable text should be skipped
+	if strings.Contains(html, `class="message-row assistant"`) {
+		t.Error("HTML should not render message-row for malformed content with no text")
 	}
 }
 
