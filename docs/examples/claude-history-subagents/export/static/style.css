@@ -1,0 +1,393 @@
+/* Claude History Export Styles */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 1rem;
+    background: #fafafa;
+    color: #333;
+    line-height: 1.5;
+}
+
+.conversation {
+    max-width: 900px;
+    margin: 0 auto;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.header h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.header .meta {
+    color: #666;
+    font-size: 0.875rem;
+}
+
+.header .meta span {
+    margin-right: 1rem;
+}
+
+.controls {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.controls button {
+    margin-right: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.controls button:hover {
+    background: #f5f5f5;
+}
+
+.entry {
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border-radius: 8px;
+}
+
+.entry.user {
+    background: #e3f2fd;
+    border-left: 4px solid #1976d2;
+}
+
+.entry.assistant {
+    background: #e8f5e9;
+    border-left: 4px solid #388e3c;
+}
+
+.entry.system {
+    background: #f5f5f5;
+    border-left: 4px solid #757575;
+}
+
+.entry.queue-operation {
+    background: #fff3e0;
+    border-left: 4px solid #f57c00;
+}
+
+.entry.summary {
+    background: #fce4ec;
+    border-left: 4px solid #c2185b;
+}
+
+.entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.entry-type {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.entry.user .entry-type { color: #1976d2; }
+.entry.assistant .entry-type { color: #388e3c; }
+.entry.system .entry-type { color: #757575; }
+.entry.queue-operation .entry-type { color: #f57c00; }
+
+.entry-content {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.tool-call {
+    margin: 0.5rem 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.tool-header {
+    padding: 0.5rem;
+    background: #fafafa;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tool-header:hover {
+    background: #f0f0f0;
+}
+
+.tool-name {
+    font-weight: 600;
+    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.875rem;
+}
+
+.tool-toggle {
+    color: #666;
+    font-size: 0.75rem;
+}
+
+.tool-body {
+    padding: 0.5rem;
+    background: #fff;
+    border-top: 1px solid #eee;
+}
+
+.tool-body.hidden {
+    display: none;
+}
+
+.tool-input,
+.tool-output {
+    overflow-x: auto;
+    font-size: 0.875rem;
+}
+
+.tool-input {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed #eee;
+}
+
+.tool-input h4,
+.tool-output h4 {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.subagent {
+    margin: 1rem 0;
+    border: 2px solid #673ab7;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.subagent-header {
+    padding: 0.75rem;
+    background: #ede7f6;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.subagent-header:hover {
+    background: #e1d5f5;
+}
+
+.subagent-title {
+    font-weight: 600;
+    color: #673ab7;
+}
+
+.subagent-meta {
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.subagent-content {
+    padding: 1rem;
+    background: #faf8ff;
+}
+
+.subagent-content:empty {
+    display: none;
+}
+
+.subagent-loading {
+    color: #666;
+    font-style: italic;
+}
+
+pre {
+    margin: 0;
+    padding: 0.5rem;
+    background: #f5f5f5;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+code {
+    font-family: 'SF Mono', Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.875em;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    body {
+        padding: 0.5rem;
+    }
+
+    .conversation {
+        max-width: 100%;
+    }
+
+    .entry {
+        padding: 0.75rem;
+        margin: 0.25rem 0;
+    }
+
+    .header h1 {
+        font-size: 1.25rem;
+    }
+
+    .controls button {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    pre {
+        font-size: 0.75rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    body {
+        background: #fff;
+    }
+
+    .controls {
+        display: none;
+    }
+
+    .tool-body.hidden {
+        display: block;
+    }
+
+    .subagent-content {
+        display: block;
+    }
+
+    .entry {
+        break-inside: avoid;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #1a1a1a;
+        color: #e0e0e0;
+    }
+
+    .header {
+        border-bottom-color: #333;
+    }
+
+    .controls {
+        background: #2a2a2a;
+        border-color: #444;
+    }
+
+    .controls button {
+        background: #2a2a2a;
+        border-color: #555;
+        color: #e0e0e0;
+    }
+
+    .controls button:hover {
+        background: #333;
+    }
+
+    .entry.user {
+        background: #1e3a5f;
+        border-left-color: #42a5f5;
+    }
+
+    .entry.assistant {
+        background: #1e4d2b;
+        border-left-color: #66bb6a;
+    }
+
+    .entry.system {
+        background: #2a2a2a;
+        border-left-color: #9e9e9e;
+    }
+
+    .entry.queue-operation {
+        background: #4a3019;
+        border-left-color: #ffb74d;
+    }
+
+    .entry.user .entry-type { color: #42a5f5; }
+    .entry.assistant .entry-type { color: #66bb6a; }
+    .entry.system .entry-type { color: #9e9e9e; }
+    .entry.queue-operation .entry-type { color: #ffb74d; }
+
+    .tool-call {
+        border-color: #444;
+    }
+
+    .tool-header {
+        background: #2a2a2a;
+    }
+
+    .tool-header:hover {
+        background: #333;
+    }
+
+    .tool-body {
+        background: #1f1f1f;
+        border-top-color: #333;
+    }
+
+    .subagent {
+        border-color: #9575cd;
+    }
+
+    .subagent-header {
+        background: #2d2340;
+    }
+
+    .subagent-header:hover {
+        background: #3a2d52;
+    }
+
+    .subagent-title {
+        color: #b39ddb;
+    }
+
+    .subagent-content {
+        background: #1f1a2e;
+    }
+
+    pre {
+        background: #2a2a2a;
+    }
+
+    code {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
