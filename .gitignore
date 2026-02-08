@@ -4,6 +4,7 @@
 # Binaries for programs and plugins
 bin/
 src/claude-history
+claude-history
 *.exe
 *.exe~
 *.dll
@@ -18,6 +19,7 @@ src/claude-history
 coverage.*
 *.coverprofile
 profile.cov
+INTEGRATION_TESTS_SUMMARY.md
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
