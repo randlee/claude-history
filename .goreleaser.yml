@@ -87,4 +87,3 @@ release:
   draft: false
   prerelease: auto
   name_template: "{{.ProjectName}} v{{.Version}}"
-  header_template_file: .goreleaser/release-notes-template.md
