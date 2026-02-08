@@ -21,9 +21,11 @@ hooks:
 
 ## Purpose
 
-Search across all Claude Code agent history to find past agents matching fuzzy criteria. Returns structured results with session/agent IDs for resurrection or reference.
+Search through Claude Code's JSONL history files to locate agents matching fuzzy criteria. Uses Grep/Glob/Read tools to scan `~/.claude/projects/` and find session_id + agent_id for agents that match the query.
 
-**Single Responsibility**: Search and rank agent matches only. Does not resurrect, export, or perform other operations.
+**Single Responsibility**: Search raw JSONL files and return session/agent IDs. Does not resurrect, export, or perform other operations.
+
+**Key Insight**: If session_id and agent_id are already known, resurrection is trivial. This agent's job is to FIND those IDs when they're unknown.
 
 ## Inputs
 
@@ -88,8 +90,8 @@ Always return fenced JSON with this structure:
 
 **Required checks**:
 - Check `query` is non-empty string (fail if empty)
-- Verify `claude-history` CLI is available: `which claude-history`
-  - If missing, return EXECUTION.TOOL_MISSING with suggested_action
+- Verify `~/.claude/projects/` directory exists
+  - If missing, return EXECUTION.NO_HISTORY error
 
 **Path safety** (if `project_path` provided):
 - Verify path exists or can be resolved
@@ -120,32 +122,55 @@ If `project_path` provided:
 If not provided:
 - Search all projects in `~/.claude/projects/`
 
-### 3. Query Claude History
+### 3. Search JSONL History Files
 
-Execute in sequence to gather candidate agents:
+Use Grep/Glob/Read tools to search Claude Code's history:
 
-**3a. List sessions in project(s)**:
-```bash
-claude-history list <project-path> --format json
+**3a. Find candidate session files**:
+
+If `project_path` provided:
 ```
-Parse JSON to get list of session IDs.
-
-**3b. Query agent spawns for each session**:
-```bash
-claude-history query <project-path> --session <session-id> --type queue-operation --format json
+Use Glob tool: ~/.claude/projects/{encoded-path}/*.jsonl
 ```
-Parse queue-operation entries to find agent spawn events.
 
-**3c. Extract agent metadata**:
-From each queue-operation entry, extract:
-- Session ID (from query context)
-- Agent ID (from queue-operation.agent_id field)
-- Spawn timestamp (from entry.timestamp)
-- Agent type (from queue-operation.subagent_type)
-- Agent description (from queue-operation.prompt field, first 500 chars)
-- Project path (from query context)
+If no project_path (search all):
+```
+Use Glob tool: ~/.claude/projects/*/*.jsonl
+```
 
-Save candidates as JSON array for ranking.
+This gives list of session JSONL file paths.
+
+**3b. Grep for agent spawn entries**:
+
+Search for queue-operation entries containing the query keywords:
+
+```
+Use Grep tool with pattern: "type":"queue-operation"
+Search in: session files from 3a
+Output mode: content (to get full lines)
+```
+
+Then filter results for lines containing query keywords (case-insensitive).
+
+**3c. Read matching agent subfiles**:
+
+For promising queue-operation entries, check if subagent files exist:
+```
+Pattern: {session-id}/subagents/agent-{agent-id}.jsonl
+Use Glob to verify file exists
+```
+
+**3d. Extract metadata from matches**:
+
+For each match, parse the JSONL entry to extract:
+- Session ID (from file path)
+- Agent ID (from queue-operation or subagent file path)
+- Timestamp (from entry.timestamp field)
+- Agent type (from queue-operation.subagent_type field)
+- Agent description (from queue-operation.prompt field)
+- Project path (from session file directory path)
+
+Save as candidates array for ranking.
 
 ### 4. Apply Fuzzy Matching
 
@@ -279,12 +304,15 @@ Return fenced JSON.
 
 ## Notes
 
-- Uses claude-history CLI tool (must be in PATH or specify full path)
+- Uses Grep, Glob, and Read tools to search JSONL history files directly
+- Searches `~/.claude/projects/` directory structure
+- Parses queue-operation entries to find agent spawns
 - Searches are case-insensitive
 - Fuzzy matching allows typos and partial matches
 - Confidence scores help user assess relevance
 - Does not resurrect agents (that's /resurrect skill's job)
 - Does not modify history (read-only operations only)
+- Works with Claude Code's internal JSONL format
 
 ## Future Enhancements
 
