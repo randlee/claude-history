@@ -36,3 +36,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Publish to winget
+        uses: vedantmgoyal2009/winget-releaser@v2
+        with:
+          identifier: randlee.claude-history
+          installers-regex: 'claude-history_.*_windows_amd64\.zip$'
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -4,8 +4,8 @@ This document describes the release process for claude-history, including how re
 
 ## Release Status by Version
 
-- **v0.1.0, v0.2.0**: Homebrew publishing failed due to authentication issues. Manual installation only.
-- **v0.3.0+**: Homebrew publishing works automatically. All installation methods functional.
+- **v0.1.0, v0.2.0**: Homebrew and winget publishing not configured. Manual installation only.
+- **v0.3.0+**: Homebrew and winget publishing fully automated. All installation methods functional.
 
 ## Release Notes Template
 
@@ -42,7 +42,7 @@ Different installation methods become available at different times:
 | **Go install** | Immediate | Published to GitHub, works via `go install` |
 | **Install Script** | Immediate | Script downloads from GitHub Releases |
 | **Homebrew** | ~5-10 minutes | GoReleaser automatically pushes to `randlee/homebrew-tap` |
-| **winget** | Manual | Requires PR to microsoft/winget-pkgs (see WINGET_SETUP.md) |
+| **winget** | ~1-2 days | Automated PR to microsoft/winget-pkgs, requires Microsoft approval |
 
 > **Note:** v0.2.0 had issues with Homebrew publishing due to authentication. This was fixed in develop and will work automatically starting with v0.3.0.
 
@@ -68,6 +68,7 @@ Different installation methods become available at different times:
    - Creates GitHub Release with release notes from template
    - Publishes to GitHub Releases
    - Updates Homebrew tap formula (automatic)
+   - Creates winget PR to microsoft/winget-pkgs (automatic)
 
 3. **Verify GitHub Release:**
    - Check https://github.com/randlee/claude-history/releases/latest
@@ -85,16 +86,17 @@ After ~5-10 minutes:
 
 If the formula didn't update, check the workflow run for errors.
 
-#### winget (manual process - optional)
+#### winget (automatic - monitor only)
 
-See [WINGET_SETUP.md](./WINGET_SETUP.md) for detailed instructions.
+The workflow automatically creates a PR to microsoft/winget-pkgs using winget-releaser.
 
-1. [ ] Calculate SHA256 for Windows zip
-2. [ ] Update `.winget/randlee.claude-history.yaml` with new version and hash
-3. [ ] Submit PR to microsoft/winget-pkgs
-4. [ ] Wait for validation (automated tests)
-5. [ ] PR merged (~1-2 days)
-6. [ ] Available via winget (~24 hours after merge)
+After ~1-2 days:
+
+- [ ] Check PR status: https://github.com/microsoft/winget-pkgs/pulls?q=claude-history
+- [ ] Monitor for validation failures (automated tests run on the PR)
+- [ ] Once merged, verify: `winget search claude-history`
+
+**Note**: The PR is created automatically but requires Microsoft maintainer approval. Validation failures are rare if the manifest is correct.
 
 ## Troubleshooting
 
