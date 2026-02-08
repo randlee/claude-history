@@ -5,7 +5,8 @@ This document describes the release process for claude-history, including how re
 ## Release Status by Version
 
 - **v0.1.0, v0.2.0**: Homebrew and winget publishing not configured. Manual installation only.
-- **v0.3.0+**: Homebrew and winget publishing fully automated. All installation methods functional.
+- **v0.3.0**: Homebrew published and functional. winget manifest submitted (PR #337541), pending Microsoft approval. Once approved, future releases will be fully automated.
+- **v0.4.0+**: Homebrew and winget publishing fully automated. All installation methods functional.
 
 ## Release Notes Template
 
@@ -44,7 +45,9 @@ Different installation methods become available at different times:
 | **Homebrew** | ~5-10 minutes | GoReleaser automatically pushes to `randlee/homebrew-tap` |
 | **winget** | ~1-2 days | Automated PR to microsoft/winget-pkgs, requires Microsoft approval |
 
-> **Note:** v0.2.0 had issues with Homebrew publishing due to authentication. This was fixed in develop and will work automatically starting with v0.3.0.
+> **Note:** v0.2.0 had issues with Homebrew publishing due to authentication. This was fixed in develop and works automatically starting with v0.3.0.
+>
+> **winget Status**: Initial manifest for v0.3.0 submitted in [PR #337541](https://github.com/microsoft/winget-pkgs/pull/337541). Once approved, winget-releaser will automatically handle future version updates.
 
 ## Release Checklist
 
