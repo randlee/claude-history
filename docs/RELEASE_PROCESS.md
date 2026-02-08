@@ -2,6 +2,11 @@
 
 This document describes the release process for claude-history, including how release notes are generated and what happens with each release.
 
+## Release Status by Version
+
+- **v0.1.0, v0.2.0**: Homebrew publishing failed due to authentication issues. Manual installation only.
+- **v0.3.0+**: Homebrew publishing works automatically. All installation methods functional.
+
 ## Release Notes Template
 
 Release notes are generated automatically by GoReleaser using the template at `.goreleaser/release-notes-template.md`.
@@ -27,7 +32,7 @@ The template lists **all** installation methods (Homebrew, winget, install scrip
 3. **Forward-looking** - Methods may become available shortly after release
 4. **Platform parity** - Shows commitment to supporting all platforms
 
-### Installation Method Availability
+### Installation Method Availability (v0.3.0+)
 
 Different installation methods become available at different times:
 
@@ -36,8 +41,10 @@ Different installation methods become available at different times:
 | **Direct Download** | Immediate | Binaries published to GitHub Releases by GoReleaser |
 | **Go install** | Immediate | Published to GitHub, works via `go install` |
 | **Install Script** | Immediate | Script downloads from GitHub Releases |
-| **Homebrew** | ~5-10 minutes | GoReleaser pushes to `randlee/homebrew-tap` (requires tap repo exists) |
+| **Homebrew** | ~5-10 minutes | GoReleaser automatically pushes to `randlee/homebrew-tap` |
 | **winget** | Manual | Requires PR to microsoft/winget-pkgs (see WINGET_SETUP.md) |
+
+> **Note:** v0.2.0 had issues with Homebrew publishing due to authentication. This was fixed in develop and will work automatically starting with v0.3.0.
 
 ## Release Checklist
 
@@ -60,7 +67,7 @@ Different installation methods become available at different times:
    - Builds binaries for all platforms
    - Creates GitHub Release with release notes from template
    - Publishes to GitHub Releases
-   - Attempts to update Homebrew tap (if `randlee/homebrew-tap` exists)
+   - Updates Homebrew tap formula (automatic)
 
 3. **Verify GitHub Release:**
    - Check https://github.com/randlee/claude-history/releases/latest
@@ -69,12 +76,16 @@ Different installation methods become available at different times:
 
 ### Post-Release Tasks
 
-#### Homebrew (if tap exists)
+#### Homebrew (automatic - verify only)
 
-- [ ] Verify formula updated in `randlee/homebrew-tap`
-- [ ] Test installation: `brew install randlee/tap/claude-history`
+After ~5-10 minutes:
 
-#### winget (manual process)
+- [ ] Verify formula updated: https://github.com/randlee/homebrew-tap/blob/main/Formula/claude-history.rb
+- [ ] Test installation: `brew upgrade claude-history` or `brew install randlee/tap/claude-history`
+
+If the formula didn't update, check the workflow run for errors.
+
+#### winget (manual process - optional)
 
 See [WINGET_SETUP.md](./WINGET_SETUP.md) for detailed instructions.
 
@@ -87,22 +98,23 @@ See [WINGET_SETUP.md](./WINGET_SETUP.md) for detailed instructions.
 
 ## Troubleshooting
 
-### Homebrew tap doesn't exist
+### Homebrew publishing fails with 403 error
 
 If you see:
 ```
-Error: failed to publish artifacts: homebrew: repository randlee/homebrew-tap not found
+homebrew tap formula: could not update "Formula/claude-history.rb": 403 Resource not accessible by integration
 ```
 
-**Solution**: Create the tap repository first (see [HOMEBREW_SETUP.md](./HOMEBREW_SETUP.md))
+**Cause**: The `HOMEBREW_TAP_TOKEN` secret is missing or expired.
 
-### GoReleaser authentication errors
+**Solution**:
+1. Create a new fine-grained PAT at https://github.com/settings/personal-access-tokens/new
+2. Grant it `Contents: Read and write` permission for `randlee/homebrew-tap` only
+3. Add it as `HOMEBREW_TAP_TOKEN` secret at https://github.com/randlee/claude-history/settings/secrets/actions
 
-Ensure `GITHUB_TOKEN` environment variable is set:
-```bash
-export GITHUB_TOKEN="ghp_..."
-goreleaser release --clean
-```
+### GitHub Release fails to create
+
+Ensure the GitHub Actions workflow has proper permissions. The default `GITHUB_TOKEN` should have `contents: write` permission (configured in `.github/workflows/release.yml`).
 
 ### Release notes template not rendering
 
