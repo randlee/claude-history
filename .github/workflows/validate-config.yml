@@ -1,0 +1,68 @@
+name: Validate Configuration
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.goreleaser.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/validate-config.yml'
+  pull_request:
+    paths:
+      - '.goreleaser.yml'
+      - '.github/workflows/release.yml'
+      - '.github/workflows/validate-config.yml'
+
+jobs:
+  validate-goreleaser:
+    name: Validate GoReleaser Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+          cache-dependency-path: src/go.sum
+
+      - name: Run GoReleaser check
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: latest
+          args: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run GoReleaser build snapshot
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: latest
+          args: build --snapshot --clean --single-target
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify build artifacts
+        run: |
+          echo "Checking for build artifacts..."
+          if [ ! -d "dist" ]; then
+            echo "ERROR: dist directory not created"
+            exit 1
+          fi
+
+          # Check that at least one binary was created
+          if [ -z "$(find dist -name 'claude-history*' -type f)" ]; then
+            echo "ERROR: No binary artifacts found in dist/"
+            exit 1
+          fi
+
+          echo "Build artifacts verified successfully"
+          ls -lh dist/

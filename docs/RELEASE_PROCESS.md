@@ -54,23 +54,38 @@ Different installation methods become available at different times:
 - [ ] Linter clean (`golangci-lint run`)
 - [ ] CHANGELOG.md updated with new version
 - [ ] Version number follows [Semantic Versioning](https://semver.org/)
+- [ ] GoReleaser configuration validated (`./scripts/validate-goreleaser.sh`)
 
 ### Creating a Release
 
-1. **Tag the release:**
+1. **Validate the GoReleaser configuration:**
+   ```bash
+   ./scripts/validate-goreleaser.sh
+   ```
+
+   This validates:
+   - Configuration syntax
+   - Build configuration with a snapshot build
+   - No deprecated or invalid fields
+   - Required files exist
+
+   **Important**: This validation runs automatically in CI on pushes to main/develop and on PRs,
+   but running it locally before tagging helps catch errors early.
+
+2. **Tag the release:**
    ```bash
    git tag -a v0.x.0 -m "Release v0.x.0"
    git push origin v0.x.0
    ```
 
-2. **GoReleaser builds and publishes:**
+3. **GoReleaser builds and publishes:**
    - Builds binaries for all platforms
    - Creates GitHub Release with release notes from template
    - Publishes to GitHub Releases
    - Updates Homebrew tap formula (automatic)
    - Creates winget PR to microsoft/winget-pkgs (automatic)
 
-3. **Verify GitHub Release:**
+4. **Verify GitHub Release:**
    - Check https://github.com/randlee/claude-history/releases/latest
    - Verify all binaries are present in Assets
    - Verify release notes rendered correctly
@@ -100,6 +115,26 @@ After ~1-2 days:
 
 ## Troubleshooting
 
+### GoReleaser configuration errors
+
+If the release workflow fails with a configuration error:
+
+```
+Error: .goreleaser.yml: unknown field: header_template_file
+```
+
+**Cause**: The `.goreleaser.yml` contains fields not supported by the GoReleaser version.
+
+**Solution**:
+1. Check the error message for the invalid field name
+2. Consult [GoReleaser documentation](https://goreleaser.com/customization/) for the correct field name
+3. Update `.goreleaser.yml` with the correct syntax
+4. Run `./scripts/validate-goreleaser.sh` to verify the fix
+5. Commit the fix and push
+
+**Prevention**: Always run `./scripts/validate-goreleaser.sh` before creating a release tag.
+The validation workflow also runs automatically on pushes to main/develop and on PRs.
+
 ### Homebrew publishing fails with 403 error
 
 If you see:
@@ -124,6 +159,25 @@ Verify the template path in `.goreleaser.yml`:
 ```yaml
 release:
   header_template_file: .goreleaser/release-notes-template.md
+```
+
+## Optional: Pre-commit Hook
+
+You can optionally install a pre-commit hook that automatically validates `.goreleaser.yml` before committing:
+
+```bash
+cp scripts/pre-commit-hook.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+This hook will:
+- Run only when `.goreleaser.yml` is being committed
+- Execute `./scripts/validate-goreleaser.sh` automatically
+- Prevent the commit if validation fails
+
+To bypass the hook (not recommended):
+```bash
+git commit --no-verify
 ```
 
 ## Modifying the Template

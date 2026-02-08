@@ -273,6 +273,28 @@ go test ./...
 go test ./... -cover
 ```
 
+### Validating GoReleaser Configuration
+
+Before creating a release or modifying `.goreleaser.yml`, validate the configuration:
+
+```bash
+./scripts/validate-goreleaser.sh
+```
+
+This script:
+- Checks configuration syntax with `goreleaser check`
+- Runs a snapshot build to validate the full configuration
+- Detects deprecated or invalid fields
+- Verifies required files exist
+
+The validation also runs automatically in CI on pushes to main/develop and on PRs.
+
+**Optional**: Install a pre-commit hook to validate automatically:
+```bash
+cp scripts/pre-commit-hook.sh .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
 ### Project Structure
 
 ```
