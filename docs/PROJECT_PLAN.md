@@ -1,10 +1,10 @@
 # Claude History CLI Tool - Project Plan
 
-**Document Version**: 2.10
+**Document Version**: 2.11
 **Created**: 2026-02-01
-**Updated**: 2026-02-03 (Phase 10 Wave 3 in progress)
+**Updated**: 2026-02-07 (Phase 15 complete)
 **Language**: Go
-**Status**: In Development (Phase 10 Wave 3 in progress, Sprint 10i remaining)
+**Status**: In Development (Phase 15 complete)
 
 ---
 
@@ -174,10 +174,11 @@ src/claude-history/
 - ✅ Phase 9: Data Model Alignment (fix agent spawn detection, query --agent flag)
 - ✅ Phase 10 Wave 1: CSS Foundation, Copy-to-Clipboard, Markdown/Syntax (merged PR #22)
 - ✅ Phase 10 Wave 2: Chat Bubble Layout (PR #24), Color-Coded Overlays (PR #25), Interactive Controls (PR #26)
-- ✅ Phase 10 Wave 3 (partial): Deep Dive Navigation (PR #27), Header/Footer (PR #28)
+- ✅ Phase 10 Wave 3: Deep Dive Navigation (PR #27), Header/Footer (PR #28)
+- ✅ Phase 15: Query HTML Format & UX Improvements (PR #42)
 
 ### In Progress
-- 🔄 Phase 10 Wave 3: Sprint 10i Integration & Polish (final sprint)
+- None
 
 ### Planned
 - 🔲 Future enhancements (see detailed plan below)
@@ -2470,6 +2471,86 @@ After all dev sprints complete:
 ```
 ~/.claude/projects/-Users-name-project/fbd51e2b.../subagents/agent-a12eb64.jsonl
 ```
+
+---
+
+### Phase 15: Query HTML Format & UX Improvements ✅ COMPLETE
+
+**Priority**: HIGH
+**Status**: COMPLETE (merged to develop via PR #42)
+**Completion Date**: 2026-02-07
+
+Add HTML export format to query command with enhanced UX improvements.
+
+#### Objectives
+- Enable HTML output format for query command
+- Auto-open HTML reports in default browser
+- Improve tool-only message display
+- Add clickable file paths in conversation text
+- Create version tracking system
+
+#### Implementation Checklist
+
+**Query HTML Format** ✅
+- [x] Add `--format html` option to query command
+- [x] Implement `generateQueryHTML()` function
+- [x] Auto-open HTML in default browser
+- [x] Wire to existing HTML export infrastructure
+
+**UX Enhancements** ✅
+- [x] Tool-only message compact styling with tool type headers
+- [x] File path detection and linkification (Unix + Windows paths)
+- [x] Remove "Main Session" breadcrumb badge
+- [x] Hide empty breadcrumbs completely
+- [x] Enhanced agent ID copy with full CLI commands
+- [x] Empty message bubble filtering and tests
+
+**Version Management** ✅
+- [x] Create `pkg/version/version.go` with single source of truth
+- [x] Update CLI and HTML to use version constant
+- [x] Add unit test to enforce version consistency
+
+**Testing** ✅
+- [x] Comprehensive empty bubble detection tests
+- [x] File path linking tests (cross-platform)
+- [x] Version consistency unit test
+- [x] Tool-only message tests
+- [x] Platform-aware test skipping for Windows
+
+**Documentation** ✅
+- [x] Document design rationale for path detection
+- [x] Add Windows 8.3 short filename support notes
+- [x] Update CHANGELOG.md with Phase 15 features
+
+#### Files Modified
+- `src/cmd/query.go` - HTML format handling and auto-open
+- `src/pkg/export/html.go` - Enhanced rendering, tool-only messages
+- `src/pkg/export/paths.go` - File path detection and linking (NEW)
+- `src/pkg/export/markdown.go` - Path processing in inline code
+- `src/pkg/version/version.go` - Version constant (NEW)
+- `src/pkg/export/templates/script.js` - Tool-only header handlers
+- `src/pkg/export/templates/style.css` - Compact tool-only styling
+- `src/pkg/export/templates/navigation.js` - Removed Main Session badge
+
+#### Test Files Added
+- `src/pkg/export/paths_test.go` - File path detection tests
+- `src/pkg/export/html_empty_test.go` - Empty bubble detection
+- `src/pkg/export/html_empty_full_test.go` - Full integration tests
+- `src/pkg/export/html_empty_edgecases_test.go` - Edge case tests
+- `src/pkg/version/version_test.go` - Version consistency tests
+- `scripts/check-empty-bubbles.sh` - Automated empty bubble checker
+
+#### Outcomes
+- ✅ Users can generate rich HTML reports with `--format html`
+- ✅ 113+ clickable file:// links in typical sessions
+- ✅ Tool-only messages display as single-line collapsed headers
+- ✅ Version 0.3.0 with single source of truth
+- ✅ All CI checks passing (Windows, macOS, Ubuntu + lint)
+- ✅ Zero empty message bubbles in HTML export
+
+#### Related PRs
+- PR #42: Phase 15 implementation (merged to develop)
+- PR #43: Release v0.3.0 to main (pending)
 
 ---
 

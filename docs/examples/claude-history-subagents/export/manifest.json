@@ -1,0 +1,829 @@
+{
+  "version": "1.0.0",
+  "exported_at": "2026-02-08T00:01:23.450483Z",
+  "session_id": "c04f363a-5592-4c56-b4af-8d9533b5bca1",
+  "project_path": "-Users-randlee-Documents-github-claude-history",
+  "entry_count": 6665,
+  "agent_tree": {
+    "id": "c04f363a-5592-4c56-b4af-8d9533b5bca1",
+    "entries": 2041,
+    "children": [
+      {
+        "id": "aprompt_suggestion-969732",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-a6b7e7",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-ebc48c",
+        "entries": 4
+      },
+      {
+        "id": "a4d2f80",
+        "entries": 55
+      },
+      {
+        "id": "aprompt_suggestion-98a439",
+        "entries": 4
+      },
+      {
+        "id": "aprompt_suggestion-cf2865",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-d5af4f",
+        "entries": 3
+      },
+      {
+        "id": "a548f34",
+        "entries": 50
+      },
+      {
+        "id": "aef30b5",
+        "entries": 227
+      },
+      {
+        "id": "aprompt_suggestion-5feafe",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-cfc532",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-f66aa4",
+        "entries": 3
+      },
+      {
+        "id": "abae753",
+        "entries": 356
+      },
+      {
+        "id": "aprompt_suggestion-7b4581",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-eed543",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-fac984",
+        "entries": 2
+      },
+      {
+        "id": "ad2309b",
+        "entries": 184
+      },
+      {
+        "id": "af35287",
+        "entries": 35
+      },
+      {
+        "id": "aprompt_suggestion-40d96e",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-56e10c",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-78522a",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-cb001c",
+        "entries": 2
+      },
+      {
+        "id": "a7734eb",
+        "entries": 210
+      },
+      {
+        "id": "af56ab9",
+        "entries": 150
+      },
+      {
+        "id": "aprompt_suggestion-0e0ed5",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-1f0f1a",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-c749b4",
+        "entries": 29
+      },
+      {
+        "id": "aprompt_suggestion-e454ee",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-fb23af",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-fd2b60",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-6183de",
+        "entries": 3
+      },
+      {
+        "id": "a21f86b",
+        "entries": 112
+      },
+      {
+        "id": "a70e460",
+        "entries": 200
+      },
+      {
+        "id": "a7fc6a5",
+        "entries": 36
+      },
+      {
+        "id": "aprompt_suggestion-3c894a",
+        "entries": 4
+      },
+      {
+        "id": "aprompt_suggestion-4009ba",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-5a40f5",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-d7a20e",
+        "entries": 3
+      },
+      {
+        "id": "a53b173",
+        "entries": 42
+      },
+      {
+        "id": "a546a1b",
+        "entries": 79
+      },
+      {
+        "id": "a5e7369",
+        "entries": 336
+      },
+      {
+        "id": "aeb02c6",
+        "entries": 164
+      },
+      {
+        "id": "aprompt_suggestion-05a4c2",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-05f45a",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-239a0b",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-afaf8b",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-4020c4",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-835677",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-a71b97",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-b2abaa",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-ec5bfe",
+        "entries": 3
+      },
+      {
+        "id": "acompact-53a066",
+        "entries": 4
+      },
+      {
+        "id": "adb90e2",
+        "entries": 34
+      },
+      {
+        "id": "a00c619",
+        "entries": 215
+      },
+      {
+        "id": "a2a93ab",
+        "entries": 102
+      },
+      {
+        "id": "aprompt_suggestion-637d5f",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-84e14e",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-a5da82",
+        "entries": 3
+      },
+      {
+        "id": "a41f3dc",
+        "entries": 232
+      },
+      {
+        "id": "aprompt_suggestion-9802ea",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-ec016b",
+        "entries": 3
+      },
+      {
+        "id": "a857ac6",
+        "entries": 32
+      },
+      {
+        "id": "acompact-efec99",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-4f4f29",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-7fc007",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-a34cc0",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-f809f4",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-23c781",
+        "entries": 4
+      },
+      {
+        "id": "aprompt_suggestion-5a4ebf",
+        "entries": 4
+      },
+      {
+        "id": "aprompt_suggestion-5d1088",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-82de0a",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-b20ec0",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-db2774",
+        "entries": 3
+      },
+      {
+        "id": "a45ee2a",
+        "entries": 133
+      },
+      {
+        "id": "a52c2b7",
+        "entries": 192
+      },
+      {
+        "id": "a79b4d3",
+        "entries": 166
+      },
+      {
+        "id": "aabf2dd",
+        "entries": 588
+      },
+      {
+        "id": "aprompt_suggestion-4d6115",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-b06b15",
+        "entries": 2
+      },
+      {
+        "id": "ae80a13",
+        "entries": 51
+      },
+      {
+        "id": "a50b3b2",
+        "entries": 197
+      },
+      {
+        "id": "a5da570",
+        "entries": 54
+      },
+      {
+        "id": "a8fc95b",
+        "entries": 193
+      },
+      {
+        "id": "aprompt_suggestion-310e8f",
+        "entries": 4
+      },
+      {
+        "id": "aprompt_suggestion-7a6aa8",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-c73246",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-d9b41e",
+        "entries": 3
+      },
+      {
+        "id": "acompact-d74098",
+        "entries": 4
+      },
+      {
+        "id": "aprompt_suggestion-861b59",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-de4c83",
+        "entries": 2
+      }
+    ]
+  },
+  "source_files": [
+    {
+      "type": "session",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-969732",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-969732.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-a6b7e7",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-a6b7e7.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-ebc48c",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-ebc48c.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a4d2f80",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a4d2f80.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-98a439",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-98a439.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-cf2865",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-cf2865.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-d5af4f",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-d5af4f.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a548f34",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a548f34.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aef30b5",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aef30b5.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-5feafe",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-5feafe.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-cfc532",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-cfc532.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-f66aa4",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-f66aa4.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "abae753",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-abae753.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-7b4581",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-7b4581.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-eed543",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-eed543.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-fac984",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-fac984.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "ad2309b",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-ad2309b.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "af35287",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-af35287.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-40d96e",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-40d96e.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-56e10c",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-56e10c.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-78522a",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-78522a.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-cb001c",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-cb001c.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a7734eb",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a7734eb.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "af56ab9",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-af56ab9.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-0e0ed5",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-0e0ed5.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-1f0f1a",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-1f0f1a.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-c749b4",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-c749b4.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-e454ee",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-e454ee.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-fb23af",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-fb23af.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-fd2b60",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-fd2b60.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-6183de",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-6183de.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a21f86b",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a21f86b.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a70e460",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a70e460.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a7fc6a5",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a7fc6a5.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-3c894a",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-3c894a.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-4009ba",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-4009ba.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-5a40f5",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-5a40f5.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-d7a20e",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-d7a20e.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a53b173",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a53b173.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a546a1b",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a546a1b.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a5e7369",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a5e7369.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aeb02c6",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aeb02c6.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-05a4c2",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-05a4c2.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-05f45a",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-05f45a.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-239a0b",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-239a0b.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-afaf8b",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-afaf8b.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-4020c4",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-4020c4.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-835677",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-835677.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-a71b97",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-a71b97.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-b2abaa",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-b2abaa.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-ec5bfe",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-ec5bfe.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "acompact-53a066",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-acompact-53a066.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "adb90e2",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-adb90e2.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a00c619",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a00c619.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a2a93ab",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a2a93ab.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-637d5f",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-637d5f.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-84e14e",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-84e14e.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-a5da82",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-a5da82.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a41f3dc",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a41f3dc.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-9802ea",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-9802ea.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-ec016b",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-ec016b.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a857ac6",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a857ac6.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "acompact-efec99",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-acompact-efec99.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-4f4f29",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-4f4f29.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-7fc007",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-7fc007.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-a34cc0",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-a34cc0.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-f809f4",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-f809f4.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-23c781",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-23c781.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-5a4ebf",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-5a4ebf.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-5d1088",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-5d1088.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-82de0a",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-82de0a.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-b20ec0",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-b20ec0.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-db2774",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-db2774.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a45ee2a",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a45ee2a.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a52c2b7",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a52c2b7.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a79b4d3",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a79b4d3.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aabf2dd",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aabf2dd.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-4d6115",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-4d6115.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-b06b15",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-b06b15.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "ae80a13",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-ae80a13.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a50b3b2",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a50b3b2.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a5da570",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a5da570.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "a8fc95b",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-a8fc95b.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-310e8f",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-310e8f.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-7a6aa8",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-7a6aa8.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-c73246",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-c73246.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-d9b41e",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-d9b41e.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "acompact-d74098",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-acompact-d74098.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-861b59",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-861b59.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-de4c83",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/c04f363a-5592-4c56-b4af-8d9533b5bca1/subagents/agent-aprompt_suggestion-de4c83.jsonl"
+    }
+  ]
+}

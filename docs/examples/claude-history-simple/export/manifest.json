@@ -1,0 +1,100 @@
+{
+  "version": "1.0.0",
+  "exported_at": "2026-02-08T00:01:17.297259Z",
+  "session_id": "967e501d-aa48-4eab-a21f-b17058bd78f0",
+  "project_path": "-Users-randlee-Documents-github-claude-history",
+  "entry_count": 720,
+  "agent_tree": {
+    "id": "967e501d-aa48-4eab-a21f-b17058bd78f0",
+    "entries": 590,
+    "children": [
+      {
+        "id": "acompact-a94287",
+        "entries": 4
+      },
+      {
+        "id": "aprompt_suggestion-221b3e",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-54c7bb",
+        "entries": 2
+      },
+      {
+        "id": "aprompt_suggestion-a3b319",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-aafb27",
+        "entries": 4
+      },
+      {
+        "id": "aprompt_suggestion-fa3a2b",
+        "entries": 3
+      },
+      {
+        "id": "aae161c",
+        "entries": 105
+      },
+      {
+        "id": "aprompt_suggestion-3cf366",
+        "entries": 3
+      },
+      {
+        "id": "aprompt_suggestion-e38cdd",
+        "entries": 3
+      }
+    ]
+  },
+  "source_files": [
+    {
+      "type": "session",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/967e501d-aa48-4eab-a21f-b17058bd78f0.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "acompact-a94287",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/967e501d-aa48-4eab-a21f-b17058bd78f0/subagents/agent-acompact-a94287.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-221b3e",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/967e501d-aa48-4eab-a21f-b17058bd78f0/subagents/agent-aprompt_suggestion-221b3e.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-54c7bb",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/967e501d-aa48-4eab-a21f-b17058bd78f0/subagents/agent-aprompt_suggestion-54c7bb.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-a3b319",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/967e501d-aa48-4eab-a21f-b17058bd78f0/subagents/agent-aprompt_suggestion-a3b319.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-aafb27",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/967e501d-aa48-4eab-a21f-b17058bd78f0/subagents/agent-aprompt_suggestion-aafb27.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-fa3a2b",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/967e501d-aa48-4eab-a21f-b17058bd78f0/subagents/agent-aprompt_suggestion-fa3a2b.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aae161c",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/967e501d-aa48-4eab-a21f-b17058bd78f0/subagents/agent-aae161c.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-3cf366",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/967e501d-aa48-4eab-a21f-b17058bd78f0/subagents/agent-aprompt_suggestion-3cf366.jsonl"
+    },
+    {
+      "type": "agent",
+      "agent_id": "aprompt_suggestion-e38cdd",
+      "path": "/Users/randlee/.claude/projects/-Users-randlee-Documents-github-claude-history/967e501d-aa48-4eab-a21f-b17058bd78f0/subagents/agent-aprompt_suggestion-e38cdd.jsonl"
+    }
+  ]
+}

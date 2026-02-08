@@ -1,17 +1,21 @@
 # Claude History - Issues & Improvements Tracker
 
+**Last Updated**: 2026-02-07 (After Phase 15 completion)
+
 This document tracks identified issues, improvements, and feature requests for future development sprints.
 
 ## Quick Summary
 
-**Total Issues**: 6
-- 🔴 **P0 Critical**: 1 (Search broken)
-- 🟠 **P1 High**: 4 (URLs, newlines, expand/collapse, file paths)
-- 🟡 **P2 Medium**: 1 (Links in new tab)
+**Total Issues**: 0 active, 6 resolved
+- ✅ **All Phase 11-15 issues resolved** (Search, newlines, expand/collapse, clickable URLs, file paths)
+- 🎯 **Ready for new issues** - All backlog items from original tracker have been addressed
 
-**Proposed Sprints**: 2
-- **Phase 11** (Critical Fixes): 3 issues, ~3-7 days effort
-- **Phase 12** (URL Enhancements): 3 issues, ~3-5 days effort
+**Recently Completed**: Phases 11-15
+- **Phase 11** (Critical Fixes): ✅ RESOLVED via PR #37
+- **Phase 12** (Enhanced Statistics): ✅ RESOLVED via PR #38
+- **Phase 13** (Agent Tooltips): ✅ RESOLVED via PR #39
+- **Phase 14** (DOM Structure): ✅ RESOLVED via PR #40
+- **Phase 15** (Query HTML & UX): ✅ RESOLVED via PR #42
 
 ## Status Key
 - 🆕 New - Not yet triaged
@@ -23,223 +27,148 @@ This document tracks identified issues, improvements, and feature requests for f
 
 ---
 
-## Sprint Planning
+## Completed Phases (2026-02-05 to 2026-02-07)
 
-### Proposed Sprint Structure
+### ✅ Phase 11: Critical HTML Export Fixes (PR #37)
+**Status**: COMPLETE
+**Completion Date**: 2026-02-05
 
-#### Sprint 1 (Phase 11): Critical Fixes
-**Focus**: Fix broken core functionality
-**Timeline**: 2-4 days
-**Priority**: P0-P1 Critical issues
+**Issues Resolved**:
+1. ✅ Search functionality broken (P0) - Fixed CSS selector mismatches in controls.js
+2. ✅ Expand/collapse buttons not working (P1) - Added support for `<details>` elements
+3. ✅ Newlines being duplicated (P1) - Fixed markdown.go to prevent double line breaks
 
-**Items**:
-1. 🆕 Search functionality broken (P0) - 1-3 days
-2. 🆕 Expand/collapse buttons not working (P1) - 1-3 days
-3. 🆕 Newlines being duplicated (P1) - <1 day (quick win)
-
-**Rationale**: These are core features that users expect to work. Search and expand/collapse are completely broken, making navigation difficult. Newlines issue affects readability throughout.
-
-**Total Effort**: ~3-7 days
+**Impact**: All core navigation features now functional. Users can search conversations, expand/collapse tool details, and text displays correctly.
 
 ---
 
-#### Sprint 2 (Phase 12): URL & Navigation Enhancements
-**Focus**: Improve navigation and link handling
-**Timeline**: 2-4 days
-**Priority**: P1-P2 High-value enhancements
+### ✅ Phase 12: Enhanced Statistics (PR #38)
+**Status**: COMPLETE
+**Completion Date**: 2026-02-06
 
-**Items**:
-1. 🆕 Clickable URLs in output (P1) - <1 day (foundational)
-2. 🆕 All links open in new tab (P2) - <1 day (builds on #1)
-3. 🆕 File path URL generation (P1) - 1-3 days (more complex)
+**Issues Resolved**:
+1. ✅ Agent count showing 0 (bug) - Fixed session ID prefix resolution
+2. ✅ Message statistics too basic - Added user/assistant/subagent breakdown
 
-**Rationale**: These features work together to improve navigation. Start with basic URL clickability, add new-tab behavior, then tackle more complex file path detection. Each builds on the previous.
+**Impact**: Session statistics now accurately display: "User: X | Assistant: Y | Subagents[Z]: W messages"
 
-**Total Effort**: ~3-5 days
+---
+
+### ✅ Phase 13: Interactive Agent Tooltips (PR #39)
+**Status**: COMPLETE
+**Completion Date**: 2026-02-06
+
+**Features Added**:
+1. ✅ Click-to-copy agent IDs - Hover tooltips with copy functionality
+2. ✅ Enhanced agent navigation - Better UX for agent resurrection workflow
+
+**Impact**: Streamlined agent resurrection workflow with one-click copying.
+
+---
+
+### ✅ Phase 14: DOM Structure Improvements (PR #40)
+**Status**: COMPLETE
+**Completion Date**: 2026-02-06
+
+**Features Added**:
+1. ✅ Flattened AGENT NOTIFICATION structure - Cleaner DOM hierarchy
+2. ✅ Improved rendering performance - Reduced nesting complexity
+
+**Impact**: Cleaner HTML structure, better maintainability.
+
+---
+
+### ✅ Phase 15: Query HTML Format & UX (PR #42)
+**Status**: COMPLETE
+**Completion Date**: 2026-02-07
+
+**Issues Resolved**:
+1. ✅ Clickable URLs in output (P1) - Auto-detection of http://, https://, localhost URLs
+2. ✅ File path URL generation (P1) - Automatic file:// links for paths in conversation
+3. ✅ All links open in new tab (P2) - Added target="_blank" to all links
+4. ✅ Empty message bubbles - Comprehensive filtering and tool-only message enhancement
+5. ✅ Tool-only messages cluttering output - Compact display with inline summaries
+
+**New Features**:
+- HTML format for query command (`--format html` with auto-open in browser)
+- File path detection (Unix/Windows absolute and relative paths)
+- Version management system (single source of truth)
+
+**Impact**: Complete HTML UX overhaul. All originally identified issues from the tracker are now resolved.
 
 ---
 
 ### Future Sprints
-(Additional sprints will be added as more issues are identified)
+No issues currently in backlog. New issues will be added as discovered through user feedback or development.
 
 ---
 
-### Backlog - Unprioritized
+### Resolved Issues Archive
+
+All issues originally tracked in this document have been resolved through Phases 11-15.
+
+#### ✅ Phase 11 Resolutions (PR #37)
+
+##### Search Functionality - RESOLVED
+**Original Priority**: P0: Critical
+**Resolution**: Fixed CSS selector mismatches in controls.js (.entry → .message-row, .content → .message-content)
+**Result**: Search now properly highlights and navigates matches with working next/previous buttons and match counter
+
+##### Expand/Collapse All Buttons - RESOLVED
+**Original Priority**: P1: High
+**Resolution**: Added support for native `<details>` elements in controls.js expandAllTools() and collapseAllTools()
+**Result**: Expand All and Collapse All buttons now work correctly, including Ctrl+K keyboard shortcut
+
+##### Newlines Being Duplicated - RESOLVED
+**Original Priority**: P1: High
+**Resolution**: Fixed markdown.go line 660 to join with empty string instead of \n
+**Result**: Single newlines render as single line breaks, no more visual doubling
+
+#### ✅ Phase 15 Resolutions (PR #42)
+
+##### Clickable URLs in Output - RESOLVED
+**Original Priority**: P1: High
+**Resolution**: Implemented automatic URL detection with regex for http://, https://, localhost patterns
+**Result**: All URLs in conversation text are now clickable with target="_blank"
+
+##### File Path URL Generation - RESOLVED
+**Original Priority**: P1: High
+**Resolution**: Comprehensive file path detection supporting Unix/Windows absolute and relative paths
+**Features**:
+- Unix absolute paths: `/path/to/file.go`
+- Windows absolute paths: `C:\path\to\file.go`
+- Relative paths: `./src/main.go`, `src/main.go`
+- Generates file:// links that open in Finder/Explorer
+- 113+ file links generated in typical sessions
+**Result**: File paths in agent output automatically become clickable links
+
+##### All Links Open in New Tab - RESOLVED
+**Original Priority**: P2: Medium
+**Resolution**: Added target="_blank" and rel="noopener noreferrer" to all generated links
+**Result**: All links (URLs, file paths, navigation) open in new tab without losing conversation view
+
+##### Empty Message Bubbles - RESOLVED
+**Original Priority**: Not originally tracked, discovered during Phase 15
+**Resolution**: Comprehensive filtering and tool-only message enhancement
+**Features**:
+- Tool-only messages display with compact headers (e.g., "TOOL: Read", "TOOL: Task")
+- Inline summaries for task operations (TaskUpdate, TaskCreate, etc.)
+- Single-line collapsed view, expandable on click
+- Automated test suite for empty bubble detection
+**Result**: Zero empty message bubbles in HTML export, cleaner conversation view
+
+---
+
+## Active Backlog
+
+No issues currently in backlog. All issues from the original tracker (Phases 11-15) have been resolved.
+
+### Categories for Future Issues
+
+When new issues are identified, they will be organized into these categories:
 
 #### Category: HTML Export Quality
 (Issues related to HTML export appearance, functionality, or usability)
-
-##### 🆕 File Path URL Generation
-
-**Priority**: P1: High
-**Effort**: Medium: 1-3 days
-
-**Description**:
-Create clickable URLs for file paths mentioned in agent output. When an agent references a file (e.g., "Completed: gastown/schema.md"), automatically convert it to a clickable link with the full file path.
-
-**Context**:
-- Agent output frequently references files it worked on
-- Users need quick access to these files
-- We know the agent's working directory from session metadata
-- Must verify file exists before creating link (avoid broken links)
-
-**Proposed Solution**:
-1. Parse text content for file path patterns (e.g., `path/to/file.ext`, `./relative/path`)
-2. Resolve relative paths against agent's working directory
-3. Check file existence with filesystem API
-4. Generate `file://` URLs for existing files
-5. Wrap matched paths in `<a>` tags
-
-**Acceptance Criteria**:
-- [ ] File paths in agent output are automatically linkified
-- [ ] Links only created for files that exist on disk
-- [ ] Relative paths resolved correctly from agent's working directory
-- [ ] Common file patterns recognized (with and without `./`)
-- [ ] Links open in new tab
-
----
-
-##### 🆕 Clickable URLs in Output
-
-**Priority**: P1: High
-**Effort**: Small: <1 day
-
-**Description**:
-Automatically convert URLs in agent output to clickable links. This includes `http://`, `https://`, `localhost`, and `file://` URLs.
-
-**Context**:
-- Agents often output URLs (e.g., "Server running at http://localhost:3000")
-- Users should be able to click these without copy/paste
-- No verification needed - just make them clickable
-
-**Proposed Solution**:
-1. Use regex to detect URL patterns in text content
-2. Match: `http://`, `https://`, `localhost:`, `file://`
-3. Wrap in `<a href="..." target="_blank">` tags
-4. Apply to all text content (user, assistant, tool results)
-
-**Acceptance Criteria**:
-- [ ] HTTP/HTTPS URLs are clickable
-- [ ] localhost URLs are clickable (with or without http://)
-- [ ] file:// URLs are clickable
-- [ ] All links open in new tab (`target="_blank"`)
-- [ ] URL detection doesn't break on URLs with query params, fragments, or ports
-
----
-
-##### 🆕 All Links Open in New Tab
-
-**Priority**: P2: Medium
-**Effort**: Small: <1 day
-
-**Description**:
-Ensure all links in the HTML export open in a new tab to prevent navigating away from the conversation view.
-
-**Context**:
-- Users should not lose their place in the conversation
-- External links, file links, and reference links should all open externally
-- Standard UX pattern for web apps
-
-**Proposed Solution**:
-- Add `target="_blank"` and `rel="noopener noreferrer"` to all `<a>` tags
-- Apply to: file paths, URLs, GitHub links, any other generated links
-
-**Acceptance Criteria**:
-- [ ] All links have `target="_blank"`
-- [ ] All external links have `rel="noopener noreferrer"` for security
-- [ ] Conversation view remains open when clicking links
-
----
-
-##### 🆕 Newlines Being Duplicated
-
-**Priority**: P1: High
-**Effort**: Small: <1 day
-
-**Description**:
-Text content is showing doubled newlines - a single newline in the source is rendering as two line breaks in the HTML.
-
-**Context**:
-- User reported seeing double-spaced text where single-spacing was expected
-- Example: "All 5 agents completed...\n\nCompleted: gastown/schema.md\n\nThe document covers..."
-- Affects readability and visual density
-
-**Proposed Solution**:
-1. Investigate where newlines are being processed (markdown rendering, escapeHTML, formatUserContent)
-2. Check if `<pre>` tags or CSS `white-space: pre-wrap` are doubling `\n`
-3. Likely culprit: converting `\n` to `<br>\n` when CSS already preserves newlines
-4. Fix: Use either CSS `white-space: pre-wrap` OR explicit `<br>` tags, not both
-
-**Acceptance Criteria**:
-- [ ] Single newlines in source render as single line breaks
-- [ ] Double newlines (paragraph breaks) render correctly
-- [ ] No visual doubling of spacing
-- [ ] Test with user messages, assistant messages, and tool results
-
----
-
-##### 🆕 Search Functionality Broken
-
-**Priority**: P0: Critical
-**Effort**: Medium: 1-3 days
-
-**Description**:
-The search feature in the HTML export does not work at all. The search box is visible but typing and searching produces no results.
-
-**Context**:
-- Search is a critical feature for navigating long conversations
-- User explicitly tested and confirmed it's broken
-- Search box and controls are rendered but non-functional
-
-**Proposed Solution**:
-1. Check if `controls.js` is being loaded and executed
-2. Verify search event listeners are attached
-3. Test search logic against conversation DOM structure
-4. Common issues:
-   - JS not loading due to path issues
-   - Event listeners not attaching (timing issue)
-   - Search selector not matching actual HTML structure
-   - Case sensitivity or whitespace handling
-
-**Acceptance Criteria**:
-- [ ] Search box accepts input
-- [ ] Search highlights matches in conversation
-- [ ] Next/Previous buttons navigate between matches
-- [ ] Match counter shows "X of Y matches"
-- [ ] Search works case-insensitively
-- [ ] Clear/Escape clears search results
-
----
-
-##### 🆕 Expand/Collapse All Buttons Not Working
-
-**Priority**: P1: High
-**Effort**: Medium: 1-3 days
-
-**Description**:
-The "Expand All" and "Collapse All" buttons in the page header do not function. Clicking them has no effect on tool call visibility.
-
-**Context**:
-- Buttons are visible in the header but non-functional
-- Users expect these to expand/collapse all tool call details blocks
-- Part of the keyboard shortcuts feature (Ctrl+K)
-
-**Proposed Solution**:
-1. Check if `controls.js` is loaded and event listeners attached
-2. Verify buttons have correct IDs: `#expand-all-btn`, `#collapse-all-btn`
-3. Check if `<details>` elements are being targeted correctly
-4. Test keyboard shortcut (Ctrl+K) separately
-5. Common issues:
-   - JS not executing (path or timing issue)
-   - Selector mismatch between JS and HTML structure
-   - Event listener not attached
-
-**Acceptance Criteria**:
-- [ ] "Expand All" button expands all tool call details
-- [ ] "Collapse All" button collapses all tool call details
-- [ ] Ctrl+K keyboard shortcut toggles expand/collapse
-- [ ] Buttons work immediately on page load
-- [ ] Visual feedback when buttons are clicked
 
 #### Category: CLI Features
 (New commands, flags, or core functionality)
@@ -293,9 +222,44 @@ Suggested approach or alternatives
 
 ---
 
+## Summary of Phase 11-15 Completion
+
+**Total Issues Resolved**: 6 major issues + 2 additional enhancements
+**Resolution Period**: February 5-7, 2026 (3 days)
+**Pull Requests**: #37, #38, #39, #40, #42
+
+### Critical Fixes (Phase 11)
+- ✅ Search functionality completely restored
+- ✅ Expand/collapse controls now functional
+- ✅ Newline rendering corrected
+
+### Enhanced Statistics (Phase 12)
+- ✅ Agent count bug fixed
+- ✅ Message breakdown added (user/assistant/subagent)
+
+### Interactive Features (Phase 13)
+- ✅ Click-to-copy agent tooltips
+
+### Structure Improvements (Phase 14)
+- ✅ Flattened DOM for better performance
+
+### UX Overhaul (Phase 15)
+- ✅ Clickable URLs (http, https, localhost)
+- ✅ Automatic file path detection and linking
+- ✅ All links open in new tab
+- ✅ Tool-only message enhancement
+- ✅ Empty message bubble elimination
+- ✅ Query command HTML format
+- ✅ Version management system
+
+**Current Status**: Clean slate - all originally identified issues resolved. Ready for new user feedback and feature requests.
+
+---
+
 ## Notes
 
 - Issues are added as discovered during development or user feedback
 - Sprint planning happens periodically to move items from backlog to planned
 - Priority and effort estimates help with sprint capacity planning
+- Phases 11-15 completed all original backlog items (6 issues) in 3 days
 - Use GitHub issues for tracking implementation once work begins

@@ -136,15 +136,16 @@ func TestRenderConversation_CopyButtonForAgentID(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Check for copy button in agent ID
-	if !strings.Contains(html, `data-copy-text="a12eb64abc123"`) {
-		t.Error("HTML missing copy button with agent ID")
-	}
+	// Check for copy button in agent ID (now includes context, not just ID)
 	if !strings.Contains(html, `data-copy-type="agent-id"`) {
 		t.Error("HTML missing agent-id copy type")
 	}
-	if !strings.Contains(html, `title="Copy agent ID"`) {
-		t.Error("HTML missing copy agent ID tooltip")
+	if !strings.Contains(html, `title="Copy agent details"`) {
+		t.Error("HTML missing copy agent details tooltip")
+	}
+	// The copy-text should now include context with the agent ID
+	if !strings.Contains(html, "a12eb64abc123") {
+		t.Error("HTML missing agent ID in copy context")
 	}
 }
 
@@ -280,16 +281,16 @@ func TestRenderSubagentPlaceholder_CopyButton(t *testing.T) {
 		"a12eb64abc123def456": 29,
 	}
 
-	html := renderSubagentPlaceholder("a12eb64abc123def456", agentMap)
+	html := renderSubagentPlaceholder("a12eb64abc123def456", agentMap, "session-123", "/test/project")
 
-	// Check for copy button with full agent ID
-	if !strings.Contains(html, `data-copy-text="a12eb64abc123def456"`) {
+	// Check for copy button with full agent ID in context
+	if !strings.Contains(html, `a12eb64abc123def456`) {
 		t.Error("Subagent placeholder missing copy button with full agent ID")
 	}
 	if !strings.Contains(html, `data-copy-type="agent-id"`) {
 		t.Error("Subagent placeholder missing agent-id copy type")
 	}
-	if !strings.Contains(html, `title="Copy agent ID"`) {
+	if !strings.Contains(html, `title="Copy agent details"`) {
 		t.Error("Subagent placeholder missing copy tooltip")
 	}
 }
@@ -491,12 +492,12 @@ func TestRenderConversation_MultipleAgentIDCopyButtons(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Should have copy buttons for both agents
-	if !strings.Contains(html, `data-copy-text="agent-alpha"`) {
-		t.Error("Missing copy button for agent-alpha")
+	// Should have copy buttons for both agents (in copy context, not exact match)
+	if !strings.Contains(html, "agent-alpha") {
+		t.Error("Missing copy button context for agent-alpha")
 	}
-	if !strings.Contains(html, `data-copy-text="agent-beta"`) {
-		t.Error("Missing copy button for agent-beta")
+	if !strings.Contains(html, "agent-beta") {
+		t.Error("Missing copy button context for agent-beta")
 	}
 }
 
@@ -525,9 +526,13 @@ func TestRenderConversation_SubagentWithCopyButton(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	// Subagent header should have copy button
-	if !strings.Contains(html, `data-copy-text="spawned-agent-123"`) {
-		t.Error("Subagent placeholder missing copy button for full agent ID")
+	// Subagent header should have copy button with full agent ID context
+	if !strings.Contains(html, `spawned-agent-123`) {
+		t.Error("Subagent placeholder missing copy button with full agent ID")
+	}
+	// Should include copy button with context
+	if !strings.Contains(html, `class="copy-btn"`) {
+		t.Error("Subagent placeholder missing copy button")
 	}
 }
 
@@ -600,7 +605,7 @@ func TestRenderSubagentPlaceholder_StructureWithCopyButton(t *testing.T) {
 		"test-agent": 10,
 	}
 
-	html := renderSubagentPlaceholder("test-agent", agentMap)
+	html := renderSubagentPlaceholder("test-agent", agentMap, "session-abc", "/test/path")
 
 	// Check structure
 	if !strings.Contains(html, `class="subagent-title"`) {

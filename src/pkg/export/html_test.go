@@ -42,8 +42,8 @@ func TestRenderConversation_BasicStructure(t *testing.T) {
 	if !strings.Contains(html, `<meta charset="UTF-8">`) {
 		t.Error("HTML missing charset meta tag")
 	}
-	if !strings.Contains(html, `<title>Claude Conversation Export</title>`) {
-		t.Error("HTML missing title")
+	if !strings.Contains(html, `<title>Claude Code Session [v`) {
+		t.Error("HTML missing title with version")
 	}
 	if !strings.Contains(html, `<link rel="stylesheet" href="static/style.css">`) {
 		t.Error("HTML missing stylesheet link")
@@ -640,7 +640,7 @@ func TestRenderEntry_AllEntryTypes(t *testing.T) {
 				Message:   json.RawMessage(`"test"`),
 			}
 
-			html := renderEntry(entry, nil, "")
+			html := renderEntry(entry, nil, "", "", "", "User", "Assistant")
 
 			if !strings.Contains(html, `class="message-row `+tt.expectedClass+`"`) {
 				t.Errorf("Entry type %s should have message-row class %s", tt.entryType, tt.expectedClass)
@@ -1012,11 +1012,11 @@ func TestRenderConversation_AgentIDInHeader(t *testing.T) {
 		t.Fatalf("RenderConversation() error = %v", err)
 	}
 
-	if !strings.Contains(html, `class="agent-id"`) {
-		t.Error("HTML missing agent-id class")
+	if !strings.Contains(html, `class="agent-id-badge"`) {
+		t.Error("HTML missing agent-id-badge class")
 	}
-	if !strings.Contains(html, "[a12eb64]") {
-		t.Error("HTML missing agent ID in header")
+	if !strings.Contains(html, ">a12eb64<") {
+		t.Error("HTML missing agent ID in header (without brackets)")
 	}
 }
 
@@ -1048,7 +1048,7 @@ func TestRenderSubagentPlaceholder_ShortAgentID(t *testing.T) {
 		"abc": 5,
 	}
 
-	html := renderSubagentPlaceholder("abc", agentMap)
+	html := renderSubagentPlaceholder("abc", agentMap, "session-123", "/test/project")
 
 	// Short IDs should not be truncated
 	if !strings.Contains(html, "Subagent: abc") {
@@ -1061,7 +1061,7 @@ func TestRenderSubagentPlaceholder_LongAgentID(t *testing.T) {
 		"a12eb64abc123def456": 10,
 	}
 
-	html := renderSubagentPlaceholder("a12eb64abc123def456", agentMap)
+	html := renderSubagentPlaceholder("a12eb64abc123def456", agentMap, "session-456", "/test/project")
 
 	// Long IDs should be truncated to 7 chars in display
 	if !strings.Contains(html, "Subagent: a12eb64") {
@@ -1076,7 +1076,7 @@ func TestRenderSubagentPlaceholder_LongAgentID(t *testing.T) {
 func TestRenderSubagentPlaceholder_ZeroEntries(t *testing.T) {
 	agentMap := map[string]int{}
 
-	html := renderSubagentPlaceholder("agent-x", agentMap)
+	html := renderSubagentPlaceholder("agent-x", agentMap, "session-789", "/test/project")
 
 	// Should show 0 entries when not in map
 	if !strings.Contains(html, "(0 entries)") {
@@ -1178,5 +1178,184 @@ func TestRenderConversation_ToolCallWithoutMatchingResult(t *testing.T) {
 	// But should not have tool-output
 	if strings.Contains(html, `class="tool-output"`) {
 		t.Error("HTML should not have tool-output for orphan tool call")
+	}
+}
+
+func TestRenderConversation_ToolOnlyMessages(t *testing.T) {
+	tests := []struct {
+		name            string
+		toolName        string
+		toolInput       map[string]any
+		expectedLabel   string
+		expectedSummary string
+	}{
+		{
+			name:            "Task tool only",
+			toolName:        "Task",
+			toolInput:       map[string]any{"description": "Search for files"},
+			expectedLabel:   "TOOL: Task",
+			expectedSummary: "Search for files",
+		},
+		{
+			name:            "Bash tool only",
+			toolName:        "Bash",
+			toolInput:       map[string]any{"command": "ls -la /tmp"},
+			expectedLabel:   "TOOL: Bash",
+			expectedSummary: "ls -la /tmp",
+		},
+		{
+			name:            "Read tool only",
+			toolName:        "Read",
+			toolInput:       map[string]any{"file_path": "/path/to/file.txt"},
+			expectedLabel:   "TOOL: Read",
+			expectedSummary: "/path/to/file.txt",
+		},
+		{
+			name:            "Write tool only",
+			toolName:        "Write",
+			toolInput:       map[string]any{"file_path": "/path/to/output.txt"},
+			expectedLabel:   "TOOL: Write",
+			expectedSummary: "/path/to/output.txt",
+		},
+		{
+			name:            "Grep tool only",
+			toolName:        "Grep",
+			toolInput:       map[string]any{"pattern": "error.*404"},
+			expectedLabel:   "TOOL: Grep",
+			expectedSummary: "error.*404",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create tool input JSON
+			inputJSON, _ := json.Marshal(tt.toolInput)
+
+			// Create assistant message with ONLY tool call (no text)
+			entries := []models.ConversationEntry{
+				{
+					UUID:      "uuid-001",
+					SessionID: "session-001",
+					Type:      models.EntryTypeAssistant,
+					Timestamp: "2026-01-31T10:00:00Z",
+					Message: json.RawMessage(`{
+						"role": "assistant",
+						"content": [
+							{
+								"type": "tool_use",
+								"id": "toolu_123",
+								"name": "` + tt.toolName + `",
+								"input": ` + string(inputJSON) + `
+							}
+						]
+					}`),
+				},
+			}
+
+			html, err := RenderConversation(entries, nil)
+			if err != nil {
+				t.Fatalf("RenderConversation() error = %v", err)
+			}
+
+			// Check for tool-only label
+			if !strings.Contains(html, `class="role tool-only-label">`) {
+				t.Error("HTML should contain tool-only-label class")
+			}
+
+			// Check for correct tool type in label
+			if !strings.Contains(html, tt.expectedLabel) {
+				t.Errorf("HTML should contain label %q, got HTML:\n%s", tt.expectedLabel, html)
+			}
+
+			// Check for inline tool summary
+			if !strings.Contains(html, `class="tool-summary-inline">`) {
+				t.Error("HTML should contain tool-summary-inline class")
+			}
+
+			// Check for expected summary content (may be truncated)
+			if !strings.Contains(html, tt.expectedSummary) {
+				t.Errorf("HTML should contain summary %q", tt.expectedSummary)
+			}
+
+			// Verify message is NOT filtered out (was previously filtered)
+			if !strings.Contains(html, "uuid-001") {
+				t.Error("Tool-only message should be rendered, not filtered out")
+			}
+		})
+	}
+}
+
+func TestRenderConversation_ToolOnlyVsTextWithTools(t *testing.T) {
+	entries := []models.ConversationEntry{
+		// Assistant message with text AND tool call - should use normal "Assistant" label
+		{
+			UUID:      "uuid-001",
+			SessionID: "session-001",
+			Type:      models.EntryTypeAssistant,
+			Timestamp: "2026-01-31T10:00:00Z",
+			Message: json.RawMessage(`{
+				"role": "assistant",
+				"content": [
+					{"type": "text", "text": "Let me read that file for you."},
+					{
+						"type": "tool_use",
+						"id": "toolu_123",
+						"name": "Read",
+						"input": {"file_path": "/test.txt"}
+					}
+				]
+			}`),
+		},
+		// Assistant message with ONLY tool call (no text) - should use "TOOL: X" label
+		{
+			UUID:      "uuid-002",
+			SessionID: "session-001",
+			Type:      models.EntryTypeAssistant,
+			Timestamp: "2026-01-31T10:00:05Z",
+			Message: json.RawMessage(`{
+				"role": "assistant",
+				"content": [
+					{
+						"type": "tool_use",
+						"id": "toolu_456",
+						"name": "Bash",
+						"input": {"command": "ls -la"}
+					}
+				]
+			}`),
+		},
+	}
+
+	html, err := RenderConversation(entries, nil)
+	if err != nil {
+		t.Fatalf("RenderConversation() error = %v", err)
+	}
+
+	// First message should have normal "Assistant" label (has text + tool)
+	htmlParts := strings.Split(html, "uuid-001")
+	if len(htmlParts) < 2 {
+		t.Fatal("Could not find uuid-001 in HTML")
+	}
+	firstMessageHTML := htmlParts[1][:500] // Get section after uuid-001
+
+	if !strings.Contains(firstMessageHTML, `class="role">Assistant</span>`) {
+		t.Error("First message (text + tool) should have normal 'Assistant' label")
+	}
+	if strings.Contains(firstMessageHTML, "tool-only-label") {
+		t.Error("First message (text + tool) should NOT have tool-only-label")
+	}
+
+	// Second message should have "TOOL: Bash" label (tool only, no text)
+	htmlParts = strings.Split(html, "uuid-002")
+	if len(htmlParts) < 2 {
+		t.Fatal("Could not find uuid-002 in HTML")
+	}
+	secondMessageHTML := htmlParts[1][:500]
+
+	if !strings.Contains(secondMessageHTML, `class="role tool-only-label">TOOL: Bash</span>`) {
+		t.Error("Second message (tool only) should have 'TOOL: Bash' label with tool-only-label class")
+	}
+	if strings.Contains(secondMessageHTML, `>Assistant</span>`) {
+		t.Error("Second message (tool only) should NOT have 'Assistant' label")
 	}
 }

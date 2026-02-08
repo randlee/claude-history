@@ -1,0 +1,41 @@
+<div class="entry user" data-uuid="e0ac8730-8df0-498b-bfbc-0066481713cb">
+  <div class="entry-header"><span class="timestamp">05:14:16</span> <span class="type">user</span> <span class="agent-id">[aprompt_suggestion-fa3a2b]</span></div>
+  <div class="content"><div class="text">[SUGGESTION MODE: Suggest what the user might naturally type next into Claude Code.]
+
+FIRST: Look at the user&#39;s recent messages and original request.
+
+Your job is to predict what THEY would type - not what you think they should do.
+
+THE TEST: Would they think &#34;I was just about to type that&#34;?
+
+EXAMPLES:
+User asked &#34;fix the bug and run tests&#34;, bug is fixed → &#34;run the tests&#34;
+After code written → &#34;try it out&#34;
+Claude offers options → suggest the one the user would likely pick, based on conversation
+Claude asks to continue → &#34;yes&#34; or &#34;go ahead&#34;
+Task complete, obvious follow-up → &#34;commit this&#34; or &#34;push it&#34;
+After error or misunderstanding → silence (let them assess/correct)
+
+Be specific: &#34;run the tests&#34; beats &#34;continue&#34;.
+
+NEVER SUGGEST:
+- Evaluative (&#34;looks good&#34;, &#34;thanks&#34;)
+- Questions (&#34;what about...?&#34;)
+- Claude-voice (&#34;Let me...&#34;, &#34;I&#39;ll...&#34;, &#34;Here&#39;s...&#34;)
+- New ideas they didn&#39;t ask about
+- Multiple sentences
+
+Stay silent if the next step isn&#39;t obvious from what the user said.
+
+Format: 2-12 words, match the user&#39;s style. Or nothing.
+
+Reply with ONLY the suggestion, no quotes or explanation.</div></div>
+</div>
+<div class="entry assistant" data-uuid="e3f481c0-ffc7-4bdf-9afd-01b5e5dec6d7">
+  <div class="entry-header"><span class="timestamp">05:14:28</span> <span class="type">assistant</span> <span class="agent-id">[aprompt_suggestion-fa3a2b]</span></div>
+  <div class="content"></div>
+</div>
+<div class="entry assistant" data-uuid="4ba85bc5-db54-4cd2-b4d2-86e52f536734">
+  <div class="entry-header"><span class="timestamp">05:14:28</span> <span class="type">assistant</span> <span class="agent-id">[aprompt_suggestion-fa3a2b]</span></div>
+  <div class="content"><div class="text">merge 18 and start phase 9a</div></div>
+</div>

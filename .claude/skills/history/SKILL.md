@@ -27,14 +27,7 @@ parameters:
 
 You are using the **claude-history** CLI tool to query Claude Code's agent history storage.
 
-## Tool Location
-
-The `claude-history` binary is located at: `/Users/randlee/Documents/github/claude-history/bin/claude-history`
-
-If not built, you can build it from source:
-```bash
-cd /Users/randlee/Documents/github/claude-history/src && go build -o ../bin/claude-history .
-```
+> **Note:** If `claude-history` is not installed or you encounter issues, see [README.md](README.md) for installation and troubleshooting instructions.
 
 ## Usage Instructions
 
@@ -96,9 +89,8 @@ cd /Users/randlee/Documents/github/claude-history/src && go build -o ../bin/clau
 3. Use `tree` to understand the agent hierarchy
 
 **When user wants to export:**
-1. Use `export` command with session ID
-2. Add `--open` flag to open in browser automatically
-3. Use `--template` flag for custom styling if needed
+1. Use `export` command with session ID to create HTML files
+2. Or use `query --format html` to generate and auto-open HTML report in browser
 
 ### Examples
 
@@ -116,7 +108,10 @@ claude-history query /path/to/project --session abc123 --type user
 claude-history find-agent /path/to/project authentication
 
 # Export session to HTML
-claude-history export /path/to/project --session abc123 --output report.html --open
+claude-history export /path/to/project --session abc123
+
+# Generate and auto-open HTML report
+claude-history query /path/to/project --session abc123 --format html
 
 # Query specific agent's work (supports git-style prefixes)
 claude-history query /path/to/project --session abc123 --agent def456
@@ -149,6 +144,69 @@ claude-history query /path/to/project --session abc123 --agent def456 --type ass
 - `file-history-snapshot` - File state captures
 - `summary` - Conversation summaries
 
+## Passing Agent to Subagents by Reference
+
+**Use Case:** Share the results of a previous agent's work with new agents without duplicating the analysis.
+
+Instead of re-analyzing a repository or re-exploring code, you can pass a **reference** to an agent that already did the work. New agents can query the previous agent's findings directly.
+
+### Example: Extracting Final Analysis from a Subagent
+
+```bash
+claude-history query <project-path> --session <session-id> --agent <agent-id> --type assistant --format json | jq -r '.[-1].message.content[0].text'
+```
+
+**What this does:**
+- Queries a specific session (the main conversation)
+- Extracts output from a specific agent (e.g., the explore agent that analyzed the repository)
+- Filters to `assistant` messages only (the agent's responses)
+- Returns JSON format to avoid truncation
+- Uses `jq` to extract just the text from the final message
+
+**Result:** Gets the complete final analysis (e.g., ~26,000 token comprehensive report) without re-analyzing.
+
+### When to Use This Pattern
+
+✅ **Use pass-by-reference when:**
+- Multiple agents need the same analysis (e.g., updating multiple docs from one repository analysis)
+- The analysis is expensive (time/tokens) to regenerate
+- You want consistent information across agents
+- Previous agent did deep exploration you want to reuse
+
+❌ **Don't use when:**
+- Information is outdated (repository changed significantly)
+- Each agent needs different depth/focus
+- The reference agent didn't cover what you need
+
+### Benefits
+
+- **10x faster** - Agents skip re-exploration
+- **Token efficient** - Share one analysis across many agents
+- **Consistency** - All agents work from same source
+- **Scalability** - One explore agent → N documentation agents
+
+### Passing to Subagents
+
+When giving this pattern to subagents, provide:
+
+1. **Exact command** in a fenced code block (prevents typos)
+2. **Session and agent IDs** (the reference to query)
+3. **Stop instruction** - "Stop immediately if command fails"
+4. **What to expect** - "Returns ~26,000 token analysis"
+
+**Template:**
+```markdown
+Use the Bash tool to run this exact command:
+
+```bash
+claude-history query <project-path> --session <session-id> --agent <agent-id> --type assistant --format json | jq -r '.[-1].message.content[0].text'
+```
+
+This returns the complete analysis from agent <agent-id>.
+
+**CRITICAL:** Stop immediately if command fails or returns empty output.
+```
+
 ## Your Task
 
 Based on the user's request parameters:
@@ -160,12 +218,11 @@ Based on the user's request parameters:
 Construct and execute the appropriate `claude-history` command(s) to fulfill the user's request.
 
 **Important:**
-1. Always use the full path to the binary: `/Users/randlee/Documents/github/claude-history/bin/claude-history`
-2. If the binary doesn't exist, offer to build it first
-3. Parse the output and present it in a clear, readable format
-4. For large outputs, consider using pagination or filtering
-5. Session and agent IDs support git-style prefixes (first 7+ characters)
-6. When showing results, explain what you found in context
+1. Use `claude-history` from PATH (see README.md if not installed)
+2. Parse the output and present it in a clear, readable format
+3. For large outputs, consider using pagination or filtering
+4. Session and agent IDs support git-style prefixes (first 7+ characters)
+5. When showing results, explain what you found in context
 
 ## Response Format
 

@@ -207,7 +207,7 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 	if !strings.Contains(html, "<header class=\"page-header\">") {
 		t.Error("Missing header element with page-header class")
 	}
-	if !strings.Contains(html, "<h1>Claude Code Session</h1>") {
+	if !strings.Contains(html, "<h1>Claude Code Session") {
 		t.Error("Missing h1 title")
 	}
 	if !strings.Contains(html, "class=\"session-metadata\"") {
@@ -221,12 +221,7 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 	if !strings.Contains(html, "fbd51e2b") {
 		t.Error("Missing truncated session ID")
 	}
-	if !strings.Contains(html, "Project:") {
-		t.Error("Missing Project label")
-	}
-	if !strings.Contains(html, "/Users/name/project") {
-		t.Error("Missing project path")
-	}
+	// Note: "Project:" label removed - session folder is now in h1
 	if !strings.Contains(html, "Started: 2026-02-01 14:23") {
 		t.Error("Missing session start time")
 	}
@@ -251,9 +246,13 @@ func TestRenderHTMLHeader_WithStats(t *testing.T) {
 		t.Error("Missing tool call count")
 	}
 
-	// Check copy button for session ID
-	if !strings.Contains(html, "data-copy-text=\"fbd51e2b-1234-5678-90ab-cdef12345678\"") {
+	// Check copy button contains full session ID (now includes context with CLI command)
+	if !strings.Contains(html, "fbd51e2b-1234-5678-90ab-cdef12345678") {
 		t.Error("Missing copy button with full session ID")
+	}
+	// Should also include project path in copy context
+	if !strings.Contains(html, "/Users/name/project") {
+		t.Error("Copy button should include project path context")
 	}
 }
 
@@ -265,7 +264,7 @@ func TestRenderHTMLHeader_NilStats(t *testing.T) {
 	if !strings.Contains(html, "<!DOCTYPE html>") {
 		t.Error("Missing DOCTYPE")
 	}
-	if !strings.Contains(html, "<h1>Claude Code Session</h1>") {
+	if !strings.Contains(html, "<h1>Claude Code Session") {
 		t.Error("Missing h1 title")
 	}
 	if !strings.Contains(html, "class=\"controls\"") {
@@ -419,15 +418,13 @@ func TestRenderConversationWithStats_Integration(t *testing.T) {
 	}
 
 	// Check header content
-	if !strings.Contains(html, "<h1>Claude Code Session</h1>") {
+	if !strings.Contains(html, "<h1>Claude Code Session") {
 		t.Error("Missing header title")
 	}
 	if !strings.Contains(html, "test-ses") {
 		t.Error("Missing truncated session ID in header")
 	}
-	if !strings.Contains(html, "/test/project") {
-		t.Error("Missing project path in header")
-	}
+	// Note: Project path moved to h1 as session folder link
 	if !strings.Contains(html, "Started: 2026-01-31 10:00") {
 		t.Error("Missing session start time in header")
 	}
@@ -553,14 +550,19 @@ func TestCopyButtonIntegration(t *testing.T) {
 	if !strings.Contains(html, "class=\"copy-btn\"") {
 		t.Error("Missing copy button class")
 	}
-	if !strings.Contains(html, "data-copy-text=\"full-session-id-12345\"") {
-		t.Error("Missing copy text for full session ID")
+	// Copy text now includes full context (session ID + project path + CLI command)
+	if !strings.Contains(html, "full-session-id-12345") {
+		t.Error("Missing full session ID in copy text")
 	}
 	if !strings.Contains(html, "data-copy-type=\"session-id\"") {
 		t.Error("Missing copy type for session ID")
 	}
-	if !strings.Contains(html, "title=\"Copy full session ID\"") {
+	if !strings.Contains(html, "title=\"Copy session details\"") {
 		t.Error("Missing tooltip for session copy button")
+	}
+	// Should include project path in copy context
+	if !strings.Contains(html, "/path/to/project") {
+		t.Error("Copy text should include project path")
 	}
 }
 

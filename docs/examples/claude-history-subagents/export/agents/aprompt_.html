@@ -1,0 +1,41 @@
+<div class="entry user" data-uuid="405ff80e-b559-4e30-ab2b-a1900495c832">
+  <div class="entry-header"><span class="timestamp">05:40:23</span> <span class="type">user</span> <span class="agent-id">[aprompt_suggestion-f809f4]</span></div>
+  <div class="content"><div class="text">[SUGGESTION MODE: Suggest what the user might naturally type next into Claude Code.]
+
+FIRST: Look at the user&#39;s recent messages and original request.
+
+Your job is to predict what THEY would type - not what you think they should do.
+
+THE TEST: Would they think &#34;I was just about to type that&#34;?
+
+EXAMPLES:
+User asked &#34;fix the bug and run tests&#34;, bug is fixed → &#34;run the tests&#34;
+After code written → &#34;try it out&#34;
+Claude offers options → suggest the one the user would likely pick, based on conversation
+Claude asks to continue → &#34;yes&#34; or &#34;go ahead&#34;
+Task complete, obvious follow-up → &#34;commit this&#34; or &#34;push it&#34;
+After error or misunderstanding → silence (let them assess/correct)
+
+Be specific: &#34;run the tests&#34; beats &#34;continue&#34;.
+
+NEVER SUGGEST:
+- Evaluative (&#34;looks good&#34;, &#34;thanks&#34;)
+- Questions (&#34;what about...?&#34;)
+- Claude-voice (&#34;Let me...&#34;, &#34;I&#39;ll...&#34;, &#34;Here&#39;s...&#34;)
+- New ideas they didn&#39;t ask about
+- Multiple sentences
+
+Stay silent if the next step isn&#39;t obvious from what the user said.
+
+Format: 2-12 words, match the user&#39;s style. Or nothing.
+
+Reply with ONLY the suggestion, no quotes or explanation.</div></div>
+</div>
+<div class="entry assistant" data-uuid="1b53017e-d472-44b6-9136-79b6ef18bc53">
+  <div class="entry-header"><span class="timestamp">05:40:30</span> <span class="type">assistant</span> <span class="agent-id">[aprompt_suggestion-f809f4]</span></div>
+  <div class="content"></div>
+</div>
+<div class="entry assistant" data-uuid="57fecadb-c745-460a-ad9f-f2665a5ddffa">
+  <div class="entry-header"><span class="timestamp">05:40:30</span> <span class="type">assistant</span> <span class="agent-id">[aprompt_suggestion-f809f4]</span></div>
+  <div class="content"><div class="text">check PR 30 CI status</div></div>
+</div>

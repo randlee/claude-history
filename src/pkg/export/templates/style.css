@@ -465,7 +465,7 @@ p {
     top: 0;
     z-index: 100;
     background: var(--bg-primary);
-    padding: var(--space-4);
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-primary);
     margin: calc(-1 * var(--space-4));
     margin-bottom: var(--space-4);
@@ -478,10 +478,38 @@ p {
 }
 
 .page-header h1 {
-    margin: 0 0 var(--space-3) 0;
+    margin: 0 0 var(--space-2) 0;
     font-size: var(--text-2xl);
     font-weight: var(--font-bold);
     color: var(--text-primary);
+}
+
+.page-header h1 .folder-link {
+    color: var(--color-info);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.page-header h1 .folder-link:hover {
+    color: hsl(var(--blue-700));
+    text-decoration: underline;
+}
+
+/* File links in message text - subtle styling to distinguish from regular links */
+.file-link {
+    color: var(--color-info);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--color-info);
+    transition: all var(--transition-fast);
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+.file-link:hover {
+    color: hsl(var(--blue-700));
+    background-color: hsl(var(--blue-50));
+    border-bottom: 1px solid hsl(var(--blue-700));
+    text-decoration: none;
 }
 
 /* Session Metadata - responsive grid of badges */
@@ -489,7 +517,7 @@ p {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-3);
 }
 
 .session-metadata .meta-item {
@@ -867,11 +895,80 @@ p {
     letter-spacing: var(--tracking-wider);
 }
 
-.message-header .timestamp {
-    color: var(--text-muted);
-    margin-left: auto;
+/* Tool-only label - use plain text styling like regular role labels */
+.message-header .role.tool-only-label {
+    color: hsl(var(--teal-700));
+    font-weight: var(--font-bold);
+    /* No background, padding, or border - display inline like ORCHESTRATOR/AGENT */
 }
 
+/* Inline tool summary shown next to tool-only label */
+.message-header .tool-summary-inline {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    font-weight: var(--font-normal);
+    font-style: italic;
+    max-width: 600px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Compact vertical spacing for tool-only messages when collapsed
+ * These messages have all info in the header, so we completely hide the message-content */
+.message-row.tool-only .message-content {
+    display: none !important;
+}
+
+/* Reduce message-bubble padding for tool-only messages - just header, no content */
+.message-row.tool-only .message-bubble {
+    padding: var(--space-2) var(--space-4) !important;
+}
+
+/* When tool is expanded (user clicks), show the message-content and tool call */
+.message-row.tool-only.expanded .message-content {
+    display: block !important;
+    margin-top: var(--space-2) !important;
+}
+
+/* Make the entire tool-only message header clickable to expand */
+.message-row.tool-only .message-header {
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.message-row.tool-only .message-header:hover {
+    background: hsl(var(--neutral-100));
+    border-radius: var(--radius-sm);
+}
+
+.message-header .timestamp {
+    color: var(--text-muted);
+}
+
+/* Agent ID badge in message header - styled like notification badges, right-aligned */
+.message-header .agent-id-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-left: auto;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.message-header .agent-id-badge:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Legacy agent-id class for backward compatibility */
 .message-header .agent-id {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
@@ -3025,6 +3122,14 @@ kbd {
     margin-bottom: var(--space-3);
     font-size: var(--text-sm);
     min-height: 36px;
+}
+
+/* Hide breadcrumbs when empty to save vertical space */
+.breadcrumbs:empty {
+    display: none !important;
+    padding: 0;
+    margin: 0;
+    min-height: 0;
 }
 
 .breadcrumb-item {

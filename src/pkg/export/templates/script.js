@@ -393,6 +393,27 @@ function initNotificationToggles() {
 }
 
 /**
+ * Initialize tool-only message header click handlers.
+ * Makes the entire header clickable to expand/collapse the tool details.
+ */
+function initToolOnlyHeaders() {
+    var toolOnlyMessages = document.querySelectorAll('.message-row.tool-only');
+    toolOnlyMessages.forEach(function(row) {
+        var header = row.querySelector('.message-header');
+        if (header) {
+            header.addEventListener('click', function(e) {
+                // Don't trigger if clicking on a button/link inside the header
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A' ||
+                    e.target.closest('button') || e.target.closest('a')) {
+                    return;
+                }
+                row.classList.toggle('expanded');
+            });
+        }
+    });
+}
+
+/**
  * Initialize the page when DOM is ready.
  */
 function init() {
@@ -404,6 +425,9 @@ function init() {
 
     // Initialize notification collapse toggles
     initNotificationToggles();
+
+    // Initialize tool-only message headers
+    initToolOnlyHeaders();
 
     // Start with tool bodies collapsed
     collapseAll();
