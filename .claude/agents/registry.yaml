@@ -1,0 +1,4 @@
+agents:
+  history-search:
+    version: 0.2.0
+    path: .claude/agents/history-search.md

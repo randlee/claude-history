@@ -29,6 +29,14 @@ You are using the **claude-history** CLI tool to query Claude Code's agent histo
 
 > **Note:** If `claude-history` is not installed or you encounter issues, see [README.md](README.md) for installation and troubleshooting instructions.
 
+## Agent Delegation (Required)
+
+This skill must **delegate all tool use** to the `history-search` agent. Do not call `claude-history` directly from the skill.
+
+1. Invoke the `history-search` agent (from `.claude/agents/registry.yaml`).
+2. Pass a fenced JSON payload that matches the agent's Input Contract.
+3. Receive a fenced JSON envelope and format the result for the user.
+
 ## Usage Instructions
 
 ### Available Commands
@@ -72,27 +80,29 @@ You are using the **claude-history** CLI tool to query Claude Code's agent histo
 - `--end <date>` - Filter entries before date
 - `--tool <name>` - Filter by tool name (exact match)
 - `--tool-match <pattern>` - Filter by tool name pattern (regex)
-- `--format <fmt>` - Output format: text, json, tree (default: text)
+- `--format <fmt>` - Output format: text, json, tree, html (default: text)
 - `--output <file>` - Write output to file
 
 ### Workflow Based on User Request
 
 **When user provides a path:**
-1. First, run `list` to see available sessions
-2. If they want to explore a specific session, use `tree` to see agent hierarchy
-3. Use `query` with appropriate filters to get detailed information
-4. Use `find-agent` to search for agents working on specific topics
+1. Delegate `list` to the agent to see available sessions
+2. If they want to explore a specific session, delegate `tree` to see agent hierarchy
+3. Delegate `query` with appropriate filters to get detailed information
+4. Delegate `find-agent` to search for agents working on specific topics
 
 **When user wants to search for specific work:**
-1. Use `find-agent` with search terms
-2. Once you identify relevant sessions/agents, use `query` to get details
-3. Use `tree` to understand the agent hierarchy
+1. Delegate `find-agent` with search terms
+2. Once you identify relevant sessions/agents, delegate `query` to get details
+3. Delegate `tree` to understand the agent hierarchy
 
 **When user wants to export:**
-1. Use `export` command with session ID to create HTML files
-2. Or use `query --format html` to generate and auto-open HTML report in browser
+1. Delegate `export` with session ID to create HTML files
+2. Or delegate `query --format html` to generate and auto-open HTML report in browser
 
 ### Examples
+
+These command examples are executed by the `history-search` agent on the skill's behalf.
 
 ```bash
 # List all sessions for a project

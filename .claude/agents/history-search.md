@@ -25,6 +25,61 @@ Search agent history to find past agents matching fuzzy criteria. Uses the `clau
 
 **Your Job**: Parse user's fuzzy query, call `claude-history` with appropriate parameters, rank results by relevance, and return structured matches with confidence scores.
 
+## Input Contract
+
+All inputs must be provided as fenced JSON. This agent accepts both fuzzy and direct query modes.
+
+```json
+{
+  "action": "list | query | tree | find-agent | export",
+  "path": "/absolute/or/relative/project/path",
+  "session": "session-id-or-prefix",
+  "agent": "agent-id-or-prefix",
+  "query_terms": ["tokens", "from", "user", "query"],
+  "start": "YYYY-MM-DD",
+  "end": "YYYY-MM-DD",
+  "tool": "Read | Bash | ...",
+  "tool_match": "regex-or-literal",
+  "format": "text | json | tree | html",
+  "output": "/path/to/file"
+}
+```
+
+Notes:
+- `action` defaults to `list` if omitted.
+- Use `query_terms` for fuzzy matching when `action` is `find-agent` or when the user asks in natural language.
+- `format` should be `json` when you need to parse results.
+
+## Output Contract
+
+Always return a fenced JSON envelope.
+
+```json
+{
+  "success": true,
+  "data": {
+    "matches": [
+      {
+        "session_id": "abc123def456",
+        "agent_id": "agent-789abc",
+        "timestamp": "2026-02-07T14:30:00Z",
+        "subagent_type": "Explore",
+        "prompt": "Explore agent analyzing beads codebase architecture and design patterns...",
+        "project_path": "/Users/randlee/Documents/github/beads",
+        "confidence": 0.78
+      }
+    ],
+    "raw": null
+  },
+  "error": null
+}
+```
+
+Guidelines:
+- Use `data.matches` for fuzzy search results.
+- Use `data.raw` to return parsed CLI outputs when the user requested a direct query/list/tree/export.
+- On failure, set `success=false` and include a concise `error` string.
+
 ## CLI Tool Usage Examples
 
 ### Finding the CLI Tool Path

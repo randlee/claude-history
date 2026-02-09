@@ -1,0 +1,4 @@
+requires:
+  cli:
+    - python3
+    - claude-history
