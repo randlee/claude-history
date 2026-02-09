@@ -191,7 +191,10 @@ claude-history export /project/path \
 
 ### TR-1: Resurrection Log Format (Phase 1 - JSONL)
 
-**Location**: `~/.claude/history/resurrection-log.jsonl` (global only, not per-project)
+**Location**: `~/.claude/history/resurrection-log.jsonl` (global personal tracking only)
+
+**Note**: Phase 1 implements global personal resurrection tracking. Team sharing
+via Dolt database is deferred to later phases.
 
 **Schema**:
 ```json

@@ -55,18 +55,16 @@ references that store metadata about agents worth resurrecting later.
   - Cross-repo: Resolve path, query remote history
 
 ### FR-4: Scope Management
-- **Requirement**: Support local and global bookmark scopes
-- **Local scope** (`.sc/history/bookmarks.jsonl`):
-  - Project-specific bookmarks
-  - Shared via git with team
-  - Preferred for project-related agents
+- **Requirement**: Global personal bookmark scope (Phase 1)
 - **Global scope** (`~/.claude/bookmarks.jsonl`):
   - Personal bookmarks across all projects
-  - Not shared via git
-  - Preferred for general-purpose agents
-- **Scope detection**:
-  - Auto-detect based on agent's project vs current project
-  - Allow explicit override: "bookmark globally as X"
+  - Single location for all bookmarks
+  - Accessible from any project
+  - Not shared (personal curation)
+- **Future** (Phase 2+):
+  - Local project-specific bookmarks (`.sc/history/bookmarks.jsonl`)
+  - Team sharing via Dolt database
+  - Scope detection and merging logic
 
 ### FR-5: Duplicate Handling
 - **Requirement**: Handle duplicate bookmark names gracefully
@@ -109,8 +107,10 @@ references that store metadata about agents worth resurrecting later.
 
 ### TR-1: Storage Format (Phase 1 - JSONL)
 
-**Global bookmarks**: `~/.claude/bookmarks.jsonl`
-**Local bookmarks**: `.sc/history/bookmarks.jsonl`
+**Location**: `~/.claude/bookmarks.jsonl` (global personal bookmarks only)
+
+**Note**: Phase 1 implements GLOBAL scope only. Local project-specific bookmarks
+and team sharing via Dolt are deferred to later phases.
 
 **Schema**:
 ```json
@@ -451,7 +451,12 @@ Acceptance Criteria:
 - ✅ Persists metadata correctly
 - ✅ CLI integration works reliably
 
-### Phase 2 (Dolt)
+### Phase 2 (Later - Team Sharing)
+- ✅ Local project bookmarks work (`.sc/history/bookmarks.jsonl`)
+- ✅ Scope merging logic (local overrides global)
+- ✅ Git integration for team collaboration
+
+### Phase 3 (Later - Dolt Integration)
 - ✅ Migrates existing JSONL bookmarks to Dolt
 - ✅ Dual-write maintains consistency
 - ✅ Fallback to JSONL when Dolt unavailable
@@ -461,11 +466,91 @@ Acceptance Criteria:
 
 ---
 
+## Later: Team Sharing & Dolt Integration
+
+### LATER-1: Team Bookmarks via Dolt Database
+
+**Purpose**: Enable team collaboration on bookmarks via shared database
+
+**Dolt database**: `dolt://shared-bookmarks`
+
+**Benefits**:
+- Multi-user access to bookmarks
+- Multi-machine synchronization
+- SQL-based queries for advanced search
+- Branch-based access control
+- Version history of bookmark changes
+
+**Implementation**:
+1. **Dual-write phase**: Write to both JSONL and Dolt
+   - JSONL remains primary for personal use
+   - Dolt for team sharing
+   - Sync bookmarks bidirectionally
+
+2. **Migration phase**: Migrate existing JSONL bookmarks to Dolt
+   - One-time migration script
+   - Preserve all metadata
+   - Maintain bookmark IDs
+
+3. **Dolt-primary phase**: Dolt becomes primary storage
+   - JSONL used as fallback/cache
+   - Auto-sync on bookmark operations
+   - Offline mode uses JSONL
+
+**Dolt schema** (see TR-2 for full SQL):
+- `bookmarks` table: Core bookmark data
+- `bookmark_tags` table: Many-to-many tags
+- `bookmark_shares` table: Access control (future)
+
+**Access control**:
+- Private: Only bookmark creator can access
+- Team: All team members can access
+- Public: Anyone with database access
+
+**Sync strategy**:
+- Pull latest bookmarks on skill invocation
+- Push new/updated bookmarks on creation/edit
+- Conflict resolution: Last-write-wins with merge tracking
+
+### LATER-2: Local Project Bookmarks
+
+**Purpose**: Project-specific bookmarks shared via git
+
+**Location**: `.sc/history/bookmarks.jsonl` (per-project)
+
+**Benefits**:
+- Share bookmarks with team via version control
+- Project-specific agent curation
+- No database dependency
+
+**Scope merging**:
+- Query local first, then global
+- Local overrides global on name conflict
+- Both results shown in searches
+
+**Git integration**:
+- Commit bookmarks.jsonl with project
+- Team pulls bookmarks with code
+- Automatic merge on git pull
+
+### LATER-3: Bookmark Sync Service
+
+**Purpose**: Sync personal bookmarks across machines (pre-Dolt)
+
+**Options**:
+- Cloud storage sync (Dropbox, Google Drive)
+- Git repository for personal bookmarks
+- SSH/rsync automated sync
+
+**Implementation**: CLI command `claude-history bookmark sync`
+
+---
+
 ## Future Enhancements
 
 ### FE-1: Bookmark Collections
 - Group related bookmarks into collections
-- Share collections with team
+- Share collections with team (via Dolt)
 - Import/export collection manifests
 
 ### FE-2: Smart Recommendations
