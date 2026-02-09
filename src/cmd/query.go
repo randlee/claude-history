@@ -29,6 +29,7 @@ var (
 	queryToolMatch     string // --tool-match flag
 	queryIncludeAgents bool   // --include-agents flag
 	queryLimit         int    // --limit flag for text truncation (0 = no truncation)
+	queryText          string // --text flag for searching message content
 )
 
 // knownTools is used for validation warnings when unknown tool types are specified
@@ -69,6 +70,10 @@ Examples:
   # Filter by tool input pattern
   claude-history query /path/to/project --tool bash --tool-match "git"
 
+  # Search for text in message content
+  claude-history query /path/to/project --text "resurrect"
+  claude-history query /path/to/project --type user --text "search term"
+
   # Output formats
   claude-history query /path/to/project --format json
   claude-history query /path/to/project --format summary
@@ -102,6 +107,7 @@ func init() {
 	queryCmd.Flags().StringVar(&queryToolMatch, "tool-match", "", "Filter by tool input regex pattern")
 	queryCmd.Flags().BoolVar(&queryIncludeAgents, "include-agents", false, "Include entries from all subagents")
 	queryCmd.Flags().IntVar(&queryLimit, "limit", 100, "Maximum characters per entry in text format (0 = no limit)")
+	queryCmd.Flags().StringVar(&queryText, "text", "", "Search for text in message content (case-insensitive)")
 }
 
 func runQuery(cmd *cobra.Command, args []string) error {
@@ -383,6 +389,9 @@ func buildFilterOptions(resolvedAgentID string) (session.FilterOptions, error) {
 
 	// Tool match pattern
 	opts.ToolMatch = queryToolMatch
+
+	// Text search pattern
+	opts.TextSearch = queryText
 
 	return opts, nil
 }
