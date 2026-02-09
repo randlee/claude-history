@@ -33,14 +33,27 @@ func ProjectsDir(claudeDir string) (string, error) {
 }
 
 // ProjectDir returns the path to a specific project's directory.
-// The projectPath should be an absolute filesystem path (e.g., /home/user/myproject).
+// The projectPath can be relative or absolute - it will be resolved to an absolute path.
 func ProjectDir(claudeDir string, projectPath string) (string, error) {
 	projectsDir, err := ProjectsDir(claudeDir)
 	if err != nil {
 		return "", err
 	}
 
-	encoded := encoding.EncodePath(projectPath)
+	// Resolve relative paths to absolute paths
+	// Note: Paths starting with "/" are considered absolute for encoding purposes,
+	// even on Windows where filepath.IsAbs() would return false.
+	// This ensures cross-platform test compatibility where "/test/project"
+	// consistently encodes to "-test-project" on all platforms.
+	absPath := projectPath
+	if !filepath.IsAbs(projectPath) && !strings.HasPrefix(projectPath, "/") {
+		absPath, err = filepath.Abs(projectPath)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	encoded := encoding.EncodePath(absPath)
 	return filepath.Join(projectsDir, encoded), nil
 }
 

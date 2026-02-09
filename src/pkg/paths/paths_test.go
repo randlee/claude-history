@@ -3,7 +3,10 @@ package paths
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/randlee/claude-history/pkg/encoding"
 )
 
 // mustMkdirAll creates directories or fails the test
@@ -39,14 +42,64 @@ func TestDefaultClaudeDir(t *testing.T) {
 func TestProjectDir(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	dir, err := ProjectDir(tmpDir, "/Users/test/myproject")
+	// Create a test directory to ensure cross-platform compatibility
+	testPath := filepath.Join(tmpDir, "test-project")
+	mustMkdirAll(t, testPath)
+
+	dir, err := ProjectDir(tmpDir, testPath)
 	if err != nil {
 		t.Fatalf("ProjectDir() error: %v", err)
 	}
 
-	expected := filepath.Join(tmpDir, "projects", "-Users-test-myproject")
+	// Expected encoding depends on the absolute path format
+	absTestPath, _ := filepath.Abs(testPath)
+	expectedEncoded := encoding.EncodePath(absTestPath)
+	expected := filepath.Join(tmpDir, "projects", expectedEncoded)
+
 	if dir != expected {
 		t.Errorf("ProjectDir() = %q, want %q", dir, expected)
+	}
+}
+
+func TestProjectDirRelativePath(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Test with "." (current directory)
+	dir, err := ProjectDir(tmpDir, ".")
+	if err != nil {
+		t.Fatalf("ProjectDir() with '.' error: %v", err)
+	}
+
+	// Should resolve to absolute path and encode it
+	// Expected path should start with tmpDir/projects/
+	if !filepath.IsAbs(dir) {
+		t.Error("ProjectDir() should return absolute path")
+	}
+	if !strings.HasPrefix(dir, filepath.Join(tmpDir, "projects")) {
+		t.Errorf("ProjectDir() = %q, should start with %q", dir, filepath.Join(tmpDir, "projects"))
+	}
+
+	// Test with ".." (parent directory)
+	dir, err = ProjectDir(tmpDir, "..")
+	if err != nil {
+		t.Fatalf("ProjectDir() with '..' error: %v", err)
+	}
+
+	if !filepath.IsAbs(dir) {
+		t.Error("ProjectDir() should return absolute path for relative input")
+	}
+	if !strings.HasPrefix(dir, filepath.Join(tmpDir, "projects")) {
+		t.Errorf("ProjectDir() = %q, should start with %q", dir, filepath.Join(tmpDir, "projects"))
+	}
+
+	// Test with relative path like "./subdir"
+	dir, err = ProjectDir(tmpDir, "./subdir")
+	if err != nil {
+		t.Fatalf("ProjectDir() with './subdir' error: %v", err)
+	}
+
+	if !filepath.IsAbs(dir) {
+		t.Error("ProjectDir() should return absolute path for relative input")
 	}
 }
 
