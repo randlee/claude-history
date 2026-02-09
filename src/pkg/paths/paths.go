@@ -41,9 +41,13 @@ func ProjectDir(claudeDir string, projectPath string) (string, error) {
 	}
 
 	// Resolve relative paths to absolute paths
-	absPath, err := filepath.Abs(projectPath)
-	if err != nil {
-		return "", err
+	// If already absolute, use as-is to support cross-platform test paths
+	absPath := projectPath
+	if !filepath.IsAbs(projectPath) {
+		absPath, err = filepath.Abs(projectPath)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	encoded := encoding.EncodePath(absPath)
