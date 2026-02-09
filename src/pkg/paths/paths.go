@@ -41,9 +41,12 @@ func ProjectDir(claudeDir string, projectPath string) (string, error) {
 	}
 
 	// Resolve relative paths to absolute paths
-	// If already absolute, use as-is to support cross-platform test paths
+	// Note: Paths starting with "/" are considered absolute for encoding purposes,
+	// even on Windows where filepath.IsAbs() would return false.
+	// This ensures cross-platform test compatibility where "/test/project"
+	// consistently encodes to "-test-project" on all platforms.
 	absPath := projectPath
-	if !filepath.IsAbs(projectPath) {
+	if !filepath.IsAbs(projectPath) && !strings.HasPrefix(projectPath, "/") {
 		absPath, err = filepath.Abs(projectPath)
 		if err != nil {
 			return "", err
