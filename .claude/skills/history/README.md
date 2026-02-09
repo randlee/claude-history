@@ -58,6 +58,37 @@ go build -o ../bin/claude-history .
 sudo mv ../bin/claude-history /usr/local/bin/
 ```
 
+#### Option 6: winget (Windows)
+
+```bash
+winget install randlee.claude-history
+```
+
+### Alternative: Local Build Without PATH
+
+If you prefer to build locally without adding to PATH (for development or testing), you can configure the path in your project:
+
+```bash
+# 1. Build locally
+git clone https://github.com/randlee/claude-history.git
+cd claude-history/src
+go build -o claude-history .
+
+# 2. Create config in your project
+mkdir -p .sc/history
+cat > .sc/history/config.yml << EOF
+cli:
+  path: $(pwd)/claude-history
+EOF
+```
+
+**Note**: This creates a `.sc/history/config.yml` file that tells the history skill where to find your local build. This method is useful for:
+- Development and testing
+- Custom builds
+- Environments where you can't modify PATH
+
+The skill will check PATH first (fast), then fall back to this config file if needed.
+
 ### Verify Installation
 
 ```bash
