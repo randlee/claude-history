@@ -27,6 +27,27 @@ Search agent history to find past agents matching fuzzy criteria. Uses the `clau
 
 ## CLI Tool Usage Examples
 
+### Finding the CLI Tool Path
+
+Most installations add `claude-history` to PATH automatically (Homebrew, winget, go install). If the tool is not on PATH (local build), get the path first:
+
+```python
+# Get CLI path (checks PATH, then .sc/history/config.yml)
+import sys
+sys.path.insert(0, '.claude/scripts')
+from validate_claude_history_cli import find_cli
+
+claude_history = find_cli()
+if not claude_history:
+    # Error: CLI not found, see installation instructions
+    raise RuntimeError("claude-history CLI not found")
+
+# Use this path in your commands
+# Example: f"{claude_history} query /path --format json"
+```
+
+For simplicity, examples below use `claude-history` assuming it's on PATH. If not, substitute with the path from `find_cli()`.
+
 ### Example 1: Search when project path is known
 
 User query: "explore agent who analyzed beads"
