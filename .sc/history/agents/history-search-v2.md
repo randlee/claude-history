@@ -20,7 +20,7 @@ hooks:
               echo "" >&2
               echo "The history-search agent requires the claude-history CLI to be installed." >&2
               echo "" >&2
-              echo "Installation instructions: ../../README.md" >&2
+              echo "Installation instructions: .claude/skills/history/README.md" >&2
               echo "" >&2
               echo "Quick install:" >&2
               echo "  cd src && go build -o claude-history ." >&2
