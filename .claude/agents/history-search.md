@@ -1,6 +1,6 @@
 ---
 name: history-search
-version: 0.4.0
+version: 0.5.0
 description: Search agent history using claude-history CLI tool to locate past agents by fuzzy criteria
 agent_type: specialized
 maturity_level: standard
@@ -221,6 +221,16 @@ claude-history query /path --text "pattern" --type user --start 2026-02-08
 ```
 
 The `--text` flag filters results to only messages containing the specified text (case-insensitive). More efficient than using `grep | jq` pipelines.
+
+#### Preferred Path (Default) vs Exceptions
+
+**Default (preferred for initial scans):**
+- Use `--text` for message content search
+- Use `--tool` / `--tool-match` only for tool usage filtering
+
+**Exceptions (allowed for refinement):**
+- Use `grep/jq` to iterate on complex filters, validate `--text` results, or explore edge cases
+- If `--text` output is ambiguous, fall back to `grep/jq` for confirmation
 
 ## Parsing Tool Output
 
