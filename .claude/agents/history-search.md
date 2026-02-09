@@ -1,11 +1,12 @@
 ---
 name: history-search
-version: 0.2.0
+version: 0.4.0
 description: Search agent history using claude-history CLI tool to locate past agents by fuzzy criteria
 agent_type: specialized
 maturity_level: standard
 author: claude-history
 created: 2026-02-08
+updated: 2026-02-09
 execution:
   timeout_s: 120
   max_tool_calls: 50
@@ -206,6 +207,20 @@ claude-history query /path/to/project --tool-match "src/components/.*\.tsx" --fo
 ```
 
 Returns entries where tool inputs match the regex pattern (TypeScript React files in src/components/).
+
+### Example 11: Search message text with --text flag
+
+User query: "find conversations about resurrect"
+
+```bash
+# Search for text in message content (case-insensitive)
+claude-history query /path/to/project --text "resurrect" --format json
+
+# Combine with other filters
+claude-history query /path --text "pattern" --type user --start 2026-02-08
+```
+
+The `--text` flag filters results to only messages containing the specified text (case-insensitive). More efficient than using `grep | jq` pipelines.
 
 ## Parsing Tool Output
 
