@@ -100,10 +100,17 @@ Systematic development checklist for implementing the 4 use cases from user stor
   - Remaining: --text flag not documented in prompt
   - Recommendation: Add Example 11 for --text flag
 
-- [ ] **T1.8** Run TC-001 iteration 4 (with --text flag docs)
-  - Use prompt v0.4.0 with --text flag documentation
-  - Expected: Agent uses --text flag natively
-  - Expected: No grep+jq workaround needed
+- [x] **T1.8** Run TC-001 iteration 4 (with --text flag docs)
+  - Completed: 2026-02-09 (agents a735613, ae1ca7a)
+  - Result: MIXED - Run 1 used wrong flag, Run 2 correct
+  - Issues: 50% consistency, Run 1 used --tool-match instead of --text
+
+- [x] **T1.9** Run TC-001 iteration 5 (with preferred path guidance)
+  - Completed: 2026-02-09 (agents ab3322c, acf5a33)
+  - Duration: 28.6s / 49.8s (avg 39.2s) - 29% faster than iter 4
+  - Tool calls: 8 / 11 (avg 9.5) - 24% fewer than iter 4
+  - Result: SUCCESS - 100% consistency, both used --text flag
+  - Prompt v0.5.0 with "Preferred Path vs Exceptions" works perfectly
 
 ### 1.2 History Skill Development
 
