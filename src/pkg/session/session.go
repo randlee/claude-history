@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/randlee/claude-history/internal/jsonl"
@@ -182,6 +183,9 @@ type FilterOptions struct {
 	// Tool filtering
 	ToolTypes []string // Filter by tool names (case-insensitive)
 	ToolMatch string   // Regex pattern to match tool inputs
+
+	// Text search
+	TextSearch string // Search for text in message content (case-insensitive)
 }
 
 // FilterEntries filters session entries based on the given options.
@@ -235,6 +239,14 @@ func FilterEntries(entries []models.ConversationEntry, opts FilterOptions) []mod
 		// Filter by tool input pattern
 		if opts.ToolMatch != "" {
 			if !entry.MatchesToolInput(opts.ToolMatch) {
+				continue
+			}
+		}
+
+		// Filter by text search (case-insensitive)
+		if opts.TextSearch != "" {
+			textContent := entry.GetTextContent()
+			if !strings.Contains(strings.ToLower(textContent), strings.ToLower(opts.TextSearch)) {
 				continue
 			}
 		}
