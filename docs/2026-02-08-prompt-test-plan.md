@@ -61,7 +61,7 @@ Systematic development checklist for implementing the 4 use cases from user stor
 
 #### Testing Checklist
 
-- [x] **T1.1** Run TC-001 baseline (Find /resurrect conversation)
+- [x] **T1.1** Run TC-001 baseline (Find bookmarking conversation)
   - Completed: 2026-02-09 (agent acaff29)
   - Result: Success with 2 failures, good recovery
   - Issues identified: 3 (1 fixed, 2 pending)

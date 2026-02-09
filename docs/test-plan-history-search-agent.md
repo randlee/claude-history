@@ -46,11 +46,11 @@ After each test run, we analyze the agent's tool use patterns to identify:
 
 **Test ID**: TC-001
 **Priority**: HIGH
-**Goal**: Find conversations containing specific text ("resurrection")
+**Goal**: Find conversations containing specific text ("bookmarking")
 
 #### Test Prompt
 ```
-Find the conversation where we discussed /resurrect in this repository.
+Find the conversation where we discussed bookmarking in this repository.
 ```
 
 #### Input JSON (if using contracts)
@@ -58,7 +58,7 @@ Find the conversation where we discussed /resurrect in this repository.
 {
   "action": "search",
   "path": "/Users/randlee/Documents/github/claude-history",
-  "fuzzy_query": "Find conversation about /resurrect"
+  "fuzzy_query": "Find conversation about bookmarking"
 }
 ```
 
@@ -77,10 +77,10 @@ Find the conversation where we discussed /resurrect in this repository.
       {
         "session_id": "24a04e6d-4ea1-4a28-8abf-eb4b88962e3a",
         "timestamp": "2026-02-08T22:48:10.993Z",
-        "snippet": "### 2. `/resurrect` - Agent Resurrection",
+        "snippet": "Bookmarking System... Create bookmarking database for useful agents",
         "confidence": 0.95,
         "match_reasons": [
-          "query: 'resurrect' (exact match in text)",
+          "query: 'bookmarking' (exact match in text)",
           "time: February 8 (recent)"
         ]
       }
@@ -105,7 +105,7 @@ Task(
 
   ---
 
-  User Query: Find the conversation where we discussed /resurrect in this repository.
+  User Query: Find the conversation where we discussed bookmarking in this repository.
   Project Path: /Users/randlee/Documents/github/claude-history
   """
 )
@@ -280,7 +280,7 @@ See `docs/prompt-analyzer-agent.md` (create separately)
 
 ### Run 1: 2026-02-09 (Baseline)
 
-**Test Case**: TC-001 (Find /resurrect conversation)
+**Test Case**: TC-001 (Find bookmarking conversation)
 **Agent ID**: acaff29
 **Model**: sonnet-4.5
 **Duration**: 88s
@@ -301,7 +301,7 @@ See `docs/prompt-analyzer-agent.md` (create separately)
    - Fix: Add filepath.Abs() before encoding (IN PROGRESS)
 
 3. **Missing Feature (HIGH)**: No text search in CLI
-   - Evidence: Agent used grep+jq to search for "resurrect" in text
+   - Evidence: Agent used grep+jq to search for "bookmarking" in text
    - Proposal: Add `--search-text` flag or fuzzy_query support
 
 **Actions Taken**:
