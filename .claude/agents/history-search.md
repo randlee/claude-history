@@ -14,19 +14,7 @@ hooks:
     - matcher: "Bash"
       hooks:
         - type: command
-          command: |
-            if ! command -v claude-history &> /dev/null; then
-              echo "ERROR: claude-history CLI tool not found" >&2
-              echo "" >&2
-              echo "The history-search agent requires the claude-history CLI to be installed." >&2
-              echo "" >&2
-              echo "Installation instructions: .claude/skills/history/README.md" >&2
-              echo "" >&2
-              echo "Quick install:" >&2
-              echo "  cd src && go build -o claude-history ." >&2
-              echo "  # Then add to PATH or use full path" >&2
-              exit 2
-            fi
+          command: "python3 .claude/scripts/validate-claude-history-cli.py"
 ---
 
 # history-search Agent
