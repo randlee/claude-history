@@ -1,0 +1,507 @@
+# Bookmark Skill Requirements
+
+**Version**: 1.0
+**Created**: 2026-02-09
+**Purpose**: Allow users to save valuable agents for future resurrection
+
+---
+
+## Overview
+
+The bookmark skill enables users to curate a registry of useful agents from any session
+(current or historical) and any project on the computer. Bookmarks are lightweight
+references that store metadata about agents worth resurrecting later.
+
+---
+
+## Functional Requirements
+
+### FR-1: Natural Language Trigger
+- **Requirement**: Skill activates on natural language containing "bookmark"
+- **Examples**:
+  - "bookmark this agent as beads-expert"
+  - "bookmark agent a1b2c3d as auth-specialist"
+  - "save this agent as architecture-expert"
+  - "add bookmark for the explore agent as beads-arch"
+- **Validation**: Parse intent, extract agent reference and bookmark name
+
+### FR-2: Multi-Context Bookmarking
+- **Requirement**: Support bookmarking from multiple contexts
+- **Contexts**:
+  1. **Current agent** (just spawned in this session)
+     - "bookmark this agent as X"
+     - Auto-detect most recent subagent
+  2. **Specific agent ID** (known ID from current or historical session)
+     - "bookmark agent a1b2c3d as X"
+     - Validate agent exists via claude-history CLI
+  3. **Historical agent** (from search results)
+     - "bookmark that agent as X" (after history search)
+     - Use context from previous search
+  4. **Cross-repo agent** (agent from different project)
+     - "bookmark agent abc123 from beads project as X"
+     - Resolve project path, validate accessibility
+
+### FR-3: Metadata Extraction
+- **Requirement**: Automatically extract agent metadata
+- **Required fields**:
+  - agent_id (e.g., "agent-a1b2c3d")
+  - session_id (e.g., "session-xyz789")
+  - project_path (absolute path to project)
+  - original_timestamp (when agent originally ran)
+  - hostname (computer identifier for accessibility)
+- **Extraction methods**:
+  - Current agent: Query current session context
+  - Historical agent: Use claude-history CLI query
+  - Cross-repo: Resolve path, query remote history
+
+### FR-4: Scope Management
+- **Requirement**: Support local and global bookmark scopes
+- **Local scope** (`.sc/history/bookmarks.jsonl`):
+  - Project-specific bookmarks
+  - Shared via git with team
+  - Preferred for project-related agents
+- **Global scope** (`~/.claude/bookmarks.jsonl`):
+  - Personal bookmarks across all projects
+  - Not shared via git
+  - Preferred for general-purpose agents
+- **Scope detection**:
+  - Auto-detect based on agent's project vs current project
+  - Allow explicit override: "bookmark globally as X"
+
+### FR-5: Duplicate Handling
+- **Requirement**: Handle duplicate bookmark names gracefully
+- **Scenarios**:
+  1. **Same scope, same name**: Warn and offer to overwrite or rename
+  2. **Different scope, same name**: Allow, note conflict in metadata
+  3. **Same agent, different name**: Allow (multiple bookmarks per agent)
+- **Resolution strategy**:
+  - Prompt user for confirmation
+  - Show existing bookmark details
+  - Offer alternatives (rename, overwrite, cancel)
+
+### FR-6: Tag Management
+- **Requirement**: Support tagging for organization and search
+- **Tag sources**:
+  - Auto-detected from agent type (Explore, Bash, etc.)
+  - Extracted from project name
+  - User-provided: "bookmark as X with tags: architecture, beads, python"
+- **Tag operations**:
+  - Add tags during bookmark creation
+  - Update tags on existing bookmarks
+  - Search by tags (future: fuzzy tag matching)
+
+### FR-7: Validation
+- **Requirement**: Validate bookmark before saving
+- **Checks**:
+  1. Agent exists (via claude-history query)
+  2. Session accessible on this hostname
+  3. Project path exists and is readable
+  4. Name is valid (alphanumeric, hyphens, underscores)
+  5. No SQL injection patterns (for future Dolt migration)
+- **Error handling**:
+  - Clear error messages
+  - Suggest corrections
+  - Offer to bookmark anyway with warnings
+
+---
+
+## Technical Requirements
+
+### TR-1: Storage Format (Phase 1 - JSONL)
+
+**Global bookmarks**: `~/.claude/bookmarks.jsonl`
+**Local bookmarks**: `.sc/history/bookmarks.jsonl`
+
+**Schema**:
+```json
+{
+  "bookmark_id": "bmk-2026-02-09-001",
+  "name": "beads-architecture-expert",
+  "description": "Explored beads codebase, documented 3-tier architecture",
+  "agent_id": "agent-a1b2c3d",
+  "session_id": "session-xyz789",
+  "project_path": "/Users/randlee/Documents/github/beads",
+  "original_timestamp": "2026-02-08T14:30:00.000Z",
+  "hostname": "macbook-pro.local",
+  "bookmarked_at": "2026-02-09T10:00:00.000Z",
+  "bookmarked_by": "randlee",
+  "scope": "local",
+  "tags": ["explore", "architecture", "beads"],
+  "resurrection_count": 0,
+  "last_resurrected": null
+}
+```
+
+**Field specifications**:
+- `bookmark_id`: Format `bmk-YYYY-MM-DD-NNN` (unique within scope)
+- `name`: Max 255 chars, alphanumeric + hyphens/underscores
+- `description`: Max 1000 chars, user-provided or auto-generated
+- `original_timestamp`: ISO 8601 format with milliseconds
+- `hostname`: Output of `hostname` command
+- `scope`: Enum ["local", "global"]
+- `tags`: Array of strings, max 20 tags per bookmark
+
+### TR-2: Storage Format (Phase 2 - Dolt)
+
+**Database**: `dolt://shared-bookmarks`
+
+**Table: bookmarks**
+```sql
+CREATE TABLE bookmarks (
+    bookmark_id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    agent_id VARCHAR(64) NOT NULL,
+    session_id VARCHAR(64) NOT NULL,
+    project_path TEXT NOT NULL,
+    original_timestamp DATETIME(3) NOT NULL,
+    hostname VARCHAR(255) NOT NULL,
+    bookmarked_at DATETIME(3) NOT NULL,
+    bookmarked_by VARCHAR(255) NOT NULL,
+    scope VARCHAR(16) NOT NULL DEFAULT 'local',
+    resurrection_count INT DEFAULT 0,
+    last_resurrected DATETIME(3),
+    created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    INDEX idx_name (name),
+    INDEX idx_agent (agent_id),
+    INDEX idx_hostname (hostname),
+    INDEX idx_scope (scope),
+    INDEX idx_bookmarked_at (bookmarked_at)
+);
+```
+
+**Table: bookmark_tags**
+```sql
+CREATE TABLE bookmark_tags (
+    bookmark_id VARCHAR(64) NOT NULL,
+    tag VARCHAR(64) NOT NULL,
+    PRIMARY KEY (bookmark_id, tag),
+    FOREIGN KEY (bookmark_id) REFERENCES bookmarks(bookmark_id) ON DELETE CASCADE,
+    INDEX idx_tag (tag)
+);
+```
+
+**Migration strategy**:
+- Phase 2a: Dual-write (JSONL + Dolt)
+- Phase 2b: Read from Dolt, fallback to JSONL
+- Phase 2c: Dolt primary, JSONL backup only
+
+### TR-3: CLI Integration
+
+**Required**: `claude-history` CLI v0.3.0+
+
+**Operations**:
+1. **Validate agent exists**:
+   ```bash
+   claude-history query /project/path --session SESSION_ID --agent AGENT_ID --format json
+   ```
+   - Verify agent_id appears in results
+   - Extract metadata (timestamp, type, etc.)
+
+2. **Resolve project path**:
+   ```bash
+   claude-history list | grep "project-name"
+   ```
+   - Resolve relative paths to absolute
+   - Validate project is indexed by claude-history
+
+3. **Extract agent context** (for future resurrection):
+   ```bash
+   claude-history export /project/path --session SESSION_ID --agent AGENT_ID --format json
+   ```
+   - Full agent transcript
+   - Tool calls and results
+   - Final output
+
+### TR-4: Hostname Detection
+
+**Method**: Use system hostname command
+```bash
+hostname=$(hostname)  # macbook-pro.local
+```
+
+**Normalization**:
+- Strip domain suffix if present
+- Lowercase
+- Store full hostname for exact matching
+
+**Comparison**:
+- Exact match: Bookmark is fully accessible
+- Partial match: Warn about potential accessibility issues
+- No match: Note that history is on different machine
+
+### TR-5: ID Generation
+
+**Format**: `bmk-YYYY-MM-DD-NNN`
+
+**Algorithm**:
+```python
+def generate_bookmark_id(date: str, existing_ids: List[str]) -> str:
+    """Generate unique bookmark ID for given date."""
+    prefix = f"bmk-{date}"
+
+    # Find highest existing number for this date
+    max_num = 0
+    for existing_id in existing_ids:
+        if existing_id.startswith(prefix):
+            num = int(existing_id.split('-')[-1])
+            max_num = max(max_num, num)
+
+    # Generate next number with zero-padding
+    next_num = max_num + 1
+    return f"{prefix}-{next_num:03d}"
+```
+
+**Example**:
+- First bookmark on 2026-02-09: `bmk-2026-02-09-001`
+- Second bookmark same day: `bmk-2026-02-09-002`
+
+### TR-6: Concurrency Handling
+
+**Problem**: Multiple sessions bookmarking simultaneously
+
+**Solution**:
+1. **File locking** (JSONL):
+   - Acquire exclusive lock before writing
+   - Retry with exponential backoff (max 3 attempts)
+   - Error if lock cannot be acquired
+
+2. **Transaction isolation** (Dolt):
+   - Use SQL transactions
+   - Handle unique constraint violations
+   - Retry on deadlock
+
+### TR-7: Error Recovery
+
+**Scenarios**:
+1. **Agent not found**: Clear error, suggest using history-search
+2. **Permission denied**: Check file permissions, suggest fix
+3. **Invalid path**: Validate and resolve before saving
+4. **Duplicate name**: Show existing, offer alternatives
+5. **CLI unavailable**: Graceful degradation (manual input?)
+
+---
+
+## User Stories
+
+### US-1: Bookmark Current Agent
+```
+As a user,
+I want to bookmark a subagent I just spawned,
+So that I can reuse its expertise later.
+
+Acceptance Criteria:
+- Detects most recent subagent automatically
+- Prompts for bookmark name
+- Saves with all metadata
+- Confirms successful bookmark
+```
+
+### US-2: Bookmark Historical Agent
+```
+As a user,
+I want to bookmark an agent from a previous session,
+So that I can resurrect its valuable work.
+
+Acceptance Criteria:
+- Accepts agent ID from history search
+- Validates agent still accessible
+- Extracts historical metadata
+- Warns if hostname differs
+```
+
+### US-3: Bookmark Cross-Repo Agent
+```
+As a developer,
+I want to bookmark an agent from a different project,
+So that I can use its insights in my current work.
+
+Acceptance Criteria:
+- Resolves project path correctly
+- Validates cross-repo accessibility
+- Stores correct project_path
+- Works from any repository
+```
+
+### US-4: Browse Bookmarks
+```
+As a user,
+I want to list all my bookmarks,
+So that I can see what agents I've saved.
+
+Acceptance Criteria:
+- Lists local and global bookmarks
+- Shows key metadata (name, description, tags)
+- Indicates accessibility (same hostname?)
+- Sortable by date, usage, name
+```
+
+### US-5: Update Bookmark
+```
+As a user,
+I want to edit bookmark metadata,
+So that I can improve descriptions or add tags.
+
+Acceptance Criteria:
+- Update name, description, tags
+- Preserve immutable fields (agent_id, original_timestamp)
+- Validate changes before saving
+- Maintain resurrection count
+```
+
+---
+
+## Performance Requirements
+
+### PERF-1: Bookmark Creation
+- **Target**: <500ms for local agent, <2s for historical/cross-repo
+- **Bottleneck**: CLI query for metadata extraction
+- **Optimization**: Cache recent agent metadata
+
+### PERF-2: Bookmark Lookup
+- **Target**: <100ms for name match, <500ms for fuzzy search
+- **Bottleneck**: Linear scan of JSONL files
+- **Optimization**: In-memory index (Phase 1), SQL index (Phase 2)
+
+### PERF-3: Storage Size
+- **Target**: <1KB per bookmark (JSONL), <500 bytes (Dolt compressed)
+- **Estimate**: 1000 bookmarks = ~1MB (JSONL), ~500KB (Dolt)
+
+---
+
+## Security Requirements
+
+### SEC-1: Path Validation
+- **Requirement**: Prevent directory traversal attacks
+- **Validation**:
+  - Reject paths with `..` unless explicitly allowed
+  - Verify paths exist and are readable
+  - No symlink following outside allowed directories
+
+### SEC-2: SQL Injection Prevention
+- **Requirement**: Sanitize all user input for Dolt migration
+- **Method**:
+  - Use parameterized queries exclusively
+  - Validate bookmark names against whitelist regex
+  - Escape special characters in descriptions
+
+### SEC-3: Access Control (Phase 2)
+- **Requirement**: Control who can read/write bookmarks in Dolt
+- **Levels**:
+  - Private: Only bookmark creator
+  - Team: Same organization/project
+  - Public: Anyone with database access
+- **Implementation**: Dolt branch permissions
+
+---
+
+## Testing Requirements
+
+### TEST-1: Unit Tests
+- Bookmark ID generation uniqueness
+- Metadata extraction accuracy
+- Scope detection logic
+- Duplicate name handling
+- Tag parsing and validation
+
+### TEST-2: Integration Tests
+- JSONL read/write with concurrent access
+- CLI integration (agent validation)
+- Cross-repo path resolution
+- Hostname comparison logic
+
+### TEST-3: End-to-End Tests
+- Bookmark current agent → verify saved
+- Bookmark historical agent → verify metadata correct
+- Bookmark cross-repo → verify accessibility check
+- Update bookmark → verify changes persist
+- List bookmarks → verify filtering/sorting
+
+### TEST-4: Migration Tests
+- JSONL → Dolt migration (data integrity)
+- Dual-write consistency (JSONL matches Dolt)
+- Fallback behavior (Dolt unavailable)
+- Rollback (Dolt → JSONL recovery)
+
+---
+
+## Dependencies
+
+### Required
+- `claude-history` CLI v0.3.0+ (path resolution, agent queries)
+- Python 3.8+ (skill implementation)
+- Bash 4.0+ (hostname detection, file operations)
+
+### Optional (Phase 2)
+- Dolt v1.0+ (database storage)
+- `dolt` CLI (database operations)
+- Network access (for shared databases)
+
+---
+
+## Success Criteria
+
+### Phase 1 (JSONL)
+- ✅ Can bookmark current agent in <500ms
+- ✅ Can bookmark historical agent in <2s
+- ✅ Can bookmark cross-repo agent
+- ✅ Handles duplicate names gracefully
+- ✅ Supports local and global scopes
+- ✅ Persists metadata correctly
+- ✅ CLI integration works reliably
+
+### Phase 2 (Dolt)
+- ✅ Migrates existing JSONL bookmarks to Dolt
+- ✅ Dual-write maintains consistency
+- ✅ Fallback to JSONL when Dolt unavailable
+- ✅ SQL queries perform well (<100ms for name lookup)
+- ✅ Supports team sharing via Dolt branches
+- ✅ Access control works correctly
+
+---
+
+## Future Enhancements
+
+### FE-1: Bookmark Collections
+- Group related bookmarks into collections
+- Share collections with team
+- Import/export collection manifests
+
+### FE-2: Smart Recommendations
+- Suggest bookmarks based on current task
+- Track which bookmarks are most useful
+- Auto-tag based on usage patterns
+
+### FE-3: Bookmark Versions
+- Track changes to agent over time
+- Bookmark specific versions of evolving agents
+- Compare bookmark versions
+
+### FE-4: Social Features (Phase 2)
+- Upvote/downvote bookmarks
+- Comment on bookmarks
+- Discover popular bookmarks in community
+
+---
+
+## Open Questions
+
+1. Should bookmark name be unique globally, or allow duplicates across scopes?
+   - **Decision needed**: Enforce global uniqueness or allow scope-level uniqueness?
+
+2. How to handle agent updates? If original agent session is deleted, bookmark becomes stale.
+   - **Proposal**: Periodic validation, mark stale bookmarks, offer cleanup
+
+3. Should we auto-bookmark high-value agents?
+   - **Criteria**: >60s execution, >20 tool calls, user interaction >10 turns
+   - **Decision**: Offer suggestion, require user approval
+
+4. How to sync bookmarks across machines (before Dolt)?
+   - **Options**: Git (manual), rsync (automated), cloud storage (Dropbox/Drive)
+   - **Decision needed**: Wait for Dolt or implement interim solution?
+
+---
+
+**Document Status**: Draft
+**Next Steps**: Review with team, finalize open questions, begin implementation

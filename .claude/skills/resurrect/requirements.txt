@@ -1,0 +1,679 @@
+# Resurrect Skill Requirements
+
+**Version**: 1.0
+**Created**: 2026-02-09
+**Purpose**: Resurrect valuable agents from history to reuse their expertise in new contexts
+
+---
+
+## Overview
+
+The resurrect skill brings back agents from previous sessions by extracting their context,
+knowledge, and outputs, then spawning a new agent initialized with that information. This
+enables reusing specialized expertise without re-exploring or re-analyzing from scratch.
+
+**Key principle**: Each resurrection creates a NEW agent with a NEW agent ID, initialized
+with the OLD agent's context. The original agent is never modified.
+
+---
+
+## Functional Requirements
+
+### FR-1: Multiple Resurrection Modes
+- **Requirement**: Support three distinct resurrection pathways
+- **Modes**:
+  1. **By bookmark name** (easiest)
+     - `/resurrect beads-expert`
+     - Looks up bookmark, extracts agent
+     - Direct, fast, requires prior bookmarking
+
+  2. **Fuzzy search** (most flexible)
+     - `/resurrect find agent who analyzed beads yesterday`
+     - Delegates to history-search agent
+     - Returns ranked matches, user selects or auto-picks best
+
+  3. **Direct by ID** (explicit)
+     - `/resurrect --session xyz789 --agent abc123 --from /path/to/beads`
+     - No bookmark required
+     - Requires knowing exact IDs
+
+### FR-2: Context Extraction
+- **Requirement**: Extract sufficient context for agent to be useful
+- **Context components**:
+  1. **Agent metadata**:
+     - Original prompt/instructions
+     - Agent type (Explore, general-purpose, etc.)
+     - Execution parameters (timeout, max_tool_calls)
+
+  2. **Conversation history**:
+     - User prompts to agent
+     - Agent responses (text + thinking)
+     - Tool calls and results
+     - Final output/summary
+
+  3. **Knowledge gained**:
+     - Files analyzed
+     - Insights discovered
+     - Conclusions reached
+     - Recommendations made
+
+  4. **Project context**:
+     - Project path
+     - Repository state (git branch, commit hash)
+     - Files/directories explored
+
+**Extraction method**:
+```bash
+# Use claude-history export
+claude-history export /project/path \
+  --session SESSION_ID \
+  --agent AGENT_ID \
+  --format json \
+  --include-tools \
+  --include-thinking
+```
+
+### FR-3: Agent Initialization
+- **Requirement**: Initialize new agent with extracted context
+- **Initialization strategy**:
+  ```
+  New Agent Prompt:
+
+  You are a resurrection of agent [AGENT_ID] from [DATE].
+
+  Original context:
+  [Extracted project context, files analyzed, etc.]
+
+  Original agent's findings:
+  [Summary of key insights, conclusions]
+
+  Original agent's final output:
+  [Complete final response]
+
+  ---
+
+  The user is now asking you to apply this expertise to a new task:
+  [User's new prompt]
+  ```
+
+**Context injection methods**:
+1. **Full transcript** (for short agents, <10 turns):
+   - Include complete conversation history
+   - Preserves nuance and reasoning
+   - Higher token cost but better context
+
+2. **Summarized** (for long agents, >10 turns):
+   - Extract key insights only
+   - Compress verbose tool results
+   - Lower token cost but may lose details
+
+3. **Hybrid** (default):
+   - Full transcript of critical sections
+   - Summarize routine operations
+   - Balance between cost and fidelity
+
+### FR-4: Resurrection Tracking
+- **Requirement**: Log all resurrection events for analytics
+- **Tracking data**:
+  - Which agent was resurrected (original ID)
+  - When it was resurrected
+  - Who/what triggered resurrection (user, bookmark, fuzzy search)
+  - What new agent ID was created
+  - Outcome (success/failure)
+  - Usage notes
+
+**Storage**: `~/.claude/history/resurrection-log.jsonl` (global)
+
+**Benefits**:
+- Track most-useful agents (resurrection_count)
+- Debug resurrection failures
+- Analyze resurrection patterns
+- Recommend popular agents
+
+### FR-5: Multi-Resurrection Support
+- **Requirement**: Same agent can be resurrected multiple times
+- **Scenario**:
+  ```
+  Original: agent-abc123 (beads architecture expert)
+    ↓ resurrect for API design
+  Resurrection 1: agent-def456 (new task, new ID)
+    ↓ resurrect for database schema
+  Resurrection 2: agent-ghi789 (new task, new ID)
+    ↓ resurrect for testing strategy
+  Resurrection 3: agent-jkl012 (new task, new ID)
+  ```
+- **Tracking**: Each resurrection logged separately
+- **Bookmark updates**: Increment `resurrection_count`
+
+### FR-6: Cross-Repo Resurrection
+- **Requirement**: Resurrect agents from different projects
+- **Use case**:
+  ```
+  Currently working in: claude-history project
+  Want to resurrect: beads architecture expert
+  Agent location: beads project
+  ```
+- **Validation**:
+  1. Verify hostname matches (or warn)
+  2. Check project path is accessible
+  3. Validate agent still exists in history
+  4. Extract context from remote project
+
+### FR-7: Resurrection Validation
+- **Requirement**: Validate resurrection will work before executing
+- **Pre-flight checks**:
+  1. **Agent exists**: Query claude-history to confirm
+  2. **Accessible**: Same hostname or explicit override
+  3. **Complete**: Agent has final output (not crashed/timeout)
+  4. **Compatible**: Context can be extracted successfully
+  5. **Sufficient**: Extracted context is meaningful (not empty)
+
+**Error handling**:
+- Clear error messages for each failure mode
+- Suggest alternatives (fuzzy search, different agent)
+- Offer to proceed anyway with warnings
+
+### FR-8: Resurrection Modes Enhancement
+- **Requirement**: Support interactive and autonomous modes
+- **Interactive mode** (default):
+  - Show resurrection candidates
+  - User selects which to resurrect
+  - Confirm before spawning new agent
+
+- **Autonomous mode** (for automation):
+  - Auto-select best match based on heuristics
+  - Skip confirmation prompts
+  - Log decisions for later review
+
+---
+
+## Technical Requirements
+
+### TR-1: Resurrection Log Format (Phase 1 - JSONL)
+
+**Location**: `~/.claude/history/resurrection-log.jsonl` (global only, not per-project)
+
+**Schema**:
+```json
+{
+  "resurrection_id": "res-2026-02-09-001",
+  "bookmark_id": "bmk-2026-02-09-001",
+  "resurrected_from_agent_id": "agent-a1b2c3d",
+  "resurrected_from_session_id": "session-xyz789",
+  "resurrected_from_hostname": "macbook-pro.local",
+  "resurrected_from_project": "/Users/randlee/Documents/github/beads",
+  "resurrected_as_agent_id": "agent-def456",
+  "resurrected_at": "2026-02-09T15:00:00.000Z",
+  "resurrected_in_session": "session-current-abc",
+  "resurrected_in_project": "/Users/randlee/Documents/github/api-gateway",
+  "resurrected_by": "randlee",
+  "resurrection_mode": "bookmark",
+  "query": "beads-architecture-expert",
+  "context_extraction_method": "hybrid",
+  "context_size_tokens": 4500,
+  "outcome": "success",
+  "outcome_reason": null,
+  "notes": "Used beads architecture expertise for API gateway design",
+  "new_agent_duration_ms": 45000,
+  "new_agent_tool_calls": 12
+}
+```
+
+**Field specifications**:
+- `resurrection_id`: Format `res-YYYY-MM-DD-NNN`
+- `resurrection_mode`: Enum ["bookmark", "fuzzy", "direct"]
+- `context_extraction_method`: Enum ["full", "summarized", "hybrid"]
+- `outcome`: Enum ["success", "failure", "partial"]
+- `outcome_reason`: Error message if outcome != "success"
+
+### TR-2: Resurrection Log Format (Phase 2 - Dolt)
+
+**Table: resurrection_log**
+```sql
+CREATE TABLE resurrection_log (
+    resurrection_id VARCHAR(64) PRIMARY KEY,
+    bookmark_id VARCHAR(64),
+    resurrected_from_agent_id VARCHAR(64) NOT NULL,
+    resurrected_from_session_id VARCHAR(64) NOT NULL,
+    resurrected_from_hostname VARCHAR(255) NOT NULL,
+    resurrected_from_project TEXT NOT NULL,
+    resurrected_as_agent_id VARCHAR(64) NOT NULL,
+    resurrected_at DATETIME(3) NOT NULL,
+    resurrected_in_session VARCHAR(64) NOT NULL,
+    resurrected_in_project TEXT NOT NULL,
+    resurrected_by VARCHAR(255) NOT NULL,
+    resurrection_mode VARCHAR(32) NOT NULL,
+    query TEXT,
+    context_extraction_method VARCHAR(32) NOT NULL,
+    context_size_tokens INT,
+    outcome VARCHAR(32) NOT NULL,
+    outcome_reason TEXT,
+    notes TEXT,
+    new_agent_duration_ms INT,
+    new_agent_tool_calls INT,
+    created_at DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
+    FOREIGN KEY (bookmark_id) REFERENCES bookmarks(bookmark_id) ON DELETE SET NULL,
+    INDEX idx_resurrected_at (resurrected_at),
+    INDEX idx_bookmark (bookmark_id),
+    INDEX idx_outcome (outcome),
+    INDEX idx_mode (resurrection_mode),
+    INDEX idx_from_agent (resurrected_from_agent_id)
+);
+```
+
+### TR-3: Context Extraction Implementation
+
+**Full context extraction**:
+```bash
+claude-history export /project/path \
+  --session SESSION_ID \
+  --agent AGENT_ID \
+  --format json \
+  --output /tmp/agent-context.json
+```
+
+**Output format**:
+```json
+{
+  "agent_id": "agent-abc123",
+  "session_id": "session-xyz789",
+  "project_path": "/Users/randlee/Documents/github/beads",
+  "started_at": "2026-02-08T14:30:00Z",
+  "completed_at": "2026-02-08T14:42:15Z",
+  "duration_ms": 735000,
+  "agent_type": "Explore",
+  "original_prompt": "Explore beads codebase...",
+  "conversation": [
+    {
+      "role": "user",
+      "content": "Explore beads codebase and document architecture",
+      "timestamp": "2026-02-08T14:30:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {"type": "text", "text": "I'll explore the beads codebase..."},
+        {"type": "tool_use", "name": "Glob", "input": {...}},
+        ...
+      ],
+      "timestamp": "2026-02-08T14:30:05Z"
+    },
+    ...
+  ],
+  "final_output": "Summary of beads architecture: 3-tier design...",
+  "files_analyzed": [
+    "/Users/randlee/Documents/github/beads/src/parser.go",
+    "/Users/randlee/Documents/github/beads/src/validator.go",
+    ...
+  ],
+  "tool_calls_summary": {
+    "total": 15,
+    "by_tool": {"Glob": 3, "Read": 8, "Grep": 4}
+  }
+}
+```
+
+### TR-4: Context Compression (Hybrid Method)
+
+**Algorithm**:
+```python
+def compress_context(full_context: dict) -> str:
+    """Compress agent context for resurrection prompt."""
+
+    # Always include: metadata, original prompt, final output
+    compressed = {
+        "original_task": full_context["original_prompt"],
+        "completion_time": full_context["completed_at"],
+        "duration": format_duration(full_context["duration_ms"]),
+        "final_output": full_context["final_output"]
+    }
+
+    # Summarize conversation: keep first/last, compress middle
+    conversation = full_context["conversation"]
+    if len(conversation) <= 10:
+        # Short conversation: keep everything
+        compressed["conversation"] = conversation
+    else:
+        # Long conversation: keep first 3, last 3, summarize middle
+        compressed["conversation"] = [
+            *conversation[:3],
+            {
+                "role": "system",
+                "content": f"[{len(conversation) - 6} messages summarized: tool usage, exploration, analysis]"
+            },
+            *conversation[-3:]
+        ]
+
+    # Include file list (for reference)
+    compressed["files_analyzed"] = full_context["files_analyzed"]
+
+    # Include tool usage summary (not all details)
+    compressed["tool_usage"] = full_context["tool_calls_summary"]
+
+    return format_prompt(compressed)
+```
+
+### TR-5: Integration with History-Search Agent
+
+**Fuzzy resurrection flow**:
+```
+User: "/resurrect find agent who analyzed beads yesterday"
+  ↓
+Resurrect skill parses intent
+  ↓
+Delegates to history-search agent with query
+  ↓
+History-search returns ranked matches
+  ↓
+Resurrect skill presents matches to user
+  ↓
+User selects match (or auto-select in autonomous mode)
+  ↓
+Resurrect skill extracts context
+  ↓
+Resurrect skill spawns new agent with context
+  ↓
+Log resurrection event
+  ↓
+Update bookmark resurrection_count (if applicable)
+```
+
+### TR-6: Integration with Bookmark System
+
+**Bookmark-based resurrection flow**:
+```
+User: "/resurrect beads-expert"
+  ↓
+Resurrect skill queries bookmarks (local then global)
+  ↓
+Found: bmk-2026-02-09-001 (agent-abc123, session-xyz789)
+  ↓
+Validate accessibility (hostname check)
+  ↓
+Extract context via claude-history export
+  ↓
+Spawn new agent with context
+  ↓
+Log resurrection event with bookmark_id
+  ↓
+Update bookmark.resurrection_count += 1
+  ↓
+Update bookmark.last_resurrected = now
+```
+
+### TR-7: Error Recovery
+
+**Failure scenarios and recovery**:
+
+1. **Agent not found**:
+   - Error: "Agent agent-abc123 not found in session xyz789"
+   - Recovery: Offer fuzzy search, verify session ID
+
+2. **Hostname mismatch**:
+   - Warning: "Agent on hostname X, you're on Y. History may not be accessible."
+   - Options: [Continue anyway] [Cancel] [Try different agent]
+
+3. **Context extraction failed**:
+   - Error: "Could not extract context from agent (export failed)"
+   - Recovery: Try direct file read, offer manual context input
+
+4. **Agent incomplete**:
+   - Warning: "Agent did not complete successfully (status: timeout)"
+   - Options: [Resurrect partial context] [Cancel]
+
+5. **Context too large**:
+   - Warning: "Agent context is 50K tokens, may be expensive to resurrect"
+   - Options: [Use summarized] [Use full anyway] [Cancel]
+
+---
+
+## User Stories
+
+### US-1: Resurrect by Bookmark
+```
+As a user,
+I want to resurrect a bookmarked agent by name,
+So that I can quickly reuse its expertise.
+
+Acceptance Criteria:
+- Accepts bookmark name as input
+- Looks up bookmark (local then global)
+- Validates accessibility
+- Extracts context automatically
+- Spawns new agent with context
+- Updates bookmark usage stats
+```
+
+### US-2: Fuzzy Resurrection
+```
+As a user,
+I want to resurrect an agent using natural language description,
+So that I don't need to remember exact names or IDs.
+
+Acceptance Criteria:
+- Accepts natural language query
+- Delegates to history-search agent
+- Presents ranked matches
+- Allows selection from results
+- Validates selection before resurrecting
+```
+
+### US-3: Direct Resurrection
+```
+As a developer,
+I want to resurrect an agent by exact session/agent ID,
+So that I can programmatically resurrect agents in scripts.
+
+Acceptance Criteria:
+- Accepts --session and --agent flags
+- Optional --from flag for project path
+- Validates IDs before extraction
+- Skips interactive prompts
+- Returns success/failure exit code
+```
+
+### US-4: Cross-Repo Resurrection
+```
+As a user,
+I want to resurrect an agent from a different project,
+So that I can apply its insights to my current work.
+
+Acceptance Criteria:
+- Resolves project path correctly
+- Validates cross-repo accessibility
+- Extracts context from remote project
+- Initializes agent in current project context
+- Notes cross-repo usage in log
+```
+
+### US-5: View Resurrection History
+```
+As a user,
+I want to see my resurrection history,
+So that I can track which agents I've reused.
+
+Acceptance Criteria:
+- Lists recent resurrections
+- Shows which agents are most popular
+- Indicates success/failure outcomes
+- Filterable by date, agent, outcome
+```
+
+---
+
+## Performance Requirements
+
+### PERF-1: Context Extraction
+- **Target**: <2s for small agents (<10 turns), <5s for large agents (>50 turns)
+- **Bottleneck**: CLI export command, JSONL parsing
+- **Optimization**: Cache exported contexts (5-minute TTL)
+
+### PERF-2: Agent Spawning
+- **Target**: New agent spawned within 3s of context ready
+- **Bottleneck**: Task tool initialization, context injection
+- **Baseline**: Similar to normal agent spawn time
+
+### PERF-3: Resurrection Tracking
+- **Target**: <100ms to log resurrection event
+- **Bottleneck**: File I/O for JSONL append
+- **Optimization**: Async logging, batch writes
+
+---
+
+## Security Requirements
+
+### SEC-1: Context Sanitization
+- **Requirement**: Sanitize extracted context before injection
+- **Risks**:
+  - Original agent may have sensitive data in context
+  - Tool results may contain secrets (API keys, passwords)
+  - File paths may reveal system information
+- **Mitigation**:
+  - Scan context for common secret patterns
+  - Warn if sensitive data detected
+  - Offer to redact before resurrection
+
+### SEC-2: Cross-Repo Validation
+- **Requirement**: Validate cross-repo access is legitimate
+- **Checks**:
+  - User has read access to source project
+  - Source project path is under allowed directories
+  - No path traversal attempts (../ etc.)
+
+### SEC-3: Resurrection Approval
+- **Requirement**: User must approve context before spawning agent
+- **Interactive preview**:
+  - Show compressed context summary
+  - Highlight key information being passed
+  - Confirm before agent spawn
+
+---
+
+## Testing Requirements
+
+### TEST-1: Unit Tests
+- Context extraction (full, summarized, hybrid)
+- Resurrection ID generation
+- Bookmark lookup and validation
+- Hostname comparison logic
+- Error handling for each failure mode
+
+### TEST-2: Integration Tests
+- Bookmark-based resurrection end-to-end
+- Fuzzy search → resurrection pipeline
+- Direct ID resurrection
+- Cross-repo resurrection
+- Log writing and bookmark updates
+
+### TEST-3: Performance Tests
+- Context extraction time vs agent size
+- Resurrection throughput (multiple sequential)
+- Memory usage for large contexts
+- Log file growth over time
+
+### TEST-4: Validation Tests
+- Reject invalid agent IDs
+- Handle missing agents gracefully
+- Warn on hostname mismatch
+- Detect incomplete agents
+
+---
+
+## Dependencies
+
+### Required
+- `claude-history` CLI v0.3.0+ (export command)
+- `bookmark` skill (for bookmark-based resurrection)
+- `history-search` agent (for fuzzy resurrection)
+- Task tool (to spawn new agents)
+- Python 3.8+ (skill implementation)
+
+### Optional (Phase 2)
+- Dolt v1.0+ (database logging)
+- Network access (for shared resurrection logs)
+
+---
+
+## Success Criteria
+
+### Phase 1 (Basic Resurrection)
+- ✅ Can resurrect by bookmark name in <5s
+- ✅ Can resurrect by fuzzy search in <10s
+- ✅ Can resurrect by direct ID in <5s
+- ✅ Context extraction works reliably
+- ✅ New agent receives correct context
+- ✅ Resurrection events are logged
+- ✅ Bookmark stats are updated
+
+### Phase 2 (Enhanced Features)
+- ✅ Dolt logging is operational
+- ✅ Cross-repo resurrection works seamlessly
+- ✅ Context compression reduces token cost by 50%
+- ✅ Resurrection recommendations based on current task
+- ✅ Team can share resurrection logs
+
+---
+
+## Metrics & Analytics
+
+### Resurrection Patterns
+- Most resurrected agents (top 10)
+- Resurrection frequency over time
+- Success rate by resurrection mode
+- Average context size by agent type
+- Cross-repo vs same-repo resurrection ratio
+
+### Performance Metrics
+- P50/P95/P99 resurrection latency
+- Context extraction time distribution
+- Failed resurrection reasons (top 5)
+- Token cost per resurrection (by method)
+
+---
+
+## Future Enhancements
+
+### FE-1: Smart Context Selection
+- Auto-detect which parts of context are most relevant
+- Exclude verbose tool results automatically
+- Preserve only actionable insights
+
+### FE-2: Resurrection Chains
+- Resurrect multiple agents in sequence
+- Pass output of one resurrected agent to next
+- Build complex workflows from resurrected components
+
+### FE-3: Resurrection Templates
+- Save common resurrection patterns as templates
+- Template library for frequent use cases
+- Share templates with team
+
+### FE-4: Live Resurrection
+- Resurrect agent while it's still running
+- Fork agent at specific point in execution
+- Compare different paths from same starting point
+
+---
+
+## Open Questions
+
+1. How much context is too much?
+   - **Proposal**: Warn at 10K tokens, require confirmation >20K tokens
+
+2. Should we cache extracted contexts?
+   - **Proposal**: Yes, 5-minute TTL, stored in `/tmp/claude-resurrect-cache/`
+
+3. How to handle agent evolution? Original agent's project may have changed.
+   - **Proposal**: Include git commit hash in context, warn on mismatch
+
+4. Should resurrection be async?
+   - **Proposal**: Synchronous by default, offer `--background` flag
+
+5. How to measure resurrection quality?
+   - **Metrics**: New agent success rate, user satisfaction, token efficiency
+   - **Decision needed**: Define success criteria
+
+---
+
+**Document Status**: Draft
+**Next Steps**: Review requirements, prioritize features, begin implementation
