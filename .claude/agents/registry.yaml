@@ -1,0 +1,7 @@
+agents:
+  history-search:
+    version: 0.2.0
+    path: .claude/agents/history-search.md
+  prompt-analyzer:
+    version: 1.1.0
+    path: .claude/agents/prompt-analyzer.md

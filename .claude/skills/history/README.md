@@ -11,6 +11,8 @@ A Claude Code skill for querying agent history using the `claude-history` CLI to
 
 This skill requires the `claude-history` CLI tool to be installed and available in your PATH.
 
+**Compatibility**: Skill v1.0.0 requires `claude-history` CLI v0.2.0 or newer and `python3`.
+
 ### Installing claude-history
 
 Choose one of the installation methods below:
@@ -173,6 +175,10 @@ Invoke the skill using the `/history` command in Claude Code:
 - **Agent Search**: Find agents working on specific topics
 - **HTML Export**: Generate readable HTML reports of sessions
 - **Pass-by-Reference**: Share agent analysis across subagents for efficiency
+
+## Agent Delegation
+
+This skill delegates all tool use to the `history-search` agent registered in `.claude/agents/registry.yaml`. The skill should not call `claude-history` directly.
 
 ## Troubleshooting
 
