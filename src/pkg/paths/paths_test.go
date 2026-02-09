@@ -50,6 +50,48 @@ func TestProjectDir(t *testing.T) {
 	}
 }
 
+func TestProjectDirRelativePath(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Test with "." (current directory)
+	dir, err := ProjectDir(tmpDir, ".")
+	if err != nil {
+		t.Fatalf("ProjectDir() with '.' error: %v", err)
+	}
+
+	// Should resolve to absolute path and encode it
+	// Expected path should start with tmpDir/projects/
+	if !filepath.IsAbs(dir) {
+		t.Error("ProjectDir() should return absolute path")
+	}
+	if !filepath.HasPrefix(dir, filepath.Join(tmpDir, "projects")) {
+		t.Errorf("ProjectDir() = %q, should start with %q", dir, filepath.Join(tmpDir, "projects"))
+	}
+
+	// Test with ".." (parent directory)
+	dir, err = ProjectDir(tmpDir, "..")
+	if err != nil {
+		t.Fatalf("ProjectDir() with '..' error: %v", err)
+	}
+
+	if !filepath.IsAbs(dir) {
+		t.Error("ProjectDir() should return absolute path for relative input")
+	}
+	if !filepath.HasPrefix(dir, filepath.Join(tmpDir, "projects")) {
+		t.Errorf("ProjectDir() = %q, should start with %q", dir, filepath.Join(tmpDir, "projects"))
+	}
+
+	// Test with relative path like "./subdir"
+	dir, err = ProjectDir(tmpDir, "./subdir")
+	if err != nil {
+		t.Fatalf("ProjectDir() with './subdir' error: %v", err)
+	}
+
+	if !filepath.IsAbs(dir) {
+		t.Error("ProjectDir() should return absolute path for relative input")
+	}
+}
+
 func TestSessionFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	sessionID := "679761ba-80c0-4cd3-a586-cc6a1fc56308"
