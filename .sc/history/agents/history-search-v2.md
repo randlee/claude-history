@@ -9,6 +9,24 @@ created: 2026-02-08
 execution:
   timeout_s: 120
   max_tool_calls: 50
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: |
+            if ! command -v claude-history &> /dev/null; then
+              echo "ERROR: claude-history CLI tool not found" >&2
+              echo "" >&2
+              echo "The history-search agent requires the claude-history CLI to be installed." >&2
+              echo "" >&2
+              echo "Installation instructions: ../../README.md" >&2
+              echo "" >&2
+              echo "Quick install:" >&2
+              echo "  cd src && go build -o claude-history ." >&2
+              echo "  # Then add to PATH or use full path" >&2
+              exit 2
+            fi
 ---
 
 # history-search Agent
