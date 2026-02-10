@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -16,7 +17,7 @@ func createTempDir(t *testing.T) string {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
 	t.Cleanup(func() {
-		os.RemoveAll(tmpDir)
+		_ = os.RemoveAll(tmpDir)
 	})
 	return tmpDir
 }
@@ -110,7 +111,7 @@ func TestGet(t *testing.T) {
 
 	// Add and get
 	testBookmark := createTestBookmark("test-get")
-	storage.Add(testBookmark)
+	_ = storage.Add(testBookmark)
 
 	bookmark, err = storage.Get("test-get")
 	if err != nil {
@@ -139,9 +140,9 @@ func TestList(t *testing.T) {
 	}
 
 	// Add multiple bookmarks
-	storage.Add(createTestBookmark("bookmark-1"))
-	storage.Add(createTestBookmark("bookmark-2"))
-	storage.Add(createTestBookmark("bookmark-3"))
+	_ = storage.Add(createTestBookmark("bookmark-1"))
+	_ = storage.Add(createTestBookmark("bookmark-2"))
+	_ = storage.Add(createTestBookmark("bookmark-3"))
 
 	bookmarks, err = storage.List()
 	if err != nil {
@@ -169,7 +170,7 @@ func TestUpdate(t *testing.T) {
 	}
 
 	// Add bookmark
-	storage.Add(createTestBookmark("test-update"))
+	_ = storage.Add(createTestBookmark("test-update"))
 
 	// Update description
 	err = storage.Update("test-update", map[string]interface{}{
@@ -247,9 +248,9 @@ func TestDelete(t *testing.T) {
 	}
 
 	// Add bookmarks
-	storage.Add(createTestBookmark("bookmark-1"))
-	storage.Add(createTestBookmark("bookmark-2"))
-	storage.Add(createTestBookmark("bookmark-3"))
+	_ = storage.Add(createTestBookmark("bookmark-1"))
+	_ = storage.Add(createTestBookmark("bookmark-2"))
+	_ = storage.Add(createTestBookmark("bookmark-3"))
 
 	// Delete one
 	err = storage.Delete("bookmark-2")
@@ -278,17 +279,17 @@ func TestSearch(t *testing.T) {
 	b1 := createTestBookmark("web-server")
 	b1.Description = "Main web server implementation"
 	b1.Tags = []string{"backend", "http"}
-	storage.Add(b1)
+	_ = storage.Add(b1)
 
 	b2 := createTestBookmark("database-schema")
 	b2.Description = "Database schema migrations"
 	b2.Tags = []string{"database", "sql"}
-	storage.Add(b2)
+	_ = storage.Add(b2)
 
 	b3 := createTestBookmark("api-client")
 	b3.Description = "REST API client implementation"
 	b3.Tags = []string{"backend", "api"}
-	storage.Add(b3)
+	_ = storage.Add(b3)
 
 	tests := []struct {
 		query    string
@@ -360,7 +361,7 @@ func TestGenerateBookmarkID(t *testing.T) {
 
 	today := time.Now().Format("2006-01-02")
 	expectedPrefix := "bmk-" + today + "-"
-	if !filepath.HasPrefix(id1, expectedPrefix) {
+	if !strings.HasPrefix(id1, expectedPrefix) {
 		t.Errorf("expected ID to start with %q, got %q", expectedPrefix, id1)
 	}
 	if id1 != expectedPrefix+"001" {
@@ -370,7 +371,7 @@ func TestGenerateBookmarkID(t *testing.T) {
 	// Add bookmark with generated ID
 	b1 := createTestBookmark("bookmark-1")
 	b1.BookmarkID = id1
-	storage.Add(b1)
+	_ = storage.Add(b1)
 
 	// Generate second ID
 	id2, err := storage.generateBookmarkID()
@@ -384,7 +385,7 @@ func TestGenerateBookmarkID(t *testing.T) {
 	// Add multiple bookmarks
 	for i := 2; i <= 10; i++ {
 		b := createTestBookmark("bookmark-" + string(rune('0'+i)))
-		storage.Add(b)
+		_ = storage.Add(b)
 	}
 
 	// Generate 11th ID
@@ -405,8 +406,8 @@ func TestJSONLPersistence(t *testing.T) {
 	storage1, _ := NewJSONLStorage(path)
 	b1 := createTestBookmark("bookmark-1")
 	b2 := createTestBookmark("bookmark-2")
-	storage1.Add(b1)
-	storage1.Add(b2)
+	_ = storage1.Add(b1)
+	_ = storage1.Add(b2)
 
 	// Create new storage instance and verify data persists
 	storage2, _ := NewJSONLStorage(path)
@@ -430,7 +431,7 @@ func TestEmptyFile(t *testing.T) {
 
 	// Create empty file
 	file, _ := os.Create(path)
-	file.Close()
+	_ = file.Close()
 
 	storage, _ := NewJSONLStorage(path)
 	bookmarks, err := storage.List()
@@ -448,8 +449,8 @@ func TestMalformedJSON(t *testing.T) {
 
 	// Write malformed JSON
 	file, _ := os.Create(path)
-	file.WriteString("{invalid json}\n")
-	file.Close()
+	_, _ = file.WriteString("{invalid json}\n")
+	_ = file.Close()
 
 	storage, _ := NewJSONLStorage(path)
 	_, err := storage.List()
@@ -464,12 +465,12 @@ func TestBlankLines(t *testing.T) {
 
 	// Create storage and add bookmark
 	storage, _ := NewJSONLStorage(path)
-	storage.Add(createTestBookmark("test-bookmark"))
+	_ = storage.Add(createTestBookmark("test-bookmark"))
 
 	// Manually add blank lines
-	file, _ := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0644)
-	file.WriteString("\n\n")
-	file.Close()
+	file, _ := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
+	_, _ = file.WriteString("\n\n")
+	_ = file.Close()
 
 	// Verify it still works
 	bookmarks, err := storage.List()
@@ -486,7 +487,7 @@ func TestUpdateWithInterfaceSlice(t *testing.T) {
 	path := filepath.Join(tmpDir, "bookmarks.jsonl")
 	storage, _ := NewJSONLStorage(path)
 
-	storage.Add(createTestBookmark("test-update"))
+	_ = storage.Add(createTestBookmark("test-update"))
 
 	// Update tags with []interface{} (as would come from JSON unmarshaling)
 	err := storage.Update("test-update", map[string]interface{}{
@@ -507,7 +508,7 @@ func TestUpdateWithFloat64(t *testing.T) {
 	path := filepath.Join(tmpDir, "bookmarks.jsonl")
 	storage, _ := NewJSONLStorage(path)
 
-	storage.Add(createTestBookmark("test-update"))
+	_ = storage.Add(createTestBookmark("test-update"))
 
 	// Update resurrection_count with float64 (as would come from JSON unmarshaling)
 	err := storage.Update("test-update", map[string]interface{}{
@@ -528,7 +529,7 @@ func TestUpdateWithTimeString(t *testing.T) {
 	path := filepath.Join(tmpDir, "bookmarks.jsonl")
 	storage, _ := NewJSONLStorage(path)
 
-	storage.Add(createTestBookmark("test-update"))
+	_ = storage.Add(createTestBookmark("test-update"))
 
 	// Update last_resurrected with string (as would come from JSON unmarshaling)
 	timeStr := "2026-02-09T12:00:00Z"
@@ -556,7 +557,7 @@ func TestAtomicWrite(t *testing.T) {
 	storage, _ := NewJSONLStorage(path)
 
 	// Add bookmark
-	storage.Add(createTestBookmark("bookmark-1"))
+	_ = storage.Add(createTestBookmark("bookmark-1"))
 
 	// Verify temp file is cleaned up
 	tmpPath := path + ".tmp"
@@ -592,7 +593,7 @@ func TestJSONRoundTrip(t *testing.T) {
 	}
 
 	// Add bookmark
-	storage.Add(original)
+	_ = storage.Add(original)
 
 	// Retrieve and compare
 	retrieved, err := storage.Get("test-roundtrip")
@@ -608,8 +609,8 @@ func TestJSONRoundTrip(t *testing.T) {
 	retrievedJSON, _ := json.Marshal(*retrieved)
 
 	var originalMap, retrievedMap map[string]interface{}
-	json.Unmarshal(originalJSON, &originalMap)
-	json.Unmarshal(retrievedJSON, &retrievedMap)
+	_ = json.Unmarshal(originalJSON, &originalMap)
+	_ = json.Unmarshal(retrievedJSON, &retrievedMap)
 
 	// Compare key fields (excluding bookmark_id and bookmarked_at which are generated)
 	compareFields := []string{"name", "description", "agent_id", "session_id", "project_path", "hostname", "bookmarked_by", "scope", "resurrection_count"}
@@ -625,7 +626,7 @@ func TestUpdateErrors(t *testing.T) {
 	path := filepath.Join(tmpDir, "bookmarks.jsonl")
 	storage, _ := NewJSONLStorage(path)
 
-	storage.Add(createTestBookmark("test-bookmark"))
+	_ = storage.Add(createTestBookmark("test-bookmark"))
 
 	tests := []struct {
 		name      string
@@ -689,7 +690,7 @@ func TestUpdateName(t *testing.T) {
 	path := filepath.Join(tmpDir, "bookmarks.jsonl")
 	storage, _ := NewJSONLStorage(path)
 
-	storage.Add(createTestBookmark("old-name"))
+	_ = storage.Add(createTestBookmark("old-name"))
 
 	err := storage.Update("old-name", map[string]interface{}{"name": "new-name"})
 	if err != nil {
@@ -720,7 +721,7 @@ func TestUpdateLastResurrectedNull(t *testing.T) {
 	b := createTestBookmark("test-bookmark")
 	now := time.Now()
 	b.LastResurrected = &now
-	storage.Add(b)
+	_ = storage.Add(b)
 
 	// Set last_resurrected to nil
 	err := storage.Update("test-bookmark", map[string]interface{}{"last_resurrected": nil})
@@ -781,7 +782,7 @@ func TestSearchCaseInsensitive(t *testing.T) {
 	b := createTestBookmark("Test-Bookmark")
 	b.Description = "Test Description"
 	b.Tags = []string{"Test-Tag"}
-	storage.Add(b)
+	_ = storage.Add(b)
 
 	// Test case insensitive search
 	tests := []string{"test", "TEST", "TeSt", "BOOKMARK", "description", "tag"}

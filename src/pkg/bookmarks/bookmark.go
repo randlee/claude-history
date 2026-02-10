@@ -256,7 +256,7 @@ func (s *JSONLStorage) readAll() ([]Bookmark, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var bookmarks []Bookmark
 	scanner := bufio.NewScanner(file)
@@ -301,38 +301,38 @@ func (s *JSONLStorage) writeAll(bookmarks []Bookmark) error {
 	for _, b := range bookmarks {
 		data, err := json.Marshal(b)
 		if err != nil {
-			file.Close()
-			os.Remove(tmpPath)
+			_ = file.Close()
+			_ = os.Remove(tmpPath)
 			return fmt.Errorf("failed to marshal bookmark: %w", err)
 		}
 
 		if _, err := writer.Write(data); err != nil {
-			file.Close()
-			os.Remove(tmpPath)
+			_ = file.Close()
+			_ = os.Remove(tmpPath)
 			return fmt.Errorf("failed to write bookmark: %w", err)
 		}
 
 		if err := writer.WriteByte('\n'); err != nil {
-			file.Close()
-			os.Remove(tmpPath)
+			_ = file.Close()
+			_ = os.Remove(tmpPath)
 			return fmt.Errorf("failed to write newline: %w", err)
 		}
 	}
 
 	if err := writer.Flush(); err != nil {
-		file.Close()
-		os.Remove(tmpPath)
+		_ = file.Close()
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("failed to flush writer: %w", err)
 	}
 
 	if err := file.Close(); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("failed to close temp file: %w", err)
 	}
 
 	// Atomic rename
 	if err := os.Rename(tmpPath, s.path); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return fmt.Errorf("failed to rename temp file: %w", err)
 	}
 

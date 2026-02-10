@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/randlee/claude-history/pkg/bookmarks"
 	"github.com/spf13/pflag"
+
+	"github.com/randlee/claude-history/pkg/bookmarks"
 )
 
 // setupTestStorage creates a temporary bookmarks file for testing
@@ -56,15 +57,15 @@ func createTestBookmark(t *testing.T, name, agentID, sessionID string, tags []st
 
 func TestBookmarkAdd(t *testing.T) {
 	tests := []struct {
-		name        string
+		name         string
 		bookmarkName string
-		agentID     string
-		sessionID   string
-		projectPath string
-		tags        []string
-		description string
-		wantErr     bool
-		errContains string
+		agentID      string
+		sessionID    string
+		projectPath  string
+		tags         []string
+		description  string
+		wantErr      bool
+		errContains  string
 	}{
 		{
 			name:         "valid bookmark",
@@ -178,10 +179,10 @@ func TestBookmarkList(t *testing.T) {
 	createTestBookmark(t, "bookmark3", "agent-3", "session-3", []string{"tag3"})
 
 	tests := []struct {
-		name        string
-		filterTag   string
-		wantCount   int
-		wantNames   []string
+		name      string
+		filterTag string
+		wantCount int
+		wantNames []string
 	}{
 		{
 			name:      "list all",
@@ -276,10 +277,10 @@ func TestBookmarkGet(t *testing.T) {
 	createTestBookmark(t, "test-bookmark", "agent-abc", "session-xyz", []string{"tag1"})
 
 	tests := []struct {
-		name        string
+		name         string
 		bookmarkName string
-		wantErr     bool
-		errContains string
+		wantErr      bool
+		errContains  string
 	}{
 		{
 			name:         "existing bookmark",
@@ -317,14 +318,14 @@ func TestBookmarkGet(t *testing.T) {
 
 func TestBookmarkUpdate(t *testing.T) {
 	tests := []struct {
-		name            string
-		bookmarkName    string
-		newDescription  string
-		addTags         []string
-		setDescription  bool
-		setTags         bool
-		wantErr         bool
-		errContains     string
+		name           string
+		bookmarkName   string
+		newDescription string
+		addTags        []string
+		setDescription bool
+		setTags        bool
+		wantErr        bool
+		errContains    string
 	}{
 		{
 			name:           "update description",
@@ -383,11 +384,11 @@ func TestBookmarkUpdate(t *testing.T) {
 			// Mock cobra command for flag checking
 			if tt.setDescription {
 				bookmarkDescription = tt.newDescription
-				cmd.Flags().Set("description", tt.newDescription)
+				_ = cmd.Flags().Set("description", tt.newDescription)
 			}
 			if tt.setTags {
 				bookmarkAddTags = tt.addTags
-				cmd.Flags().Set("add-tags", strings.Join(tt.addTags, ","))
+				_ = cmd.Flags().Set("add-tags", strings.Join(tt.addTags, ","))
 			}
 
 			err := runBookmarkUpdate(cmd, []string{tt.bookmarkName})

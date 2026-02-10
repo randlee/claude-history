@@ -11,10 +11,10 @@ import (
 // TestValidateBookmarkName tests bookmark name validation
 func TestValidateBookmarkName(t *testing.T) {
 	tests := []struct {
-		name      string
+		name         string
 		bookmarkName string
-		wantErr   bool
-		errContains string
+		wantErr      bool
+		errContains  string
 	}{
 		{
 			name:         "valid simple name",
@@ -284,8 +284,8 @@ func TestValidateAgentExists(t *testing.T) {
 
 	// Set HOME to tempDir so paths.DefaultClaudeDir() uses our test .claude
 	oldHome := os.Getenv("HOME")
-	os.Setenv("HOME", tempDir)
-	defer os.Setenv("HOME", oldHome)
+	_ = os.Setenv("HOME", tempDir)
+	defer func() { _ = os.Setenv("HOME", oldHome) }()
 
 	tests := []struct {
 		name        string

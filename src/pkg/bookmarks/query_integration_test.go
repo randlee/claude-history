@@ -144,11 +144,11 @@ func TestEnrichWithBookmarks(t *testing.T) {
 func TestMatchBookmarkTags(t *testing.T) {
 	baseTime := time.Now()
 	bookmark := Bookmark{
-		BookmarkID:  "bmk-001",
-		Name:        "Architecture Expert",
-		Description: "An agent that explores system architecture and design patterns",
-		AgentID:     "agent-123",
-		Tags:        []string{"architecture", "design", "patterns"},
+		BookmarkID:   "bmk-001",
+		Name:         "Architecture Expert",
+		Description:  "An agent that explores system architecture and design patterns",
+		AgentID:      "agent-123",
+		Tags:         []string{"architecture", "design", "patterns"},
 		BookmarkedAt: baseTime,
 	}
 

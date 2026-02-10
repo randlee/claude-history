@@ -8,8 +8,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/randlee/claude-history/pkg/bookmarks"
 	"github.com/spf13/cobra"
+
+	"github.com/randlee/claude-history/pkg/bookmarks"
 )
 
 var (
@@ -142,9 +143,9 @@ func init() {
 	bookmarkAddCmd.Flags().StringVar(&bookmarkProjectPath, "project", "", "Project path")
 	bookmarkAddCmd.Flags().StringSliceVar(&bookmarkTags, "tags", []string{}, "Comma-separated tags")
 	bookmarkAddCmd.Flags().StringVar(&bookmarkDescription, "description", "", "Bookmark description")
-	bookmarkAddCmd.MarkFlagRequired("name")
-	bookmarkAddCmd.MarkFlagRequired("agent")
-	bookmarkAddCmd.MarkFlagRequired("session")
+	_ = bookmarkAddCmd.MarkFlagRequired("name")
+	_ = bookmarkAddCmd.MarkFlagRequired("agent")
+	_ = bookmarkAddCmd.MarkFlagRequired("session")
 
 	// bookmark list flags
 	bookmarkListCmd.Flags().StringVar(&bookmarkFilterTag, "tag", "", "Filter by tag")
@@ -269,21 +270,21 @@ func runBookmarkList(cmd *cobra.Command, args []string) error {
 
 	// Text format (table)
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tID\tSESSION\tTAGS\tDESCRIPTION")
+	_, _ = fmt.Fprintln(w, "NAME\tID\tSESSION\tTAGS\tDESCRIPTION")
 	for _, b := range allBookmarks {
 		tags := strings.Join(b.Tags, ",")
 		desc := b.Description
 		if len(desc) > 50 {
 			desc = desc[:47] + "..."
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 			b.Name,
 			b.BookmarkID,
 			b.SessionID,
 			tags,
 			desc)
 	}
-	w.Flush()
+	_ = w.Flush()
 
 	return nil
 }
@@ -414,10 +415,10 @@ func runBookmarkDelete(cmd *cobra.Command, args []string) error {
 	if !bookmarkForce {
 		fmt.Printf("Delete bookmark %q (ID: %s)? [y/N]: ", name, existing.BookmarkID)
 		var response string
-		fmt.Scanln(&response)
+		_, _ = fmt.Scanln(&response)
 		response = strings.ToLower(strings.TrimSpace(response))
 		if response != "y" && response != "yes" {
-			fmt.Println("Deletion cancelled")
+			fmt.Println("Deletion canceled")
 			return nil
 		}
 	}
@@ -463,21 +464,21 @@ func runBookmarkSearch(cmd *cobra.Command, args []string) error {
 	// Text format (table)
 	fmt.Printf("Found %d bookmark(s) matching %q:\n\n", len(results), query)
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tID\tSESSION\tTAGS\tDESCRIPTION")
+	_, _ = fmt.Fprintln(w, "NAME\tID\tSESSION\tTAGS\tDESCRIPTION")
 	for _, b := range results {
 		tags := strings.Join(b.Tags, ",")
 		desc := b.Description
 		if len(desc) > 50 {
 			desc = desc[:47] + "..."
 		}
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 			b.Name,
 			b.BookmarkID,
 			b.SessionID,
 			tags,
 			desc)
 	}
-	w.Flush()
+	_ = w.Flush()
 
 	return nil
 }
