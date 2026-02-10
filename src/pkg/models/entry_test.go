@@ -517,3 +517,97 @@ func TestMultipleAgentSpawnDetection(t *testing.T) {
 		}
 	}
 }
+
+func TestBookmarkFieldsSerialization(t *testing.T) {
+	tests := []struct {
+		name  string
+		entry ConversationEntry
+	}{
+		{
+			name: "bookmarked entry with all fields",
+			entry: ConversationEntry{
+				UUID:         "test-uuid",
+				SessionID:    "test-session",
+				Type:         EntryTypeAssistant,
+				Timestamp:    "2026-02-09T10:30:00.000Z",
+				Bookmarked:   true,
+				BookmarkID:   "bookmark-123",
+				BookmarkName: "Important Decision",
+				BookmarkTags: []string{"architecture", "critical"},
+			},
+		},
+		{
+			name: "non-bookmarked entry",
+			entry: ConversationEntry{
+				UUID:      "test-uuid-2",
+				SessionID: "test-session",
+				Type:      EntryTypeUser,
+				Timestamp: "2026-02-09T10:30:00.000Z",
+			},
+		},
+		{
+			name: "bookmarked entry with minimal fields",
+			entry: ConversationEntry{
+				UUID:       "test-uuid-3",
+				SessionID:  "test-session",
+				Type:       EntryTypeAssistant,
+				Timestamp:  "2026-02-09T10:30:00.000Z",
+				Bookmarked: true,
+				BookmarkID: "bookmark-456",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Serialize to JSON
+			data, err := json.Marshal(tt.entry)
+			if err != nil {
+				t.Fatalf("Failed to marshal entry: %v", err)
+			}
+
+			// Deserialize back
+			var parsed ConversationEntry
+			err = json.Unmarshal(data, &parsed)
+			if err != nil {
+				t.Fatalf("Failed to unmarshal entry: %v", err)
+			}
+
+			// Verify bookmark fields round-trip correctly
+			if parsed.Bookmarked != tt.entry.Bookmarked {
+				t.Errorf("Bookmarked mismatch: got %v, expected %v", parsed.Bookmarked, tt.entry.Bookmarked)
+			}
+			if parsed.BookmarkID != tt.entry.BookmarkID {
+				t.Errorf("BookmarkID mismatch: got %s, expected %s", parsed.BookmarkID, tt.entry.BookmarkID)
+			}
+			if parsed.BookmarkName != tt.entry.BookmarkName {
+				t.Errorf("BookmarkName mismatch: got %s, expected %s", parsed.BookmarkName, tt.entry.BookmarkName)
+			}
+
+			// Verify tags
+			if len(parsed.BookmarkTags) != len(tt.entry.BookmarkTags) {
+				t.Errorf("BookmarkTags length mismatch: got %d, expected %d", len(parsed.BookmarkTags), len(tt.entry.BookmarkTags))
+			} else {
+				for i, tag := range parsed.BookmarkTags {
+					if tag != tt.entry.BookmarkTags[i] {
+						t.Errorf("BookmarkTags[%d] mismatch: got %s, expected %s", i, tag, tt.entry.BookmarkTags[i])
+					}
+				}
+			}
+
+			// Verify omitempty works correctly (check JSON doesn't include empty fields)
+			if !tt.entry.Bookmarked {
+				jsonStr := string(data)
+				if contains(jsonStr, "bookmarked") || contains(jsonStr, "bookmark_id") ||
+					contains(jsonStr, "bookmark_name") || contains(jsonStr, "bookmark_tags") {
+					t.Error("Non-bookmarked entry should not contain bookmark fields in JSON")
+				}
+			}
+		})
+	}
+}
+
+// Helper function to check if string contains substring
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || contains(s[1:], substr)))
+}

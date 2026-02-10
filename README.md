@@ -207,6 +207,71 @@ claude-history resolve /path/to/project
 claude-history resolve /path/to/project --session abc123 --agent def456
 ```
 
+### Bookmark Management
+
+Save and quickly access valuable agents from history.
+
+#### Add a bookmark
+```bash
+claude-history bookmark add \
+  --name beads-expert \
+  --agent agent-abc123 \
+  --session session-xyz \
+  --project /path/to/beads \
+  --tags "architecture,beads,explore" \
+  --description "Explored beads architecture"
+```
+
+#### List bookmarks
+```bash
+# List all bookmarks
+claude-history bookmark list
+
+# Filter by tag
+claude-history bookmark list --tag architecture
+
+# JSON output
+claude-history bookmark list --format json
+```
+
+#### Get bookmark details
+```bash
+claude-history bookmark get beads-expert
+```
+
+#### Search bookmarks
+```bash
+claude-history bookmark search "beads"
+```
+
+#### Update bookmark
+```bash
+claude-history bookmark update beads-expert \
+  --description "Updated description" \
+  --add-tags "python"
+```
+
+#### Delete bookmark
+```bash
+claude-history bookmark delete beads-expert
+```
+
+#### Query integration
+
+Bookmarks are automatically integrated into query results:
+
+```bash
+claude-history query /project --text "beads"
+```
+
+Results include bookmark metadata:
+- `bookmarked: true` - indicates if agent is bookmarked
+- `bookmark_id` - unique bookmark identifier
+- `bookmark_name` - user-provided bookmark name
+- `bookmark_tags` - array of tags for organization
+
+**Storage**: Bookmarks are stored in `~/.claude/bookmarks.jsonl`
+
 ## Claude Code Skill
 
 This project includes a Claude Code skill for easy querying from within Claude sessions.

@@ -45,6 +45,12 @@ type ConversationEntry struct {
 	// ToolUseResult contains agent spawn information for user entries with tool results
 	ToolUseResult *ToolUseResult `json:"toolUseResult,omitempty"`
 
+	// Bookmark metadata (populated by query integration)
+	Bookmarked   bool     `json:"bookmarked,omitempty"`
+	BookmarkID   string   `json:"bookmark_id,omitempty"`
+	BookmarkName string   `json:"bookmark_name,omitempty"`
+	BookmarkTags []string `json:"bookmark_tags,omitempty"`
+
 	// Additional fields that may be present
 	CacheBreakpoint bool   `json:"cacheBreakpoint,omitempty"`
 	Usertype        string `json:"userType,omitempty"`
