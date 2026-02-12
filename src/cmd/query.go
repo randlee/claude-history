@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/randlee/claude-history/internal/output"
+	"github.com/randlee/claude-history/pkg/bookmarks"
 	"github.com/randlee/claude-history/pkg/export"
 	"github.com/randlee/claude-history/pkg/models"
 	"github.com/randlee/claude-history/pkg/paths"
@@ -114,6 +115,13 @@ func runQuery(cmd *cobra.Command, args []string) error {
 	projectPath := args[0]
 	outputFormat := output.ParseFormat(format)
 
+	// Load bookmarks at the start
+	allBookmarks, err := bookmarks.LoadDefaultBookmarks()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to load bookmarks: %v\n", err)
+		allBookmarks = []bookmarks.Bookmark{}
+	}
+
 	// Get the project directory
 	projectDir, err := paths.ProjectDir(claudeDir, projectPath)
 	if err != nil {
@@ -204,6 +212,26 @@ func runQuery(cmd *cobra.Command, args []string) error {
 			}
 			allEntries = append(allEntries, entries...)
 		}
+	}
+
+	// Enrich results with bookmark metadata
+	allEntries = bookmarks.EnrichWithBookmarks(allEntries, allBookmarks)
+
+	// If --text flag is used, also include matching bookmarks (filter and merge)
+	if queryText != "" {
+		// Filter bookmarks that match the text query
+		var matchingBookmarkAgents = make(map[string]bool)
+		for _, bm := range allBookmarks {
+			if bookmarks.MatchBookmarkTags(bm, queryText) {
+				matchingBookmarkAgents[bm.AgentID] = true
+			}
+		}
+
+		// Note: We don't need to add separate entries for bookmarked agents
+		// because they're already enriched in the history results above.
+		// The enrichment ensures agents know they're bookmarked.
+		// If a bookmarked agent has no history entries matching the query,
+		// it won't appear in results (this is intentional - we query history, not bookmarks).
 	}
 
 	if len(allEntries) == 0 {

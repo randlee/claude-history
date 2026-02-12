@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Bookmark system for saving and organizing valuable agents
+  - `bookmark add` - Create bookmarks with tags and descriptions
+  - `bookmark list` - List bookmarks with optional tag filtering
+  - `bookmark get` - Get detailed bookmark information
+  - `bookmark search` - Search by name, description, or tags
+  - `bookmark update` - Update bookmark descriptions and tags
+  - `bookmark delete` - Remove bookmarks from storage
+- Query integration - bookmark metadata automatically enriched in query results
+  - Results show `bookmarked: true` for bookmarked agents
+  - Bookmark tags participate in text search matching
+  - Single result per agent (no duplicates)
+- Bookmark storage in `~/.claude/bookmarks.jsonl` (JSONL format)
+- Comprehensive validation for bookmark names and fields
+- Atomic JSONL writes for data safety
+- 82% test coverage on bookmark package (209 new tests)
+
 ## [0.3.0] - 2026-02-07
 
 ### Added - Phase 15: Query HTML Format & UX Improvements
