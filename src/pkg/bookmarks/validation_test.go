@@ -282,10 +282,16 @@ func TestValidateAgentExists(t *testing.T) {
 		t.Fatalf("failed to create test agent file: %v", err)
 	}
 
-	// Set HOME to tempDir so paths.DefaultClaudeDir() uses our test .claude
+	// Set HOME and USERPROFILE to tempDir so paths.DefaultClaudeDir() uses our test .claude
+	// Windows uses USERPROFILE, Unix uses HOME
 	oldHome := os.Getenv("HOME")
+	oldUserProfile := os.Getenv("USERPROFILE")
 	_ = os.Setenv("HOME", tempDir)
-	defer func() { _ = os.Setenv("HOME", oldHome) }()
+	_ = os.Setenv("USERPROFILE", tempDir)
+	defer func() {
+		_ = os.Setenv("HOME", oldHome)
+		_ = os.Setenv("USERPROFILE", oldUserProfile)
+	}()
 
 	tests := []struct {
 		name        string
