@@ -1,103 +1,21 @@
 # Claude History Skill
 
-A Claude Code skill for querying agent history using the `claude-history` CLI tool.
+A Claude Code skill for querying agent history with the `claude-history` CLI.
 
 ## Files
 
-- `SKILL.md` - Main skill file with YAML frontmatter and instructions
-- `README.md` - This documentation file
+- `SKILL.md` - skill entry point
+- `README.md` - package overview
+- `references/installation-and-troubleshooting.md` - install, upgrade, and troubleshooting guide
 
 ## Prerequisites
 
-This skill requires the `claude-history` CLI tool to be installed and available in your PATH.
+This skill requires:
+- `claude-history` CLI `v0.2.0+`
+- `python3`
 
-**Compatibility**: Skill v1.0.0 requires `claude-history` CLI v0.2.0 or newer and `python3`.
-
-### Installing claude-history
-
-Choose one of the installation methods below:
-
-#### Option 1: Homebrew (macOS/Linux) - Recommended
-
-```bash
-brew tap randlee/tap
-brew install claude-history
-```
-
-#### Option 2: Install Script (macOS/Linux)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/randlee/claude-history/main/install.sh | bash
-```
-
-#### Option 3: Go Install
-
-```bash
-go install github.com/randlee/claude-history/src@latest
-```
-
-#### Option 4: Download Pre-built Binary
-
-1. Download from: https://github.com/randlee/claude-history/releases/latest
-2. Extract the archive for your platform
-3. Move `claude-history` to a directory in your PATH:
-   ```bash
-   # macOS/Linux
-   sudo mv claude-history /usr/local/bin/
-
-   # Or to user directory (no sudo needed)
-   mkdir -p ~/bin
-   mv claude-history ~/bin/
-   export PATH="$HOME/bin:$PATH"  # Add to ~/.bashrc or ~/.zshrc
-   ```
-
-#### Option 5: Build from Source
-
-```bash
-git clone https://github.com/randlee/claude-history.git
-cd claude-history/src
-go build -o ../bin/claude-history .
-sudo mv ../bin/claude-history /usr/local/bin/
-```
-
-#### Option 6: winget (Windows)
-
-```bash
-winget install randlee.claude-history
-```
-
-### Alternative: Local Build Without PATH
-
-If you prefer to build locally without adding to PATH (for development or testing), you can configure the path in your project:
-
-```bash
-# 1. Build locally
-git clone https://github.com/randlee/claude-history.git
-cd claude-history/src
-go build -o claude-history .
-
-# 2. Create config in your project
-mkdir -p .sc/history
-cat > .sc/history/config.yml << EOF
-cli:
-  path: $(pwd)/claude-history
-EOF
-```
-
-**Note**: This creates a `.sc/history/config.yml` file that tells the history skill where to find your local build. This method is useful for:
-- Development and testing
-- Custom builds
-- Environments where you can't modify PATH
-
-The skill will check PATH first (fast), then fall back to this config file if needed.
-
-### Verify Installation
-
-```bash
-claude-history --version
-```
-
-Should output the version number (e.g., `claude-history version 0.2.0`).
+For installation, upgrade, PATH help, and Synaptic Canvas commands, read:
+- [`references/installation-and-troubleshooting.md`](references/installation-and-troubleshooting.md)
 
 ## Installing the Skill
 
@@ -182,52 +100,8 @@ This skill delegates all tool use to the `history-search` agent registered in `.
 
 ## Troubleshooting
 
-### Command Not Found
-
-If you see `claude-history: command not found`:
-
-1. **Check if installed:**
-   ```bash
-   which claude-history
-   ```
-
-2. **Check PATH:**
-   ```bash
-   echo $PATH
-   ```
-
-3. **Reload shell:**
-   ```bash
-   source ~/.bashrc  # or ~/.zshrc
-   ```
-
-### Permission Denied
-
-```bash
-chmod +x $(which claude-history)
-```
-
-### macOS Security Warning
-
-If macOS blocks the binary:
-
-```bash
-xattr -d com.apple.quarantine $(which claude-history)
-```
-
-Or go to **System Preferences → Security & Privacy** and click **"Allow Anyway"**.
-
-### Outdated Version
-
-**Homebrew:**
-```bash
-brew upgrade claude-history
-```
-
-**Go install:**
-```bash
-go install github.com/randlee/claude-history/src@latest
-```
+See:
+- [`references/installation-and-troubleshooting.md`](references/installation-and-troubleshooting.md)
 
 ## See Also
 
