@@ -1,0 +1,24 @@
+name: claude-history
+version: 0.3.0
+description: Query Claude Code agent history with the claude-history CLI and companion agents.
+author: randlee
+license: MIT
+tags:
+  - claude
+  - history
+  - agents
+  - cli
+artifacts:
+  skills:
+    - skills/history/SKILL.md
+    - skills/history/README.md
+    - skills/history/references/installation-and-troubleshooting.md
+  agents:
+    - agents/history-search.md
+    - agents/prompt-analyzer.md
+    - agents/registry.yaml
+  scripts:
+    - scripts/validate-claude-history-cli.py
+requires:
+  - python3
+  - claude-history >= 0.2.0
