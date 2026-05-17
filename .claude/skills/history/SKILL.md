@@ -25,9 +25,48 @@ parameters:
 
 # Claude History Query Skill
 
-You are using the **claude-history** CLI tool to query Claude Code's agent history storage.
+You are using the **claude-history** CLI tool to query Claude Code's agent
+history storage.
 
-> **Note:** If `claude-history` is not installed or you encounter issues, see [README.md](README.md) for installation and troubleshooting instructions.
+## Step 1 — Verify `claude-history` Installation
+
+```bash
+which claude-history && claude-history --version
+python3 --version
+```
+
+If not found on PATH, also check common install locations:
+
+```bash
+for p in "$HOME/.local/bin/claude-history" \
+  "$(python3 -m site --user-base 2>/dev/null)/bin/claude-history" \
+  "/opt/homebrew/bin/claude-history"; do
+  [ -x "$p" ] && echo "Found at: $p" && break
+done
+```
+
+If found at a non-PATH location, use the full path for all commands, or export
+that directory to PATH for this session:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+This skill requires `claude-history` CLI `v0.2.0+` and `python3`.
+
+If `claude-history` is not installed or is too old, read
+[`references/installation-and-troubleshooting.md`](references/installation-and-troubleshooting.md)
+before proceeding.
+
+## Synaptic Canvas
+
+If you are using Synaptic Canvas instead of manual installation:
+
+```bash
+sc install claude-history
+sc upgrade claude-history
+sc uninstall claude-history
+```
 
 ## Agent Delegation (Required)
 
@@ -225,14 +264,15 @@ Based on the user's request parameters:
 - **session**: ${session}
 - **agent**: ${agent}
 
-Construct and execute the appropriate `claude-history` command(s) to fulfill the user's request.
+Delegate the request to `history-search` with a fenced JSON payload. Do not run
+`claude-history` directly from the skill. The agent owns CLI execution,
+structured results, and retry/error handling.
 
 **Important:**
-1. Use `claude-history` from PATH (see README.md if not installed)
-2. Parse the output and present it in a clear, readable format
-3. For large outputs, consider using pagination or filtering
-4. Session and agent IDs support git-style prefixes (first 7+ characters)
-5. When showing results, explain what you found in context
+1. Ensure the delegated payload matches the agent Input Contract.
+2. If the CLI is missing or too old, stop and direct the user to `references/installation-and-troubleshooting.md`.
+3. Session and agent IDs support git-style prefixes (first 7+ characters).
+4. Format the agent result clearly for the user and explain any relevant findings.
 
 ## Response Format
 
