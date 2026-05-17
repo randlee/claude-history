@@ -20,5 +20,6 @@ artifacts:
   scripts:
     - scripts/validate-claude-history-cli.py
 requires:
-  - python3
-  - claude-history >= 0.2.0
+  cli:
+    - python3
+    - claude-history >= 0.2.0
